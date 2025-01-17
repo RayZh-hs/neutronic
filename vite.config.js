@@ -6,5 +6,17 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 5174,
+  },
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: '@import "@/styles/variables.scss";',
+      },
+    },
   }
 })

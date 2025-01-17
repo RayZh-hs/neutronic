@@ -10,7 +10,7 @@
   </main>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .footer {
   position: fixed;
   bottom: 2rem;
@@ -18,5 +18,6 @@
   transform: translateX(-50%);
 
   font-size: 0.8rem;
+  color: $footnote-color;
 }
 </style>
