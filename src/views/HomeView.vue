@@ -1,16 +1,22 @@
-<script setup></script>
+<script setup>
+
+const toGithub = () => {
+    window.location.href = 'https://github.com/RayZh-hs/neutronic'
+}
+
+</script>
 
 <template>
     <div class="home-view-container">
         <h1 class="home-main-title">Neutronic</h1>
         <div class="buttons-container">
-            <n-button>
-                <template #icon>
+            <n-button @click="toGithub">
+                <!-- <template #icon>
                     <n-icon>
                         <ion-icon name="globe-outline"></ion-icon>
                     </n-icon>
-                </template>
-                Hello World
+                </template> -->
+                Work in progress 🚧
             </n-button>
         </div>
     </div>

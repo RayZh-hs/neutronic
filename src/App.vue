@@ -1,6 +1,6 @@
 <script setup>
 import { darkTheme } from 'naive-ui';
-
+import AbstractBackground from './components/AbstractBackground.vue';
 </script>
 
 <template>
@@ -15,6 +15,7 @@ import { darkTheme } from 'naive-ui';
             <div class="footer">
               <p>Made with ♥️ by Norb @ 2025</p>
             </div>
+            <abstract-background />
           </main>
         </n-modal-provider>
       </n-message-provider>
