@@ -1,0 +1,143 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "meta": {
+            "type": "object",
+            "properties": {
+                "levelId": {
+                    "type": "string",
+                    "default": "1234567890"
+                },
+                "name": {
+                    "type": "string",
+                    "default": "ez"
+                },
+                "author": {
+                    "type": "string",
+                    "default": "yjx"
+                },
+                "description": {
+                    "type": "string",
+                    "default": "hello!"
+                },
+                "difficulty": {
+                    "type": "string",
+                    "default": "hard"
+                }
+            },
+            "required": ["name", "author", "description", "difficulty"]
+        },
+        "content": {
+            "type": "object",
+            "properties": {
+                "boards": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": ["board", "portal"]
+                            },
+                            "row": {
+                                "type": "number"
+                            },
+                            "column": {
+                                "type": "number"
+                            },
+                            "label": {
+                                "type": "string"
+                            }
+                        },
+                        "required": ["type", "row", "column"]
+                    },
+                    "default": [
+                        {
+                            "type": "board",
+                            "row": 1,
+                            "column": 1,
+                            "label": "Start"
+                        },
+                        {
+                            "type": "board",
+                            "row": 1,
+                            "column": 2
+                        },
+                        {
+                            "type": "board",
+                            "row": 1,
+                            "column": 3
+                        },
+                        {
+                            "type": "board",
+                            "row": 2,
+                            "column": 4
+                        },
+                        {
+                            "type": "board",
+                            "row": 2,
+                            "column": 2
+                        },
+                        {
+                            "type": "board",
+                            "row": 2,
+                            "column": 3
+                        },
+                        {
+                            "type": "board",
+                            "row": 3,
+                            "column": 3
+                        },
+                        {
+                            "type": "board",
+                            "row": 3,
+                            "column": 4
+                        },
+                        {
+                            "type": "portal",
+                            "row": 3,
+                            "column": 5
+                        }
+                    ]
+                },
+                "particles":{
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "color": {
+                                "type": "string",
+                                "enum": ["red", "blue"]
+                            },
+                            "row": {
+                                "type": "number"
+                            },
+                            "column": {
+                                "type": "number"
+                            }
+                        },
+                        "required": ["type", "row", "column"]
+                    },
+                    "default": [
+                        {
+                            "color": "red",
+                            "row": 1,
+                            "column": 1
+                        },
+                        {
+                            "color": "red",
+                            "row": 1,
+                            "column": 2
+                        },
+                        {
+                            "color": "blue",
+                            "row": 2,
+                            "column": 4
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

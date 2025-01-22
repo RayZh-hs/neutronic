@@ -1,22 +1,28 @@
-<script setup>
-
-const toGithub = () => {
-    window.location.href = 'https://github.com/RayZh-hs/neutronic'
-}
-
+<script>
+export default {
+    data() {
+      return {
+      };
+    },
+    methods: {
+        play() {
+        this.$router.push('/game');
+      }
+    }
+  };
 </script>
 
 <template>
     <div class="home-view-container">
         <h1 class="home-main-title">Neutronic</h1>
         <div class="buttons-container">
-            <n-button @click="toGithub">
-                <!-- <template #icon>
+            <n-button @click="play">
+                <template #icon>
                     <n-icon>
                         <ion-icon name="globe-outline"></ion-icon>
                     </n-icon>
-                </template> -->
-                Work in progress 🚧
+                </template>
+                Play
             </n-button>
         </div>
     </div>
