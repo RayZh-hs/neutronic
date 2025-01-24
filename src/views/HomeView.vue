@@ -1,9 +1,12 @@
 <script setup>
-
+import { useRouter } from 'vue-router';
+const router = useRouter();
 const toGithub = () => {
     window.location.href = 'https://github.com/RayZh-hs/neutronic'
 }
-
+const play = () =>{
+    router.push('/game');
+}
 </script>
 
 <template>
@@ -17,6 +20,14 @@ const toGithub = () => {
                     </n-icon>
                 </template> -->
                 Work in progress 🚧
+            </n-button>
+            <n-button @click="play">
+                <template #icon>
+                    <n-icon>
+                        <ion-icon name="globe-outline"></ion-icon>
+                    </n-icon>
+                </template>
+                Play
             </n-button>
         </div>
     </div>

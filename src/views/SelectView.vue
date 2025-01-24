@@ -1,19 +1,15 @@
-<script>
-export default {
-    data() {
-      return {
-      };
-    },
-    methods: {
-        goToLevel(level) {
-            this.$router.push(`/game/${level}`);
-        },
-        quit()
-        {
-            this.$router.go(-1);
-        }
-    }
-  };
+<script setup>
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+const goToLevel = (level) => {
+    router.push(`/game/${level}`);
+};
+
+const quit = () => {
+    router.go(-1);
+};
 </script>
 
 <template>
