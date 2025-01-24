@@ -18,8 +18,8 @@ const play = () =>{
                     <n-icon>
                         <ion-icon name="globe-outline"></ion-icon>
                     </n-icon>
-                </template>
-                Play
+                </template> -->
+                Work in progress 🚧
             </n-button>
             <n-button @click="play">
                 <template #icon>
