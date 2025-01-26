@@ -8,7 +8,7 @@ const author = ref('');
 const description = ref('');
 const difficulty = ref('');
 const gameState = ref({ boards: [], particles: [] });
-const gridSize = ref({ width: 62, height: 62 });
+const gridSize = ref({ width: 3.875, height: 3.875 });
 const selected = ref(null);
 
 const loadLevelConfig = async () => {
@@ -116,12 +116,12 @@ const selectParticle=(particle)=> {
     }
 };
 const getPosition=(item)=> {
-    const left = 300+(item.column - 1) * gridSize.value.width;
-    const top = 200+(item.row - 1) * gridSize.value.height;
+    const left = 18.75+(item.column - 1) * gridSize.value.width;
+    const top = 12.5+(item.row - 1) * gridSize.value.height;
     return {
         position: 'absolute',
-        left: `${left}px`,
-        top: `${top}px`
+        left: `${left}rem`,
+        top: `${top}rem`
     };
 };
 onMounted(() => {
@@ -177,19 +177,19 @@ onBeforeUnmount(() => {
     height: 80vh;
 }
 .viewport .board{
-    width: 58px;
-    height: 58px;
+    width: 3.625rem;
+    height: 3.625rem;
     opacity: 1;        
-    border-radius: 0px 0px 5px 0px;
+    border-radius: 0px 0px 0.3125rem 0px;
     background: rgba(230, 230, 230, 0.07);
     border: 1px solid rgba(237, 237, 237, 0.15);
 }
 
 .viewport .portal{
-    width: 58px;
-    height: 58px;
+    width: 3.625rem;
+    height: 3.625rem;
     opacity: 1;
-    border-radius: 10px;
+    border-radius: 0.625rem;
     background: rgba(255, 141, 26, 0.2);
     border: 1px solid rgba(255, 141, 26, 0.61);
     box-shadow: 0px 2px 9px 1px rgba(0, 0, 0, 0.25);
@@ -199,10 +199,10 @@ onBeforeUnmount(() => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 30px;
-    height: 30px;
+    width: 1.875rem;
+    height: 1.875rem;
     opacity: 1;
-    border-radius: 43px;
+    border-radius: 50%;
     background: rgb(0, 102, 204);
     border: 2px solid rgba(0, 122, 240, 0.78);
     filter: blur(1px);
@@ -212,8 +212,8 @@ onBeforeUnmount(() => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 30px;
-    height: 30px;
+    width: 1.875rem;
+    height: 1.875rem;
     opacity: 1;
     border-radius: 50%;
     background: rgba(229, 104, 54, 0.7);
@@ -226,8 +226,8 @@ onBeforeUnmount(() => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 39px; 
-    height: 39px;
+    width: 2.4375rem; 
+    height: 2.4375rem;
     border-radius: 50%;
     border: 4px solid rgba(194,34,64);
     background: transparent;
@@ -238,10 +238,10 @@ onBeforeUnmount(() => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 30px;
-    height: 30px;
+    width: 1.875rem;
+    height: 1.875rem;
     opacity: 1;
-    border-radius: 43px;
+    border-radius: 50%;
     background: rgba(229, 104, 54, 0.7);
     border: 1px solid rgba(191, 167, 121, 0.54);
     filter: blur(1px);
@@ -253,8 +253,8 @@ onBeforeUnmount(() => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 39px; 
-    height: 39px;
+    width: 2.4375rem; 
+    height: 2.4375rem;
     border-radius: 50%;
     border: 4px solid rgb(94, 169, 243);
     background: transparent;
@@ -265,10 +265,10 @@ onBeforeUnmount(() => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 30px;
-    height: 30px;
+    width: 1.875rem;
+    height: 1.875rem;
     opacity: 1;
-    border-radius: 43px;
+    border-radius: 50%;
     background: rgb(0, 102, 204);
     border: 1px solid rgba(0, 122, 240, 0.78);
     filter: blur(1px);
