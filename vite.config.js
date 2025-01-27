@@ -7,7 +7,13 @@ import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => tag.startsWith('ion-') // All tags starting with "ion-"
+        }
+      }
+    }),
     AutoImport({
       imports: [
         'vue',

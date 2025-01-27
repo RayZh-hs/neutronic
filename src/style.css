@@ -13,6 +13,7 @@
   box-sizing: border-box;
 
   --color-primary: #2065dc;
+  /* --ionicon-stroke-width: 16px; */
 }
 
 body {
