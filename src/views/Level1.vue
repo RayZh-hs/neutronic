@@ -97,6 +97,17 @@ const moveParticle=(direction)=> {
                 selected.value=null;
                 return;
             }
+            else if(gameState.value.particles.some(item => item.color!==co && item.row === another.row && item.column === another.column))
+            {
+                gameState.value.particles[index].row=another.row;
+                gameState.value.particles[index].column=another.column;
+                gameState.value.boards = gameState.value.boards.filter(item => item.row !== another.row || item.column !== another.column);
+                gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== another.row || particle.column !== another.column);
+                tmp.type='board';
+                selected.value=null;
+                return;
+            }
+            else if(gameState.value.particles.some(item => item.color===co && item.row === another.row && item.column === another.column)) return;
             gameState.value.particles[index].row=another.row;
             gameState.value.particles[index].column=another.column;
         }
