@@ -4,17 +4,21 @@ import { ref } from 'vue';
 
 const curAtButton = ref('none');
 
+const showInfo = ref(false);
+
 </script>
 
 <template>
     <div class="home-view-container">
         <h1 class="home-main-title a-fade-in">Neutronic</h1>
         <div class="r-container">
-            <div class="r-divider-bg clickable a-fade-in a-delay-2" @mouseover="curAtButton = 'info'"
-                @mouseleave="curAtButton = 'none'">
+            <div class="r-divider-bg clickable a-fade-in a-delay-2"
+                @click="showInfo = true"
+                @mouseover="curAtButton = 'info'" @mouseleave="curAtButton = 'none'">
                 <ion-icon name="information-outline" class="form-button" size="large"></ion-icon>
             </div>
-            <div class="r-divider-bg clickable a-fade-in a-delay-3" @click="router.push('/album')"
+            <div class="r-divider-bg clickable a-fade-in a-delay-3"
+                @click="router.push('/album')"
                 @mouseover="curAtButton = 'play'" @mouseleave="curAtButton = 'none'">
                 <ion-icon name="play-outline" class="form-button" size="large"></ion-icon>
             </div>
@@ -41,6 +45,18 @@ const curAtButton = ref('none');
             </div>
         </div>
     </div>
+    <n-modal v-model:show="showInfo">
+        <n-card title="Neutronic" class="info-card">
+            <template #header-extra>
+                <img src="/logo-dark.svg" class="logo">
+            </template>
+            <p>Neutronic is a mind-taxing single-player puzzle game where the player cancels out blue and red particles to pass levels.</p>
+            <n-divider></n-divider>
+            <p>Game Designer: Norb</p>
+            <p>Implementor: Norb, JasonYuan</p>
+            <p>The game is open-source at <a href="https://github.com/RayZh-hs/neutronic">Github</a></p>
+        </n-card>
+    </n-modal>
 </template>
 
 <style lang="scss" scoped>
@@ -98,6 +114,36 @@ const curAtButton = ref('none');
                 }
             }
         }
+    }
+}
+
+.info-card {
+    max-width: 24rem;
+
+    .logo {
+        width: 3rem;
+        height: 3rem;
+        // margin-right: 1rem;
+        animation: spin 24s linear infinite;
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+a {
+    color: $n-ion-button-hover-color;
+    text-decoration: none;
+    outline: none;
+
+    &:hover {
+        text-decoration: underline;
     }
 }
 

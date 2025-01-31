@@ -59,3 +59,7 @@ button:focus-visible {
   padding: 2rem;
   text-align: center;
 }
+
+.n-card {
+  background-color: #262626 !important;
+}
