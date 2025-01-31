@@ -12,9 +12,9 @@ import AbstractBackground from './components/AbstractBackground.vue';
           <!-- main starts here -->
           <main>
             <router-view v-slot="{ Component }">
-              <transition name="zoom" mode="out-in">
+              <!-- <transition name="zoom" mode="out-in"> -->
                 <component :is="Component" />
-              </transition>
+              <!-- </transition> -->
             </router-view>
             <div class="footer">
               <p>Made with ♥️ by Norb @ 2025</p>

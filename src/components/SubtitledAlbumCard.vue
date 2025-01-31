@@ -1,13 +1,9 @@
 <script setup>
-import StatusBar from './StatusBar.vue';
-import { ref } from 'vue';
 
 const props = defineProps({
     name: String,
-    total: Number,
-    passes: { type: Number, default: 0 },
-    perfects: { type: Number, default: 0 },
-    locked: Boolean
+    subtitle: String,
+    icon: String
 });
 
 const emits = defineEmits(['click']);
@@ -19,11 +15,10 @@ const emits = defineEmits(['click']);
         <div class="album-card">
             <h1>
                 {{ name }}
-                <ion-icon name="lock-closed-outline" style="font-size: 1.6rem;" v-show="locked"></ion-icon>
+                <ion-icon :name="icon" style="font-size: 2.0rem;"></ion-icon>
             </h1>
             <div class="data-container">
-                <status-bar title="perfects" color="#007bff" width="18rem" :total="total" :finished="perfects" />
-                <status-bar title="passes" color="#f03c24" width="18rem" :total="total" :finished="passes" />
+                <span>{{ subtitle }}</span>
             </div>
         </div>
     </div>
@@ -53,12 +48,17 @@ const emits = defineEmits(['click']);
         cursor: pointer;
 
         transition: all 0.3s;
-        &:not(.locked):hover {
+
+        &:hover {
             scale: 1.03;
         }
 
         h1 {
             display: inline-block;
+
+            ion-icon {
+                margin-left: 1.2rem;
+            }
         }
     }
 }
@@ -72,5 +72,10 @@ const emits = defineEmits(['click']);
 
     margin-bottom: 2rem;
 
+    span {
+        font-weight: 200;
+        letter-spacing: 2pt;
+        margin: 0;
+    }
 }
 </style>

@@ -31,7 +31,15 @@ const updatePage = (swiper) => {
 //: Custom component setup
 
 import AlbumCard from '../components/AlbumCard.vue';
+import SubtitledAlbumCard from '../components/SubtitledAlbumCard.vue';
 import { router } from '../router';
+
+//: Custom json setup
+
+import album from "../data/album.json";
+import player from "../data/player.json";
+
+console.log(album);
 
 </script>
 
@@ -43,7 +51,7 @@ import { router } from '../router';
             prevEl: '.backward-btn',
             nextEl: '.forward-btn'
         }" :mousewheel="true" @swiper="updatePage" @slideChange="updatePage">
-            <swiper-slide>
+            <!-- <swiper-slide>
                 <album-card name="Naive" :locked="false" :total="20" :passes="12" :perfects="10" class="a-fade-in" />
             </swiper-slide>
             <swiper-slide>
@@ -51,12 +59,15 @@ import { router } from '../router';
             </swiper-slide>
             <swiper-slide>
                 <album-card name="Difficult" :locked="true" :total="32" :passes="0" :perfects="0" class="a-fade-in" />
+            </swiper-slide> -->
+            <swiper-slide v-for="(item, num) in album.slice(0, 3)" :key="num">
+                <album-card :name="item.name" :locked="player.progress[num].locked" :total="item.levels.length" :passes="player.progress[num].passed.length" :perfects="player.progress[num].perfected.length" class="a-fade-in" />
             </swiper-slide>
             <swiper-slide>
-                <album-card name="Custom" :locked="false" :total="20" :passes="0" :perfects="0" class="a-fade-in" />
+                <subtitled-album-card name="Custom" subtitle="Build your own puzzles." icon="create-outline"></subtitled-album-card>
             </swiper-slide>
             <swiper-slide>
-                <album-card name="Online" :locked="false" :total="20" :passes="0" :perfects="0" class="a-fade-in" />
+                <subtitled-album-card name="Online" subtitle="And join the world at thought." icon="logo-web-component"></subtitled-album-card>
             </swiper-slide>
         </swiper>
         <ion-icon name="chevron-forward-outline" class="forward-btn"></ion-icon>

@@ -1,0 +1,30 @@
+{
+    "username": "visitor",
+    "password": "",
+    "progress": [
+        {
+            "name": "Naive",
+            "locked": false,
+            "passed": [],
+            "perfected": []
+        },
+        {
+            "name": "Medium",
+            "locked": true,
+            "passed": [],
+            "perfected": []
+        },
+        {
+            "name": "Hard",
+            "locked": true,
+            "passed": [],
+            "perfected": []
+        },
+        {
+            "name": "Online",
+            "locked": false,
+            "passed": [],
+            "perfected": []
+        }
+    ]
+}

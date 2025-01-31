@@ -1,0 +1,27 @@
+[
+    {
+        "name": "Naive",
+        "levels": [
+            {
+                "name": "Tutorial",
+                "uuid": "528a89f9-4a9f-4ad2-86ac-3b184f218a48"
+            }
+        ]
+    },
+    {
+        "name": "Medium",
+        "levels": []
+    },
+    {
+        "name": "Hard",
+        "levels": []
+    },
+    {
+        "name": "Custom",
+        "levels": []
+    },
+    {
+        "name": "Online",
+        "levels": []
+    }
+]
