@@ -16,7 +16,7 @@ const emits = defineEmits(['click']);
 
 <template>
     <div class="album-divider">
-        <div class="album-card">
+        <div class="album-card" :class="{ locked: locked }" @click="$emit('click')">
             <h1>
                 {{ name }}
                 <ion-icon name="lock-closed-outline" style="font-size: 1.6rem;" v-show="locked"></ion-icon>
@@ -50,11 +50,14 @@ const emits = defineEmits(['click']);
         align-items: center;
         gap: 0.5rem;
 
-        cursor: pointer;
+        cursor: not-allowed;
 
-        transition: all 0.3s;
+        transition: scale 0.3s;
+
         &:not(.locked):hover {
             scale: 1.03;
+            cursor: pointer;
+            animation: borderAnimation 0.35s forwards;
         }
 
         h1 {

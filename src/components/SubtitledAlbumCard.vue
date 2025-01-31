@@ -12,7 +12,7 @@ const emits = defineEmits(['click']);
 
 <template>
     <div class="album-divider">
-        <div class="album-card">
+        <div class="album-card" @click="$emit('click')">
             <h1>
                 {{ name }}
                 <ion-icon :name="icon" style="font-size: 2.0rem;"></ion-icon>
@@ -37,6 +37,7 @@ const emits = defineEmits(['click']);
         // height: 100%;
 
         width: 26rem;
+        min-height: 14rem;
         margin: 0 auto;
 
         display: flex;
@@ -51,6 +52,7 @@ const emits = defineEmits(['click']);
 
         &:hover {
             scale: 1.03;
+            animation: borderAnimation 0.35s forwards;
         }
 
         h1 {
