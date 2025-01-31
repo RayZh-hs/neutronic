@@ -10,6 +10,7 @@ const difficulty = ref('');
 const gameState = ref({ boards: [], particles: [] });
 const gridSize = ref({ width: 3.875, height: 3.875 });
 const selected = ref(null);
+const cnt=ref(0);
 
 const loadLevelConfig = async () => {
     try {
@@ -74,6 +75,7 @@ const moveParticle=(direction)=> {
     const valid=gameState.value.boards.some(item => item.row === r && item.column === c)&&!gameState.value.particles.some(item => item.color===co && item.row === r && item.column === c);
     if(valid)
     {
+        cnt.value++;
         gameState.value.particles[index].row=r;
         gameState.value.particles[index].column=c;
         const tmp=gameState.value.boards.find(item => item.row === r && item.column === c);
@@ -127,8 +129,8 @@ const selectParticle=(particle)=> {
     }
 };
 const getPosition=(item)=> {
-    const left = 18.75+(item.column - 1) * gridSize.value.width;
-    const top = 12.5+(item.row - 1) * gridSize.value.height;
+    const left = 18+(item.column - 1) * gridSize.value.width;
+    const top = 10+(item.row - 1) * gridSize.value.height;
     return {
         position: 'absolute',
         left: `${left}rem`,
@@ -137,6 +139,7 @@ const getPosition=(item)=> {
 };
 onMounted(() => {
     loadLevelConfig();
+    cnt.value=0;
     //console.log("created");
     window.addEventListener('keydown', handleKeydown);
 });
@@ -151,6 +154,10 @@ onBeforeUnmount(() => {
     <div class="svg-container" @click="quit">
         <img src="../../quit.svg"/>
     </div>
+    <div class="steps-container">
+        <div class="number">{{ cnt }}</div>
+        <div class="string">Steps</div>
+    </div>
     <div class="viewport"> 
         <div v-for="(item, index) in gameState.boards" :key="index" :style="getPosition(item)" :class="item.type">
             <div v-for="(particle, pindex) in findParticle(item)" :key="pindex" @click="selectParticle(particle)"
@@ -162,13 +169,63 @@ onBeforeUnmount(() => {
 </template>
   
 <style lang="scss" scoped>
+@font-face {
+    font-family: 'Game of Squids';
+    src: url(../assets/GameOfSquids.ttf) format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Borned';
+    src: url(../assets/borned.ttf) format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+.steps-container{
+    position: fixed; 
+    top: 2rem;
+    right: 3rem;
+    width: 7rem;
+    height: 5.5rem;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: rgba(230, 230, 230, 0.07);
+    border: 1px solid rgba(230, 230, 230, 0.24);
+    border-radius: 0.5rem;
+}
+.number{
+    font-family: 'Game of Squids';
+    font-size: 3.5rem;
+    height: 3.2rem;
+    color: transparent;
+    -webkit-text-stroke: 0.2rem rgba(227, 60, 100, 1);
+    filter: blur(0.25px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
 
+.string{
+    font-family: 'Borned';
+    font-size: 1rem;
+    color:rgba(237, 237, 237, 0.81);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
 .svg-container {
     position: fixed; 
-    top: 10px;
-    left: 10px;
-    width: 60px;
-    height: 60px;
+    top: 0.625rem;
+    left: 0.625rem;
+    width: 3.75rem;
+    height: 3.75rem;
     z-index: 1;
 }
 .svg-container img {
