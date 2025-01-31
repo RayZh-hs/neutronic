@@ -31,10 +31,12 @@ const updatePage = (swiper) => {
 //: Custom component setup
 
 import AlbumCard from '../components/AlbumCard.vue';
+import { router } from '../router';
 
 </script>
 
 <template>
+    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="router.push('/')"></ion-icon>
     <div class="side-container">
         <ion-icon name="chevron-back-outline" class="backward-btn"></ion-icon>
         <swiper ref="swiperRef" :pagination="pagination" :modules="modules" class="swiper" :navigation="{
@@ -42,19 +44,19 @@ import AlbumCard from '../components/AlbumCard.vue';
             nextEl: '.forward-btn'
         }" :mousewheel="true" @swiper="updatePage" @slideChange="updatePage">
             <swiper-slide>
-                <album-card name="Naive" :locked="false" :total="20" :passes="12" :perfects="10" />
+                <album-card name="Naive" :locked="false" :total="20" :passes="12" :perfects="10" class="a-fade-in" />
             </swiper-slide>
             <swiper-slide>
-                <album-card name="Transmissive" :locked="false" :total="24" :passes="2" :perfects="0" />
+                <album-card name="Medium" :locked="false" :total="24" :passes="2" :perfects="0" class="a-fade-in" />
             </swiper-slide>
             <swiper-slide>
-                <album-card name="Difficult" :locked="true" :total="32" :passes="0" :perfects="0" />
+                <album-card name="Difficult" :locked="true" :total="32" :passes="0" :perfects="0" class="a-fade-in" />
             </swiper-slide>
             <swiper-slide>
-                <album-card name="Custom" :locked="false" :total="20" :passes="0" :perfects="0" />
+                <album-card name="Custom" :locked="false" :total="20" :passes="0" :perfects="0" class="a-fade-in" />
             </swiper-slide>
             <swiper-slide>
-                <album-card name="Online" :locked="false" :total="20" :passes="0" :perfects="0" />
+                <album-card name="Online" :locked="false" :total="20" :passes="0" :perfects="0" class="a-fade-in" />
             </swiper-slide>
         </swiper>
         <ion-icon name="chevron-forward-outline" class="forward-btn"></ion-icon>
@@ -62,6 +64,21 @@ import AlbumCard from '../components/AlbumCard.vue';
 </template>
 
 <style lang="scss" scoped>
+.back-to-home-btn {
+    position: fixed;
+    left: 0;
+    top: 0;
+    font-size: 2rem;
+    margin: 2.6rem;
+    cursor: pointer;
+    transition: all 0.3s;
+
+    &:hover {
+        color: $n-primary;
+        scale: 1.04;
+    }
+}
+
 .side-container {
 
     display: flex;
@@ -91,7 +108,7 @@ import AlbumCard from '../components/AlbumCard.vue';
     .swiper {
         width: 60vw;
         height: 60vh;
-        // outline: 1px solid rgb(255, 255, 255);
+        // outline: 1px solid rgb(255, 255, 255);   
     }
 }
 
