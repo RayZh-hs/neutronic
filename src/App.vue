@@ -1,6 +1,11 @@
 <script setup>
 import { darkTheme } from 'naive-ui';
 import AbstractBackground from './components/AbstractBackground.vue';
+import IonButton from './components/IonButton.vue';
+
+const openGitHub = () => {
+  window.open("https://github.com/RayZh-hs/neutronic", "_blank");
+};
 </script>
 
 <template>
@@ -11,6 +16,9 @@ import AbstractBackground from './components/AbstractBackground.vue';
         <n-modal-provider>
           <!-- main starts here -->
           <main>
+            <div class="header">
+              <IonButton name="logo-github" size="2rem" aria-label="github" @click="openGitHub" />
+            </div>
             <router-view v-slot="{ Component }">
               <!-- <transition name="zoom" mode="out-in"> -->
                 <component :is="Component" />
@@ -50,5 +58,14 @@ import AbstractBackground from './components/AbstractBackground.vue';
 .zoom-enter-to, .zoom-leave-from {
   opacity: 1;
   transform: scale(1);
+}
+
+.header {
+  position: fixed;
+  top: 2rem;
+  left: 0;
+  width: calc(100vw - 2rem);
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

@@ -80,7 +80,8 @@ console.log(album);
     left: 0;
     top: 0;
     font-size: 2rem;
-    margin: 2.6rem;
+    // margin: 2.6rem;
+    margin: 2rem;
     cursor: pointer;
     transition: all 0.3s;
 
