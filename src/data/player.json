@@ -5,26 +5,35 @@
         {
             "name": "Naive",
             "locked": false,
-            "passed": [],
-            "perfected": []
+            "passed": [
+                "528a89f9-42"
+            ],
+            "perfected": [
+                "528a89f9-4a9f-4ad2-86ac-3b184f218a48",
+                "528a89f9-41"
+            ],
+            "openAt": 5
         },
         {
             "name": "Medium",
             "locked": true,
             "passed": [],
-            "perfected": []
+            "perfected": [],
+            "openAt": 1
         },
         {
             "name": "Hard",
             "locked": true,
             "passed": [],
-            "perfected": []
+            "perfected": [],
+            "openAt": 1
         },
         {
             "name": "Online",
             "locked": false,
             "passed": [],
-            "perfected": []
+            "perfected": [],
+            "openAt": 1
         }
     ]
 }

@@ -12,7 +12,11 @@ const props = defineProps({
     },
     total: Number,
     finished: Number,
-    title: String
+    title: String,
+    marginBottom: {
+        type: String,
+        default: '1.2rem'
+    }
 });
 
 </script>
@@ -26,7 +30,8 @@ const props = defineProps({
     </div>
     <div class="status-bar-container" :style="{
         width: width,
-        height: height
+        height: height,
+        'margin-bottom': marginBottom
     }">
         <div class="status-bar" :style="{
             width: (finished / total * 100) + '%',
@@ -55,7 +60,7 @@ const props = defineProps({
     background-color: $n-dark-grey;
     opacity: 50%;
 
-    margin-bottom: 1.2rem;
+    // margin-bottom: 1.2rem;
 
     .status-bar {
         position: absolute;

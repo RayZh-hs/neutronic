@@ -5,6 +5,66 @@
             {
                 "name": "Tutorial",
                 "uuid": "528a89f9-4a9f-4ad2-86ac-3b184f218a48"
+            },
+            {
+                "name": "Level 2",
+                "uuid": "528a89f9-41"
+            },
+            {
+                "name": "Level 3",
+                "uuid": "528a89f9-42"
+            },
+            {
+                "name": "Level 4",
+                "uuid": "528a89f9-43"
+            },
+            {
+                "name": "Level 5",
+                "uuid": "528a89f9-44"
+            },
+            {
+                "name": "Level 6",
+                "uuid": "528a89f9-45"
+            },
+            {
+                "name": "Level 7",
+                "uuid": "528a89f9-46"
+            },
+            {
+                "name": "Level 8",
+                "uuid": "528a89f9-47"
+            },
+            {
+                "name": "Level 9",
+                "uuid": "528a89f9-48"
+            },
+            {
+                "name": "Level 10",
+                "uuid": "528a89f9-49"
+            },
+            {
+                "name": "Level 8",
+                "uuid": "528a89f9-47"
+            },
+            {
+                "name": "Level 9",
+                "uuid": "528a89f9-48"
+            },
+            {
+                "name": "Level 10",
+                "uuid": "528a89f9-49"
+            },
+            {
+                "name": "Level 8",
+                "uuid": "528a89f9-47"
+            },
+            {
+                "name": "Level 9",
+                "uuid": "528a89f9-48"
+            },
+            {
+                "name": "Level 10",
+                "uuid": "528a89f9-49"
             }
         ]
     },

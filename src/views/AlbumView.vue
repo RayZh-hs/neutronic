@@ -41,6 +41,19 @@ import player from "../data/player.json";
 
 console.log(album);
 
+//: Jump to referring page
+const jumpToReferent = () => {
+    const id = swiperPage.value;
+    console.log("Jumping to ", id);
+    if (id === 3) {
+        router.push('/custom');
+    } else if (id === 4) {
+        router.push('/online');
+    } else {
+        router.push(`/album/${id}`);
+    }
+}
+
 </script>
 
 <template>
@@ -61,13 +74,19 @@ console.log(album);
                 <album-card name="Difficult" :locked="true" :total="32" :passes="0" :perfects="0" class="a-fade-in" />
             </swiper-slide> -->
             <swiper-slide v-for="(item, num) in album.slice(0, 3)" :key="num">
-                <album-card :name="item.name" :locked="player.progress[num].locked" :total="item.levels.length" :passes="player.progress[num].passed.length" :perfects="player.progress[num].perfected.length" class="a-fade-in" />
+                <album-card :name="item.name" :locked="player.progress[num].locked" :total="item.levels.length" :passes="player.progress[num].passed.length" :perfects="player.progress[num].perfected.length" class="a-fade-in" 
+                    @click="jumpToReferent"
+                />
             </swiper-slide>
             <swiper-slide>
-                <subtitled-album-card name="Custom" subtitle="Build your own puzzles." icon="create-outline"></subtitled-album-card>
+                <subtitled-album-card name="Custom" subtitle="Build your own puzzles." icon="create-outline"
+                    @click="jumpToReferent"
+                ></subtitled-album-card>
             </swiper-slide>
             <swiper-slide>
-                <subtitled-album-card name="Online" subtitle="And join the world at thought." icon="logo-web-component"></subtitled-album-card>
+                <subtitled-album-card name="Online" subtitle="And join the world at thought." icon="logo-web-component"
+                    @click="jumpToReferent"
+                ></subtitled-album-card>
             </swiper-slide>
         </swiper>
         <ion-icon name="chevron-forward-outline" class="forward-btn"></ion-icon>
@@ -75,22 +94,6 @@ console.log(album);
 </template>
 
 <style lang="scss" scoped>
-.back-to-home-btn {
-    position: fixed;
-    left: 0;
-    top: 0;
-    font-size: 2rem;
-    // margin: 2.6rem;
-    margin: 2rem;
-    cursor: pointer;
-    transition: all 0.3s;
-
-    &:hover {
-        color: $n-primary;
-        scale: 1.04;
-    }
-}
-
 .side-container {
 
     display: flex;
@@ -136,6 +139,22 @@ console.log(album);
 </style>
 
 <style lang="scss">
+.back-to-home-btn {
+    position: fixed;
+    left: 0;
+    top: 0;
+    font-size: 2rem;
+    // margin: 2.6rem;
+    margin: 2rem;
+    cursor: pointer;
+    transition: all 0.3s;
+
+    &:hover {
+        color: $n-primary;
+        scale: 1.04;
+    }
+}
+
 .swiper-pagination-bullet {
     width: $pagination-dot-size;
     height: $pagination-dot-size;
