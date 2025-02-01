@@ -13,7 +13,7 @@ const props = defineProps({
     },
     color: {
         type: String,
-        default: '#efefef;'
+        default: '#efefef'
     }
 });
 
