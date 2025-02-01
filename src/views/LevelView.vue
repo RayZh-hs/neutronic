@@ -2,7 +2,6 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
-const levelId = ref('');
 const name = ref('');
 const author = ref('');
 const description = ref('');
@@ -11,11 +10,11 @@ const gameState = ref({ boards: [], particles: [] });
 const gridSize = ref({ width: 3.875, height: 3.875 });
 const selected = ref(null);
 const cnt=ref(0);
+const levelId = router.currentRoute.value.params.levelId;
 
 const loadLevelConfig = async () => {
     try {
-        let levelConfig = await import('./Level1.json');
-        levelId.value = levelConfig.default.properties.meta.properties.levelId.default;
+        let levelConfig = await import(`../data/maps/${levelId}.json`);
         name.value = levelConfig.default.properties.meta.properties.name.default;
         author.value = levelConfig.default.properties.meta.properties.author.default;
         description.value = levelConfig.default.properties.meta.properties.description.default;

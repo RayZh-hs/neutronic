@@ -66,10 +66,11 @@ const getStatus = (level) => {
         </div>
         <div class="main-container">
             <simple-level-card class="level-card a-fade-in" :class="{ [`a-delay-${num + 1}`]: true }"
-                v-for="(level, num) in album[albumId].levels.slice(sliceWindow.begin, sliceWindow.end)"
+                v-for="(item, num) in album[albumId].levels.slice(sliceWindow.begin, sliceWindow.end)"
                 :key="num + 1 + sliceWindow.begin"
                 :level="num + 1 + sliceWindow.begin"
                 :status="getStatus(num + 1 + sliceWindow.begin)"
+                @click="router.push(`/album/${albumId}/${item.uuid}`)"
                 ></simple-level-card>
         </div>
         <ion-icon name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in"
