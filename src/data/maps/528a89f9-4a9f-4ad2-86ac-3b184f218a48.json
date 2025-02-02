@@ -1,160 +1,23 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "properties": {
-        "meta": {
-            "type": "object",
-            "properties": {
-                "levelId": {
-                    "type": "string",
-                    "default": "1234567890"
-                },
-                "name": {
-                    "type": "string",
-                    "default": "ez"
-                },
-                "author": {
-                    "type": "string",
-                    "default": "yjx"
-                },
-                "description": {
-                    "type": "string",
-                    "default": "hello!"
-                },
-                "difficulty": {
-                    "type": "string",
-                    "default": "hard"
-                }
+    "meta": {
+        "levelId": "528a89f9-4a9f-4ad2-86ac-3b184f218a48",
+        "name": "A simple level",
+        "author": "yjx",
+        "description": "This is a simple level.",
+        "difficulty": "easy"
+    },
+    "content": {
+        "boards": [
+            {
+                "type": "board",
+                "row": 1,
+                "column": 1
             },
-            "required": ["name", "author", "description", "difficulty"]
-        },
-        "content": {
-            "type": "object",
-            "properties": {
-                "boards": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "type": "string",
-                                "enum": ["board", "portal"]
-                            },
-                            "row": {
-                                "type": "number"
-                            },
-                            "column": {
-                                "type": "number"
-                            },
-                            "label": {
-                                "type": "string"
-                            }
-                        },
-                        "required": ["type", "row", "column"]
-                    },
-                    "default": [
-                        {
-                            "type": "board",
-                            "row": 1,
-                            "column": 1,
-                            "label": "Start"
-                        },
-                        {
-                            "type": "board",
-                            "row": 1,
-                            "column": 2
-                        },
-                        {
-                            "type": "board",
-                            "row": 1,
-                            "column": 3
-                        },
-                        {
-                            "type": "board",
-                            "row": 2,
-                            "column": 4
-                        },
-                        {
-                            "type": "board",
-                            "row": 2,
-                            "column": 2
-                        },
-                        {
-                            "type": "board",
-                            "row": 2,
-                            "column": 3
-                        },
-                        {
-                            "type": "board",
-                            "row": 3,
-                            "column": 3
-                        },
-                        {
-                            "type": "board",
-                            "row": 3,
-                            "column": 4
-                        },
-                        {
-                            "type": "board",
-                            "row": 4,
-                            "column": 7
-                        },
-                        {
-                            "type": "portal",
-                            "row": 3,
-                            "column": 5,
-                            "label": "uu"
-                        },
-                        {
-                            "type": "portal",
-                            "row": 4,
-                            "column": 6,
-                            "label": "uu"
-                        }
-                    ]
-                },
-                "particles":{
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "color": {
-                                "type": "string",
-                                "enum": ["red", "blue"]
-                            },
-                            "row": {
-                                "type": "number"
-                            },
-                            "column": {
-                                "type": "number"
-                            }
-                        },
-                        "required": ["type", "row", "column"]
-                    },
-                    "default": [
-                        {
-                            "color": "red",
-                            "row": 1,
-                            "column": 1
-                        },
-                        {
-                            "color": "red",
-                            "row": 1,
-                            "column": 2
-                        },
-                        {
-                            "color": "red",
-                            "row": 4,
-                            "column": 7
-                        },
-                        {
-                            "color": "blue",
-                            "row": 2,
-                            "column": 4
-                        }
-                    ]
-                }
+            {
+                "type": "board",
+                "row": 1,
+                "column": 2
             }
-        }
+        ]
     }
 }

@@ -30,7 +30,7 @@ const props = defineProps({
 
     &:hover {
         color: $n-ion-button-hover-color !important;
-        scale: 1.06;
+        scale: 1.04;
     }
 }
 </style>

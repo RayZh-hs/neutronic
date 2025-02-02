@@ -22,6 +22,8 @@ const props = defineProps({
 </template>
 
 <style lang="scss" scoped>
+@use "sass:color";
+
 .level-card {
     width: $level-select-grid-scale;
     height: $level-select-grid-scale;
@@ -40,13 +42,16 @@ const props = defineProps({
     }
 
     &.perfect {
-        background-color: rgba(darken($n-blue, 26), 0.2);
+        // background-color: rgba(darken($n-blue, 26), 0.2);
+        background-color: rgba(color.adjust($n-blue, $lightness: -26%), 0.2)
     }
     &.finished {
-        background-color: rgba(darken($n-red, 26), 0.2);
+        // background-color: rgba(darken($n-red, 26), 0.2);
+        background-color: rgba(color.adjust($n-red, $lightness: -26%), 0.2)
     }
     &.open:hover {
-        background-color: rgba(darken($n-primary, 32), 0.2);
+        // background-color: rgba(darken($n-primary, 32), 0.2);
+        background-color: rgba(color.adjust($n-primary, $lightness: -32%), 0.2)
     }
 
     &.locked ion-icon {

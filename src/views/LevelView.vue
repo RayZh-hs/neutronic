@@ -15,12 +15,12 @@ const levelId = router.currentRoute.value.params.levelId;
 const loadLevelConfig = async () => {
     try {
         let levelConfig = await import(`../data/maps/${levelId}.json`);
-        name.value = levelConfig.default.properties.meta.properties.name.default;
-        author.value = levelConfig.default.properties.meta.properties.author.default;
-        description.value = levelConfig.default.properties.meta.properties.description.default;
-        difficulty.value = levelConfig.default.properties.meta.properties.difficulty.default;
-        gameState.value.boards = JSON.parse(JSON.stringify(levelConfig.default.properties.content.properties.boards.default));
-        gameState.value.particles = JSON.parse(JSON.stringify(levelConfig.default.properties.content.properties.particles.default));
+        name.value = levelConfig.meta.name;
+        author.value = levelConfig.meta.author;
+        description.value = levelConfig.meta.description;
+        difficulty.value = levelConfig.meta.difficulty;
+        gameState.value.boards = JSON.parse(JSON.stringify(levelConfig.content.boards));
+        gameState.value.particles = JSON.parse(JSON.stringify(levelConfig.content.particles));
     } catch (error) {
         console.error('Failed to load level config:', error);
     }

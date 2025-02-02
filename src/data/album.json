@@ -78,7 +78,8 @@
     },
     {
         "name": "Custom",
-        "levels": []
+        "levels": [
+        ]
     },
     {
         "name": "Online",
