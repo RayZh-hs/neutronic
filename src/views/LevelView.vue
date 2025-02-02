@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
 const name = ref('');
@@ -127,19 +127,41 @@ const selectParticle=(particle)=> {
         selected.value=particle;
     }
 };
-const getPosition=(item)=> {
+
+const boardsWithPositions = computed(() => {
+    return gameState.value.boards.map(item => {
+        const position = getPosition(item);
+        return {
+            ...item,
+            style: position.style,
+            className: position.className
+        };
+    });
+});
+
+const getPosition = (item) => {
+    item.classes = [];
+    item.classes.push(item.type);
+    if(gameState.value.boards.some(tmp => tmp.row === item.row-1 && tmp.column === item.column && tmp.type==='board')) item.classes.push('top');
+    if(gameState.value.boards.some(tmp => tmp.row === item.row+1 && tmp.column === item.column && tmp.type==='board')) item.classes.push('bottom');
+    if(gameState.value.boards.some(tmp => tmp.row === item.row && tmp.column === item.column-1 && tmp.type==='board')) item.classes.push('left');
+    if(gameState.value.boards.some(tmp => tmp.row === item.row && tmp.column === item.column+1 && tmp.type==='board')) item.classes.push('right');
     const left = 18+(item.column - 1) * gridSize.value.width;
     const top = 10+(item.row - 1) * gridSize.value.height;
     return {
-        position: 'absolute',
-        left: `${left}rem`,
-        top: `${top}rem`
+        style:
+        {
+            position: 'absolute',
+            left: `${left}rem`,
+            top: `${top}rem`
+        },
+        className: item.classes.join(' ')
     };
 };
-onMounted(() => {
-    loadLevelConfig();
+
+onMounted(async() => {
+    await loadLevelConfig();
     cnt.value=0;
-    //console.log("created");
     window.addEventListener('keydown', handleKeydown);
 });
 
@@ -158,7 +180,7 @@ onBeforeUnmount(() => {
         <div class="string">Steps</div>
     </div>
     <div class="viewport"> 
-        <div v-for="(item, index) in gameState.boards" :key="index" :style="getPosition(item)" :class="item.type">
+        <div v-for="(item, index) in boardsWithPositions" :key="index" :style="item.style" :class="item.className">
             <div v-for="(particle, pindex) in findParticle(item)" :key="pindex" @click="selectParticle(particle)"
             :class="{[particle.color]:true, active: selected === particle}"
             >
@@ -183,7 +205,7 @@ onBeforeUnmount(() => {
 .steps-container{
     position: fixed; 
     top: 2rem;
-    right: 3rem;
+    right: 4rem;
     width: 7rem;
     height: 5.5rem;
     z-index: 1;
@@ -247,11 +269,30 @@ onBeforeUnmount(() => {
     width: 3.625rem;
     height: 3.625rem;
     opacity: 1;        
-    border-radius: 0px 0px 0.3125rem 0px;
+    --border-top-left-radius: 0.31rem;
+    --border-top-right-radius: 0.31rem;
+    --border-bottom-left-radius: 0.31rem;
+    --border-bottom-right-radius: 0.31rem;
+    border-radius: var(--border-top-left-radius) var(--border-top-right-radius) var(--border-bottom-right-radius) var(--border-bottom-left-radius);
     background: rgba(230, 230, 230, 0.07);
     border: 1px solid rgba(237, 237, 237, 0.15);
+    &.top{
+        --border-top-left-radius: 0;
+        --border-top-right-radius: 0;
+    }
+    &.bottom{
+        --border-bottom-left-radius: 0;
+        --border-bottom-right-radius: 0;
+    }
+    &.left{
+        --border-top-left-radius: 0;
+        --border-bottom-left-radius: 0;
+    }
+    &.right{
+        --border-top-right-radius: 0;
+        --border-bottom-right-radius: 0;
+    }
 }
-
 .viewport .portal{
     width: 3.625rem;
     height: 3.625rem;
