@@ -28,6 +28,12 @@ h1 {
   font-size: 3.2em;
   line-height: 1.1;
   font-weight: 200;
+  user-select: none;
+}
+
+span,
+p {
+  user-select: none;
 }
 
 button {
