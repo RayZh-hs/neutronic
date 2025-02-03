@@ -1,9 +1,9 @@
 // Pass on all for use
 
 @use "variables" as *;
-@use "effects" as *;
+@use "utility" as *;
 @use "animations" as *;
 
 @forward "variables";
-@forward "effects";
+@forward "utility";
 @forward "animations";
