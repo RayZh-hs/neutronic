@@ -35,6 +35,24 @@ const prevWindow = () => {
     sliceWindow.value.end -= customSelectionWindowSize;
 }
 
+//: UUID generator and level-editor linker
+
+import { v4 as uuidV4Generator } from 'uuid';
+
+
+// This function generates a new UUID.
+// Currently it uses the V4 version of the UUID generator, from the UUID package.
+// @param {void}
+// @returns {string} - The UUID generated.
+const getUUID = () => {
+    return uuidV4Generator();
+}
+
+const enterLevelEditor = () => {
+    const uuid = getUUID();
+    router.push(`/custom/edit/${uuid}`);
+}
+
 </script>
 
 <template>
@@ -44,7 +62,9 @@ const prevWindow = () => {
         <n-flex align="baseline">
             <h1 class="a-fade-in">Custom Levels</h1>
             <div class="gap-5" />
-            <IonButton name="add-circle-outline" class="a-fade-in" size="2.2rem"></IonButton>
+            <IonButton name="add-circle-outline" class="a-fade-in" size="2.2rem"
+                @click="enterLevelEditor"
+            ></IonButton>
         </n-flex>
         <div class="level-container">
             <level-card v-for="(level, index) in customLevels.slice(sliceWindow.begin, sliceWindow.end)"

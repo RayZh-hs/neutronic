@@ -4,12 +4,14 @@ import HomeView from './views/HomeView.vue'
 import AlbumView from './views/AlbumView.vue'
 import SubAlbumView from './views/SubAlbumView.vue'
 import CustomSelectionView from './views/CustomSelectionView.vue'
+import LevelEditorView from './views/LevelEditorView.vue'
 
 const routes = [
     { path: '/', component: HomeView },
     { path: '/album', component: AlbumView },
     { path: '/album/:id', component: SubAlbumView },
     { path: '/custom', component: CustomSelectionView },
+    { path: '/custom/edit/:uuid', component: LevelEditorView },
 ]
 
 export const router = createRouter({
