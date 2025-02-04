@@ -16,7 +16,7 @@ const emits = defineEmits(['click']);
 
 <template>
     <div class="album-divider">
-        <div class="album-card" :class="{ locked: locked }" @click="$emit('click')">
+        <div class="album-card" :class="{ locked: locked }" @click="locked ? null : $emit('click')">
             <h1>
                 {{ name }}
                 <ion-icon name="lock-closed-outline" style="font-size: 1.6rem;" v-show="locked"></ion-icon>
