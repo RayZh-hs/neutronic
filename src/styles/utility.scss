@@ -1,6 +1,6 @@
-@use "variables" as *;
+@use "constants" as *;
 
-@for $i from 1 through 20 {
+@for $i from 1 through 32 {
     .u-gap-#{$i} {
         width: $i * 1pt;
     }
@@ -8,4 +8,16 @@
 
 .u-green {
     color: $n-primary;
+}
+
+.u-show {
+    background-color: rgb(41, 39, 39);
+}
+
+.u-mla {
+    margin-left: auto;
+}
+
+.u-df {
+    display: flex;
 }

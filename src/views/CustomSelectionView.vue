@@ -13,7 +13,7 @@ import IonButton from '@/components/IonButton.vue';
 //: Import json and setup corresponding references
 
 import album from "@/data/album.json";
-import { customSelectionWindowSize } from '@/data/constant';
+import { customSelectionWindowSize } from '@/data/constants';
 
 const customLevels = album.find(a => a.name === 'Custom').levels;
 const total = customLevels.length;
