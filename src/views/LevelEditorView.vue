@@ -381,13 +381,10 @@ onMounted(() => {
 
 .map-container-wrapping {
     pointer-events: none;
-    clip-path: inset(0);    // Tis
+    clip-path: inset(0);    // This removes outside-boundary mouseover
 
     .sprite-mouseover {
         position: fixed;
-        width: 4rem;
-        height: 4rem;
-        background-color: $n-primary;
         opacity: 0.2;
         pointer-events: none;
     }
