@@ -47,6 +47,12 @@ const quit = () => {
     router.go(-1);
 };
 
+const handleCollision = (r, c) => {
+    gameState.value.boards = gameState.value.boards.filter(item => item.row !== r || item.column !== c);
+    gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
+    selected.value = null;
+};
+
 const moveParticle=(direction)=> {
     if (!selected.value) {
         return;
@@ -82,9 +88,9 @@ const moveParticle=(direction)=> {
         {
             if(gameState.value.particles.some(item => item.color!==co && item.row === r && item.column === c))
             {
-                gameState.value.boards = gameState.value.boards.filter(item => item.row !== r || item.column !== c);
-                gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
-                selected.value=null;
+                const collidingParticles = gameState.value.particles.filter(particle => particle.row === r && particle.column === c);
+                collidingParticles.forEach(particle => particle.colliding = true);
+                setTimeout(() => handleCollision(r, c), 1000);
             }
         }
         else if(tmp.type==='portal')
@@ -92,20 +98,18 @@ const moveParticle=(direction)=> {
             const another=gameState.value.boards.find(item => item.type==='portal' && item.label===tmp.label && item.row !== r && item.column !== c);
             if(gameState.value.particles.some(item => item.color!==co && item.row === r && item.column === c))
             {
-                gameState.value.boards = gameState.value.boards.filter(item => item.row !== r || item.column !== c);
-                gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
-                another.type='board';
-                selected.value=null;
+                const collidingParticles = gameState.value.particles.filter(particle => particle.row === r && particle.column === c);
+                collidingParticles.forEach(particle => particle.colliding = true);
+                setTimeout(() => {handleCollision(r, c); another.type = 'board';}, 1000);
                 return;
             }
             else if(gameState.value.particles.some(item => item.color!==co && item.row === another.row && item.column === another.column))
             {
                 gameState.value.particles[index].row=another.row;
                 gameState.value.particles[index].column=another.column;
-                gameState.value.boards = gameState.value.boards.filter(item => item.row !== another.row || item.column !== another.column);
-                gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== another.row || particle.column !== another.column);
-                tmp.type='board';
-                selected.value=null;
+                const collidingParticles = gameState.value.particles.filter(particle => particle.row === another.row && particle.column === another.row);
+                collidingParticles.forEach(particle => particle.colliding = true);
+                setTimeout(() => {handleCollision(another.row, another.column); tmp.type = 'board';}, 1000);
                 return;
             }
             else if(gameState.value.particles.some(item => item.color===co && item.row === another.row && item.column === another.column)) return;
@@ -169,6 +173,10 @@ onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleKeydown);
     selected.value = null;
 });
+
+const hasWon = computed(() => {
+    return gameState.value.particles.length === 0;
+});
 </script>
 
 <template>
@@ -179,13 +187,15 @@ onBeforeUnmount(() => {
         <div class="number">{{ cnt }}</div>
         <div class="string">Steps</div>
     </div>
-    <div class="viewport"> 
+    <div class="viewport" :class="{ disabled: hasWon }"> 
         <div v-for="(item, index) in boardsWithPositions" :key="index" :style="item.style" :class="item.className">
             <div v-for="(particle, pindex) in findParticle(item)" :key="pindex" @click="selectParticle(particle)"
-            :class="{[particle.color]:true, active: selected === particle}"
-            >
+            :class="{[particle.color]:true, active: selected === particle ,collision: particle.colliding}">
             </div>
         </div>
+    </div>
+    <div v-if="hasWon" class="win-message">
+        You Win!
     </div>
 </template>
   
@@ -202,6 +212,14 @@ onBeforeUnmount(() => {
     font-weight: normal;
     font-style: normal;
 }
+@keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+
+.collision {
+    animation: flicker 0.4s 3;
+}
 .steps-container{
     position: fixed; 
     top: 2rem;
@@ -215,6 +233,19 @@ onBeforeUnmount(() => {
     background: rgba(230, 230, 230, 0.07);
     border: 1px solid rgba(230, 230, 230, 0.24);
     border-radius: 0.5rem;
+}
+.win-message{
+    position: fixed; 
+    top: 5rem;
+    left: 30rem;
+    font-family: 'Game of Squids', sans-serif;
+    font-size: 3.5rem;
+    color: rgba(0, 102, 204, 0.9);
+    text-shadow: 0px 0px 0.5rem rgba(39, 236, 21, 0.3);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 .number{
     font-family: 'Game of Squids';
@@ -264,6 +295,10 @@ onBeforeUnmount(() => {
     left: 0;
     width: 80vw;
     height: 80vh;
+}
+.disabled{
+    pointer-events: none;
+    opacity: 0.5;
 }
 .viewport .board{
     width: 3.625rem;
