@@ -1,7 +1,7 @@
 <script setup>
 //: Vue-specific imports
 import { onMounted, ref } from "vue";
-import { useMouse } from "@vueuse/core";
+import { useMouse, useMouseInElement } from "@vueuse/core";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -62,6 +62,7 @@ const onPanEnd = () => {
 
 // - tool selection
 
+const refToolbar = ref(null);
 const activeTool = ref("board");
 
 // - tool sprite positioning
@@ -100,6 +101,8 @@ const updateToolSpritePosition = () => {
     }
 }
 
+const {isOutside: mouseOutsideToolbar} = useMouseInElement(refToolbar);
+
 onMounted(() => {
     console.log(getMapBasePosition());
     setInterval(updateToolSpritePosition, 1000 / levelEditorRefreshFrequency);
@@ -134,7 +137,7 @@ onMounted(() => {
             'background-position-y': `${panningOffset.y}px`
         }"></div>
     </div>
-    <div class="right-container">
+    <div class="right-container" ref="refToolbar">
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
                 <div class="tool-container tool-container--board"
@@ -195,13 +198,14 @@ onMounted(() => {
             Focus
         </n-tooltip>
     </div>
-    <div class="bottom-tooltip u-show">
-    </div>
+    <!-- <div class="bottom-tooltip">
+    </div> -->
 
     <div class="map-container-wrapping">
         <div class="sprite-mouseover" :style="{
             'top': `${toolSpritePosition.y}px`,
-            'left': `${toolSpritePosition.x}px`
+            'left': `${toolSpritePosition.x}px`,
+            'visibility': mouseOutsideToolbar ? 'visible' : 'hidden'
         }"></div>
     </div>
 </template>
