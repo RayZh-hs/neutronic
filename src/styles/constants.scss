@@ -36,6 +36,15 @@ $level-map-board-border-color: rgba($n-light-grey, 0.25);
 $level-map-board-border-width: 1px;
 $level-map-board-border-radius: 3.2px;
 $level-map-board-background-color: rgba($n-dark-grey, 0.2);
+$level-map-portal-border-width: 1px;
+$level-map-portal-border-radius: 2px;
+$level-map-portal-background-alpha: 0.25;
+$level-map-particle-diameter: 2.4rem;
+$level-map-particle-border-width: 1px;
+$level-map-positron-background-color: rgba($n-red, 0.6);
+$level-map-positron-border-color: $n-red;
+$level-map-electron-background-color: rgba($n-blue, 0.6);
+$level-map-electron-border-color: $n-blue;
 
 //: Map Editor Setting
 

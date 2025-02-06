@@ -30,7 +30,7 @@ const onLevelNameChange = (event) => {
     levelName.value = newLevelName;
 }
 
-//: - tracking the panning offset
+// - tracking the panning offset
 const { x: mouseX, y: mouseY, sourceType } = useMouse();
 const panningOffset = ref({ x: 0, y: 0 });
 let panningOffsetStart = { x: 0, y: 0 };
@@ -65,6 +65,10 @@ const onPanEnd = () => {
         panningTracker = null;
     }
 }
+
+// - global context management
+
+const globalModeContext = ref('place'); // ['place', 'edit'] refers to the mode of the editor
 
 // - tool selection
 
@@ -124,41 +128,103 @@ const usedPortalCount = ref(0);
 const nextPortalColor = ref(
     levelPortalCycleColor[usedPortalCount.value]
 );
+const activePortalMode = ref('first');  // ['first', 'second'] refers to the order of the portal being placed in the pair
 
-// - all containers
+// - all containers and particles
 const containerBoards = ref([]);
 const containerPortals = ref([]);
+const particlePositrons = ref([]);
+const particleElectrons = ref([]);
 
-const existBoardAt = (x, y) => {
-    return containerBoards.value.some(item => item.x === x && item.y === y);
-};
-const existContainerAt = (x, y) => {
-    return existBoardAt(x, y)
-        || containerPortals.value.some(item => item.x === x && item.y === y);
-};
+const existBoardAt = (coord) => {
+    return containerBoards.value.some(item => item.x === coord.x && item.y === coord.y);
+}
+const existPortalAt = (coord) => {
+    return containerPortals.value.some(
+        pair => pair.some(item => item.x === coord.x && item.y === coord.y)
+    );
+}
+const existContainerAt = (coord) => {
+    return existBoardAt(coord)
+        || existPortalAt(coord);
+}
+const makeBoardAt = (coord) => {
+    containerBoards.value.push(coord);
+}
+const removeBoardAt = (coord) => {
+    containerBoards.value = containerBoards.value.filter(item => item.x !== coord.x || item.y !== coord.y);
+}
+const existPositronAt = (coord) => {
+    return particlePositrons.value.some(item => item.x === coord.x && item.y === coord.y);
+}
+const existElectronAt = (coord) => {
+    return particleElectrons.value.some(item => item.x === coord.x && item.y === coord.y);
+}
+const removeParticleAt = (coord) => {
+    particleElectrons.value = particleElectrons.value.filter(item => item.x !== coord.x || item.y !== coord.y);
+    particlePositrons.value = particlePositrons.value.filter(item => item.x !== coord.x || item.y !== coord.y);
+}
 
 //: Custom Event Handlers
 
 const onMouseLeftClickOnMap = () => {
     console.log("Left click");
+    // assert that the left click is only handled when the mode is 'place'!
+    if (globalModeContext.value !== 'place') { return; }
     const atCoord = {
         x: toolSpritePosition.value.x - originPosition.value.x,
         y: toolSpritePosition.value.y - originPosition.value.y
     }
-    console.log(['board', 'portal'].includes(activeTool.value));
-    if (    // Validate the position:
-        ['positron', 'electron'].includes(activeTool.value)
-        ^ existContainerAt(atCoord.x, atCoord.y)) {
-        // aka.
-        // If be container and is attempting to place another;
-        // If not be container and is trying to place a particle:
-        return;
-    }
     if (activeTool.value === 'board') {
+        // Check if there is already a container at the location
+        if (existContainerAt(atCoord)) { return; }
         // Append a new board to the containerBoards
         // The x, y here is relative to the origin.
-        containerBoards.value.push(atCoord);
-        console.log(containerBoards);
+        // containerBoards.value.push(atCoord);
+        makeBoardAt(atCoord);
+    }
+    else if (activeTool.value === 'portal') {
+        if (existBoardAt(atCoord)) {
+            // A portal can take the place of a board at placement
+            removeBoardAt(atCoord);
+            removeParticleAt(atCoord);
+        }
+        else if (existContainerAt(atCoord)) {
+            // Then there exists a portal at the position
+            message.warning("You cannot place a portal on another portal!");
+        }
+        else {
+            // All is clear
+
+        }
+    }
+    else if (activeTool.value === 'positron') {
+        if (existPositronAt(atCoord)) {
+            // Then there exists a positron at the position
+            // message.warning("You cannot place a positron on another positron!");
+            return;
+        }
+        if (!existContainerAt(atCoord)) {
+            // Create a new board on which the positron can stand
+            makeBoardAt(atCoord);
+        }
+        removeParticleAt(atCoord);
+        // Append a new positron to the particlePositrons
+        particlePositrons.value.push(atCoord);
+    }
+    else if (activeTool.value === 'electron') {
+        if (existElectronAt(atCoord)) {
+            // Then there exists an electron at the position
+            // message.warning("You cannot place an electron on another electron!");
+            return;
+        }
+        if (!existContainerAt(atCoord)) {
+            // Create a new board on which the electron can stand
+            makeBoardAt(atCoord);
+        }
+        removeParticleAt(atCoord);
+        // Append a new electron to the particleElectrons
+        particleElectrons.value.push(atCoord);
     }
 }
 
@@ -168,8 +234,10 @@ const showConfirmDeletionModal = ref(false);
 const deleteAll = () => {
     containerBoards.value = [];
     containerPortals.value = [];
+    particlePositrons.value = [];
+    particleElectrons.value = [];
 
-    message.success("Deleted all items")
+    message.success("Deleted all items");
 }
 </script>
 
@@ -200,8 +268,9 @@ const deleteAll = () => {
         <div class="u-gap-30"></div>
     </div>
     <code>
-    {{ panningOffset }}
+    <!-- {{ panningOffset }}
     {{ nextPortalColor }}
+    {{ globalModeContext }} -->
     </code>
     <div class="map-container" @mousedown.middle="onPanStart" @mouseup.middle="onPanEnd" @click="onMouseLeftClickOnMap"
         @mouseleave="onPanEnd" ref="refMapContainer">
@@ -283,8 +352,8 @@ const deleteAll = () => {
             <div class="sprite-mouseover__board" v-show="activeTool === 'board'"></div>
             <div class="sprite-mouseover__portal" v-show="activeTool === 'portal'"
                 :style="{ 'background-color': nextPortalColor }"></div>
-            <div class="sprite-mouseover__positron" v-show="activeTool === 'positron'"></div>
-            <div class="sprite-mouseover__electron" v-show="activeTool === 'electron'"></div>
+            <div class="sprite-mouseover__particle sprite-mouseover__particle--positron" v-show="activeTool === 'positron'"></div>
+            <div class="sprite-mouseover__particle sprite-mouseover__particle--electron" v-show="activeTool === 'electron'"></div>
         </div>
         <div class="sprite-container sprite-containers-container">
             <!-- All Container objects ie. Boards and Portals are listed here -->
@@ -296,7 +365,14 @@ const deleteAll = () => {
         </div>
         <div class="sprite-container sprite-particles-container">
             <!-- All positrons and electrons are listed here -->
-
+            <div class="sprite-particle sprite-positron" v-for="positron in particlePositrons" :style="{
+                'top': `${positron.y + originPosition.y}px`,
+                'left': `${positron.x + originPosition.x}px`
+            }"></div>
+            <div class=" sprite-particle sprite-electron" v-for="electron in particleElectrons" :style="{
+                'top': `${electron.y + originPosition.y}px`,
+                'left': `${electron.x + originPosition.x}px`
+            }"></div>
         </div>
     </div>
 
@@ -524,13 +600,34 @@ const deleteAll = () => {
                 background-color: $level-map-board-background-color;
             }
         }
+
+        .sprite-particle {
+            position: fixed;
+            width: $level-map-particle-diameter;
+            height: $level-map-particle-diameter;
+            translate:  calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width)
+                        calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width);
+            border: $level-map-particle-border-width solid;
+            border-radius: 50%;
+
+            &.sprite-positron {
+                background-color: $level-map-positron-background-color;
+                border-color: $level-map-positron-border-color;
+            }
+
+            &.sprite-electron {
+                background-color: $level-map-electron-background-color;
+                border-color: $level-map-electron-border-color;
+            }
+        }
     }
 
     .sprite-mouseover-container {
-        opacity: 0.1;
+        opacity: 0.2;
         pointer-events: none;
 
         .sprite-mouseover__board {
+            opacity: 0.4;
             position: absolute;
             width: $level-map-grid-scale;
             height: $level-map-grid-scale;
@@ -538,14 +635,33 @@ const deleteAll = () => {
         }
 
         .sprite-mouseover__portal {
+            opacity: 0.5;
             position: absolute;
             width: $level-map-grid-scale;
             height: $level-map-grid-scale;
             // The background color will be dynamically injected with inline styling.
         }
+
+        .sprite-mouseover__particle {
+            position: absolute;
+            width: $level-map-particle-diameter;
+            height: $level-map-particle-diameter;
+            border: $level-map-particle-border-width solid;
+            border-radius: 50%;
+            translate:  calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width)
+                        calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width);
+
+            &--positron {
+                background-color: $level-map-positron-background-color;
+                border-color: $level-map-positron-border-color;
+            }
+
+            &--electron {
+                background-color: $level-map-electron-background-color;
+                border-color: $level-map-electron-border-color;
+            }
+        }
     }
-
-
 }
 
 .confirm-deletion__card {
