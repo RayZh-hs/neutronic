@@ -22,16 +22,20 @@ $pagination-bg-color: $n-light-grey;
 $pagination-bg-color--active: $n-primary;
 $pagination-dot-size: 5px;
 
-//: Level Grid Setting
+//: Level Select Grid Setting
 
 $level-select-grid-scale: 6rem;
 $level-select-grid-gap: 1rem;
 
 //: Level Map Setting
 
-$level-map-grid-scale: 4rem;
+$level-map-grid-scale: 4rem;    // Is linked to levelMapGridScale, levelMapGridScalePx
 $level-map-grid-color: rgba($n-white, 0.5);
 $level-map-background-color: rgba($n-dark-grey, 0.05);
+$level-map-board-border-color: rgba($n-light-grey, 0.25);
+$level-map-board-border-width: 1px;
+$level-map-board-border-radius: 3.2px;
+$level-map-board-background-color: rgba($n-dark-grey, 0.2);
 
 //: Map Editor Setting
 
@@ -43,13 +47,17 @@ $map-editor-toolbar-right-margin: 9.2vw;
 $map-editor-na-color: $n-red;
 $map-editor-right-color: #303030c0;
 $map-editor-username-color: $n-grey;
+
 $map-editor-toolbar-icon-size: 1.8rem;
 $map-editor-toolbar-button-height: 3.6rem;
 $map-editor-toolbar-active-backdrop-color: rgba($n-dark-grey, 0.2);
-
 $map-editor-toolbar-board-color: orange;
 $map-editor-toolbar-portal-color: $n-primary;
 $map-editor-toolbar-positron-color: $n-red;
 $map-editor-toolbar-electron-color: $n-blue;
 $map-editor-toolbar-clear-all-backdrop-color: $n-red;
 $map-editor-toolbar-focus-backdrop-color: $n-blue;
+
+$map-editor-sprite-mouseover-board-color: $n-light-grey;
+
+$map-editor-confirm-deletion-card-width: min(25rem, 60rem);
