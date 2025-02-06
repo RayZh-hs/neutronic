@@ -5,6 +5,7 @@ import { useMouse, useMouseInElement } from "@vueuse/core";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
+const message = useMessage();
 
 //: Custom Components
 import IonButton from "@/components/IonButton.vue"
@@ -12,7 +13,12 @@ import IonButton from "@/components/IonButton.vue"
 //: Custom Data
 import { levelEditorRefreshFrequency } from "../data/constants";
 
-//: - tracking the level name
+// - account info: TODO
+const account = ref({
+    username: "Neutronic"
+})
+
+// - tracking the level name
 const levelName = ref("New Level");
 
 const onLevelNameChange = (event) => {
@@ -89,49 +95,116 @@ const getMapBasePosition = () => {
  * A setInterval is used to update the tool sprite position every update cycle.
  */
 const toolSpritePosition = ref({ x: 0, y: 0 });
+const originPosition = ref({ x: 0, y: 0 });
 const updateToolSpritePosition = () => {
-    let originPosition = {
+    originPosition.value = {
         x: getMapBasePosition().x + panningOffset.value.x,
         y: getMapBasePosition().y + panningOffset.value.y
     }
     // console.log(originPosition);
     toolSpritePosition.value = {
-        x: Math.floor((mouseX.value - originPosition.x) / levelMapGridScalePx) * levelMapGridScalePx + originPosition.x,
-        y: Math.floor((mouseY.value - originPosition.y) / levelMapGridScalePx) * levelMapGridScalePx + originPosition.y
+        x: Math.floor((mouseX.value - originPosition.value.x) / levelMapGridScalePx) * levelMapGridScalePx + originPosition.value.x,
+        y: Math.floor((mouseY.value - originPosition.value.y) / levelMapGridScalePx) * levelMapGridScalePx + originPosition.value.y
     }
 }
 
-const {isOutside: mouseOutsideToolbar} = useMouseInElement(refToolbar);
+const { isOutside: mouseOutsideToolbar } = useMouseInElement(refToolbar);
 
 onMounted(() => {
     console.log(getMapBasePosition());
     setInterval(updateToolSpritePosition, 1000 / levelEditorRefreshFrequency);
 });
 
+// - active portal coloring
+
+import { levelPortalCycleColor, levelPortalCycleColorCount } from "../data/constants";
+import { useMessage } from "naive-ui";
+
+const usedPortalCount = ref(0);
+const nextPortalColor = ref(
+    levelPortalCycleColor[usedPortalCount.value]
+);
+
+// - all containers
+const containerBoards = ref([]);
+const containerPortals = ref([]);
+
+const existBoardAt = (x, y) => {
+    return containerBoards.value.some(item => item.x === x && item.y === y);
+};
+const existContainerAt = (x, y) => {
+    return existBoardAt(x, y)
+        || containerPortals.value.some(item => item.x === x && item.y === y);
+};
+
+//: Custom Event Handlers
+
+const onMouseLeftClickOnMap = () => {
+    console.log("Left click");
+    const atCoord = {
+        x: toolSpritePosition.value.x - originPosition.value.x,
+        y: toolSpritePosition.value.y - originPosition.value.y
+    }
+    console.log(['board', 'portal'].includes(activeTool.value));
+    if (    // Validate the position:
+        ['positron', 'electron'].includes(activeTool.value)
+        ^ existContainerAt(atCoord.x, atCoord.y)) {
+        // aka.
+        // If be container and is attempting to place another;
+        // If not be container and is trying to place a particle:
+        return;
+    }
+    if (activeTool.value === 'board') {
+        // Append a new board to the containerBoards
+        // The x, y here is relative to the origin.
+        containerBoards.value.push(atCoord);
+        console.log(containerBoards);
+    }
+}
+
+//: Custom modals and popups
+
+const showConfirmDeletionModal = ref(false);
+const deleteAll = () => {
+    containerBoards.value = [];
+    containerPortals.value = [];
+
+    message.success("Deleted all items")
+}
 </script>
 
 <template>
     <div class="top-container">
         <!-- The left side of the top section -->
         <div class="u-gap-16"></div>
-        <IonButton name="home-outline" size="1.6rem" @click="router.back" />
-        <IonButton name="save-outline" size="1.6rem" />
+        <ion-button name="home-outline" size="1.6rem" @click="router.back" />
+        <ion-button name="save-outline" size="1.6rem" />
         <div class="u-gap-5"></div>
-        <span class="username">Username</span>
+        <span class="username">{{ account.username }}</span>
         <p class="slash-separator">/</p>
         <span class="level-name" contenteditable="" @input="onLevelNameChange">{{ levelName }}</span>
 
         <!-- The right side of the top section -->
         <div class="u-mla"></div>
+        <!-- Developer tools -->
+        <n-flex class="dev-toolbox" align="center" justify="center" v-if="account.username === 'Neutronic'">
+            <span>Developer Tools:</span>
+            <ion-button name="download-outline" size="1.6rem"></ion-button>
+            <ion-button name="copy-outline" size="1.6rem"></ion-button>
+        </n-flex>
+        <div class="u-gap-1"></div>
         <span>Current best</span>
         <span class="score score--na">NA</span>
         <div class="u-gap-4"></div>
-        <IonButton name="play-outline" size="1.6rem" />
+        <ion-button name="play-outline" size="1.6rem" />
         <div class="u-gap-30"></div>
     </div>
+    <code>
     {{ panningOffset }}
-    <div class="map-container" @mousedown.middle="onPanStart" @mouseleave="onPanEnd" @mouseup.middle="onPanEnd"
-        ref="refMapContainer">
+    {{ nextPortalColor }}
+    </code>
+    <div class="map-container" @mousedown.middle="onPanStart" @mouseup.middle="onPanEnd" @click="onMouseLeftClickOnMap"
+        @mouseleave="onPanEnd" ref="refMapContainer">
         <div class="background-grid" :style="{
             'background-position-x': `${panningOffset.x}px`,
             'background-position-y': `${panningOffset.y}px`
@@ -181,7 +254,7 @@ onMounted(() => {
         <n-divider class="divider"></n-divider>
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
-                <div class="tool-container tool-container--clear-all">
+                <div class="tool-container tool-container--clear-all" @click="showConfirmDeletionModal = true">
                     <ion-icon name="trash-outline"></ion-icon>
                     <span class="tool-container__tooltip">Clear All</span>
                 </div>
@@ -202,12 +275,52 @@ onMounted(() => {
     </div> -->
 
     <div class="map-container-wrapping">
-        <div class="sprite-mouseover" :style="{
+        <div class="sprite-container sprite-mouseover-container" :style="{
             'top': `${toolSpritePosition.y}px`,
             'left': `${toolSpritePosition.x}px`,
             'visibility': mouseOutsideToolbar ? 'visible' : 'hidden'
-        }"></div>
+        }">
+            <div class="sprite-mouseover__board" v-show="activeTool === 'board'"></div>
+            <div class="sprite-mouseover__portal" v-show="activeTool === 'portal'"
+                :style="{ 'background-color': nextPortalColor }"></div>
+            <div class="sprite-mouseover__positron" v-show="activeTool === 'positron'"></div>
+            <div class="sprite-mouseover__electron" v-show="activeTool === 'electron'"></div>
+        </div>
+        <div class="sprite-container sprite-containers-container">
+            <!-- All Container objects ie. Boards and Portals are listed here -->
+            <div class="sprite-board" v-for="board in containerBoards" :style="{
+                'top': `${board.y + originPosition.y}px`,
+                'left': `${board.x + originPosition.x}px`
+            }"></div>
+            <div class="sprite-portal"></div>
+        </div>
+        <div class="sprite-container sprite-particles-container">
+            <!-- All positrons and electrons are listed here -->
+
+        </div>
     </div>
+
+    <!-- Modals and popups -->
+    <n-modal v-model:show="showConfirmDeletionModal">
+        <n-card class="confirm-deletion__card">
+            <h2 class="confirm-deletion__title">Confirm Deletion?</h2>
+            <p class="confirm-deletion__text">
+                Are you sure you want to delete all containers and particles on the map?
+                You cannot undo this action!
+            </p>
+            <n-divider></n-divider>
+            <n-flex justify="center">
+                <n-button class="confirm-deletion__button" @click="showConfirmDeletionModal = false">Cancel</n-button>
+                <n-button class="confirm-deletion__button" type="error"
+                    @click="showConfirmDeletionModal = false; deleteAll();">
+                    <template #icon>
+                        <ion-icon name="trash-outline"></ion-icon>
+                    </template>
+                    Delete
+                </n-button>
+            </n-flex>
+        </n-card>
+    </n-modal>
 </template>
 
 <style lang="scss" scoped>
@@ -237,6 +350,13 @@ onMounted(() => {
         &:hover {
             color: $n-light-grey;
         }
+    }
+
+    .dev-toolbox {
+        padding: 0 1rem;
+        background-color: $level-map-background-color;
+        border-radius: 2px;
+        outline: 1px solid $level-map-board-border-color;
     }
 
     .score {
@@ -381,15 +501,73 @@ onMounted(() => {
 
 .map-container-wrapping {
     pointer-events: none;
-    clip-path: inset(0);    // Tis
+    clip-path: inset(0); // This removes outside-boundary mouseover
 
-    .sprite-mouseover {
+    .sprite-container {
         position: fixed;
-        width: 4rem;
-        height: 4rem;
-        background-color: $n-primary;
-        opacity: 0.2;
+
+        .sprite-board {
+            position: fixed;
+            width: calc($level-map-grid-scale - 2 * $level-map-board-border-width);
+            height: calc($level-map-grid-scale - 2 * $level-map-board-border-width);
+            background-color: $level-map-board-background-color;
+            border: $level-map-board-border-width solid $level-map-board-border-color;
+            border-radius: $level-map-board-border-radius;
+
+            &::before {
+                content: "";
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                background-color: $level-map-board-background-color;
+            }
+        }
+    }
+
+    .sprite-mouseover-container {
+        opacity: 0.1;
         pointer-events: none;
+
+        .sprite-mouseover__board {
+            position: absolute;
+            width: $level-map-grid-scale;
+            height: $level-map-grid-scale;
+            background-color: $map-editor-sprite-mouseover-board-color;
+        }
+
+        .sprite-mouseover__portal {
+            position: absolute;
+            width: $level-map-grid-scale;
+            height: $level-map-grid-scale;
+            // The background color will be dynamically injected with inline styling.
+        }
+    }
+
+
+}
+
+.confirm-deletion__card {
+    max-width: $map-editor-confirm-deletion-card-width;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    .confirm-deletion__title {
+        font-size: 2rem;
+        font-weight: 200;
+        justify-self: center;
+        margin-top: 0;
+    }
+
+    .confirm-deletion__text {
+        font-weight: 200;
+        letter-spacing: .3pt;
+    }
+
+    .confirm-deletion__button {
+        width: 40%;
     }
 }
 </style>
