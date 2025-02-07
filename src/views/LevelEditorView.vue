@@ -1,17 +1,22 @@
 <script setup>
 //: Vue-specific imports
-import { onMounted, ref } from "vue";
-import { useMouse, useMouseInElement } from "@vueuse/core";
+import { onMounted, ref, computed } from "vue";
+import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys } from "@vueuse/core";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 const message = useMessage();
+const keys = useMagicKeys();
 
 //: Custom Components
 import IonButton from "@/components/IonButton.vue"
 
+//: Custom Functions
+import { hexaToRgba } from "@/functions/colorUtils"
+import { sleep } from "@/functions/timeUtils"
+
 //: Custom Data
-import { levelEditorRefreshFrequency } from "../data/constants";
+import { levelEditorRefreshFrequency, leftClickCooldownTime } from "../data/constants";
 
 // - account info: TODO
 const account = ref({
@@ -55,12 +60,16 @@ const onPanStart = () => {
             y: panningOffsetStart.y + mouseY.value - panningStart.y
         }
     }, 1000 / levelEditorRefreshFrequency);
+    // Change the cursor
+    document.body.style.cursor = "move";
 }
 
 const onPanEnd = () => {
     console.log("Middle mouse up");
     // Stop tracking the mouse movement
     if (panningTracker) {
+        // Reset the cursor
+        document.body.style.cursor = "default";
         clearInterval(panningTracker);
         panningTracker = null;
     }
@@ -121,14 +130,20 @@ onMounted(() => {
 
 // - active portal coloring
 
-import { levelPortalCycleColor, levelPortalCycleColorCount } from "../data/constants";
+import { levelPortalCycleColor, levelPortalCycleColorCount, levelMapPortalBackgroundAlpha } from "../data/constants";
 import { useMessage } from "naive-ui";
 
-const usedPortalCount = ref(0);
-const nextPortalColor = ref(
-    levelPortalCycleColor[usedPortalCount.value]
-);
+const usedPortalPairsCount = ref(0);
+// const nextPortalColor = ref(
+//     levelPortalCycleColor[usedPortalPairsCount.value]
+// );
+const nextPortalColor = computed(() => {
+    return levelPortalCycleColor[usedPortalPairsCount.value % levelPortalCycleColorCount];
+})
 const activePortalMode = ref('first');  // ['first', 'second'] refers to the order of the portal being placed in the pair
+const canPlaceMorePortals = computed(() => {
+    return usedPortalPairsCount.value < levelPortalCycleColorCount;
+})
 
 // - all containers and particles
 const containerBoards = ref([]);
@@ -164,10 +179,46 @@ const removeParticleAt = (coord) => {
     particleElectrons.value = particleElectrons.value.filter(item => item.x !== coord.x || item.y !== coord.y);
     particlePositrons.value = particlePositrons.value.filter(item => item.x !== coord.x || item.y !== coord.y);
 }
+const cleanupPortals = () => {
+    // This should be called to remove any incomplete portal pairs
+    containerPortals.value = containerPortals.value.filter(pair => pair.length === 2);
+    usedPortalPairsCount.value = containerPortals.value.length;
+    activePortalMode.value = 'first';
+}
+const makePortalAt = (coord) => {
+    if (activePortalMode.value === 'first') {
+        containerPortals.value.push([coord]);
+        activePortalMode.value = 'second';
+    }
+    else if (activePortalMode.value === 'second') {
+        containerPortals.value[usedPortalPairsCount.value].push(coord);
+        usedPortalPairsCount.value++;
+        activePortalMode.value = 'first';
+    }
+}
+const removeFrontAt = (coord) => {
+    if (existPositronAt(coord) || existElectronAt(coord)) {
+        removeParticleAt(coord);
+    } else if (existBoardAt(coord)) {
+        removeBoardAt(coord);
+    } else if (existPortalAt(coord)) {
+        containerPortals.value = containerPortals.value.map(pair => pair.filter(item => item.x !== coord.x || item.y !== coord.y));
+        cleanupPortals();
+    }
+}
+
+//: Import and Export
+
 
 //: Custom Event Handlers
 
+import { levelEditorPlaceFrequency } from "../data/constants";
+
+let placementTracker = null;
+let leftClickCooldown = false;
+
 const onMouseLeftClickOnMap = () => {
+    if (leftClickCooldown) { return; }
     console.log("Left click");
     // assert that the left click is only handled when the mode is 'place'!
     if (globalModeContext.value !== 'place') { return; }
@@ -184,6 +235,14 @@ const onMouseLeftClickOnMap = () => {
         makeBoardAt(atCoord);
     }
     else if (activeTool.value === 'portal') {
+        if (!canPlaceMorePortals.value) {
+            message.error("Too many portals in the map!");
+            leftClickCooldown = true;
+            setTimeout(() => {
+                leftClickCooldown = false;
+            }, leftClickCooldownTime);
+            return;
+        }
         if (existBoardAt(atCoord)) {
             // A portal can take the place of a board at placement
             removeBoardAt(atCoord);
@@ -191,11 +250,11 @@ const onMouseLeftClickOnMap = () => {
         }
         else if (existContainerAt(atCoord)) {
             // Then there exists a portal at the position
-            message.warning("You cannot place a portal on another portal!");
+            // message.warning("You cannot place a portal on another portal!");
         }
         else {
             // All is clear
-
+            makePortalAt(atCoord);
         }
     }
     else if (activeTool.value === 'positron') {
@@ -226,7 +285,55 @@ const onMouseLeftClickOnMap = () => {
         // Append a new electron to the particleElectrons
         particleElectrons.value.push(atCoord);
     }
+    else if (activeTool.value === 'remover') {
+        removeFrontAt(atCoord);
+        // A cooldown is implemented to prevent multi-clicks
+        leftClickCooldown = true;
+        setTimeout(() => {
+            leftClickCooldown = false;
+        }, leftClickCooldownTime);
+    }
 }
+
+const onPlaceStart = () => {
+    if (placementTracker) {
+        return;
+    }
+    placementTracker = setInterval(onMouseLeftClickOnMap, 1000 / levelEditorPlaceFrequency);
+}
+
+const onPlaceEnd = () => {
+    if (placementTracker) {
+        clearInterval(placementTracker);
+        placementTracker = null;
+    }
+}
+
+const onSave = () => {
+    message.success("Saved to account");
+}
+
+// - keyboard hotkeys
+
+onKeyStroke(['b', 'B'], (e) => {
+    activeTool.value = 'board';
+})
+onKeyStroke(['p', 'P'], (e) => {
+    activeTool.value = 'portal';
+})
+onKeyStroke(['+'], (e) => {
+    activeTool.value = 'positron';
+})
+onKeyStroke(['-'], (e) => {
+    activeTool.value = 'electron';
+})
+onKeyStroke(['r', 'R'], (e) => {
+    activeTool.value = 'remover';
+})
+whenever(keys.Ctrl_S, () => {
+    // ctrl+shift+s to save
+    onSave();
+})
 
 //: Custom modals and popups
 
@@ -236,6 +343,8 @@ const deleteAll = () => {
     containerPortals.value = [];
     particlePositrons.value = [];
     particleElectrons.value = [];
+    usedPortalPairsCount.value = 0;
+    activePortalMode.value = 'first';
 
     message.success("Deleted all items");
 }
@@ -245,26 +354,26 @@ const deleteAll = () => {
     <div class="top-container">
         <!-- The left side of the top section -->
         <div class="u-gap-16"></div>
-        <ion-button name="home-outline" size="1.6rem" @click="router.back" />
-        <ion-button name="save-outline" size="1.6rem" />
+        <ion-button name="arrow-back-circle-outline" size="1.6rem" @click="router.back" class="a-fade-in" />
+        <ion-button name="save-outline" size="1.6rem" class="a-fade-in a-delay-1" />
         <div class="u-gap-5"></div>
-        <span class="username">{{ account.username }}</span>
-        <p class="slash-separator">/</p>
-        <span class="level-name" contenteditable="" @input="onLevelNameChange">{{ levelName }}</span>
+        <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
+        <p class="slash-separator a-fade-in a-delay-2">/</p>
+        <span class="level-name a-fade-in a-delay-3" contenteditable="" @input="onLevelNameChange">{{ levelName }}</span>
 
         <!-- The right side of the top section -->
         <div class="u-mla"></div>
         <!-- Developer tools -->
-        <n-flex class="dev-toolbox" align="center" justify="center" v-if="account.username === 'Neutronic'">
+        <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center" v-if="account.username === 'Neutronic'">
             <span>Developer Tools:</span>
             <ion-button name="download-outline" size="1.6rem"></ion-button>
             <ion-button name="copy-outline" size="1.6rem"></ion-button>
         </n-flex>
         <div class="u-gap-1"></div>
-        <span>Current best</span>
-        <span class="score score--na">NA</span>
+        <span class="a-fade-in a-delay-5">Current best</span>
+        <span class="score score--na a-fade-in a-delay-6">NA</span>
         <div class="u-gap-4"></div>
-        <ion-button name="play-outline" size="1.6rem" />
+        <ion-button name="play-outline" class="a-fade-in a-delay-7" size="1.6rem" />
         <div class="u-gap-30"></div>
     </div>
     <code>
@@ -272,8 +381,8 @@ const deleteAll = () => {
     {{ nextPortalColor }}
     {{ globalModeContext }} -->
     </code>
-    <div class="map-container" @mousedown.middle="onPanStart" @mouseup.middle="onPanEnd" @click="onMouseLeftClickOnMap"
-        @mouseleave="onPanEnd" ref="refMapContainer">
+    <div class="map-container a-fade-in-raw a-delay-6" @mousedown.middle="onPanStart" @mouseup.middle="onPanEnd" @mousedown.left="onPlaceStart"
+        @mouseup.left="onPlaceEnd" @mouseleave="onPanEnd(); onPlaceEnd();" ref="refMapContainer">
         <div class="background-grid" :style="{
             'background-position-x': `${panningOffset.x}px`,
             'background-position-y': `${panningOffset.y}px`
@@ -289,6 +398,7 @@ const deleteAll = () => {
                 </div>
             </template>
             Board
+            <code>(B)</code>
         </n-tooltip>
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
@@ -299,6 +409,7 @@ const deleteAll = () => {
                 </div>
             </template>
             Portal
+            <code>(P)</code>
         </n-tooltip>
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
@@ -309,6 +420,7 @@ const deleteAll = () => {
                 </div>
             </template>
             Positron
+            <code>(+)</code>
         </n-tooltip>
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
@@ -319,6 +431,18 @@ const deleteAll = () => {
                 </div>
             </template>
             Electron
+            <code>(-)</code>
+        </n-tooltip>
+        <n-tooltip trigger="hover" placement="left">
+            <template #trigger>
+                <div class="tool-container tool-container--remover"
+                    :class="{ 'tool-container--active': activeTool === 'remover' }" @click="activeTool = 'remover'">
+                    <ion-icon name="remove-circle-outline"></ion-icon>
+                    <span class="tool-container__tooltip">Remover</span>
+                </div>
+            </template>
+            Remover
+            <code>(R)</code>
         </n-tooltip>
         <n-divider class="divider"></n-divider>
         <n-tooltip trigger="hover" placement="left">
@@ -350,18 +474,30 @@ const deleteAll = () => {
             'visibility': mouseOutsideToolbar ? 'visible' : 'hidden'
         }">
             <div class="sprite-mouseover__board" v-show="activeTool === 'board'"></div>
-            <div class="sprite-mouseover__portal" v-show="activeTool === 'portal'"
+            <div class="sprite-mouseover__portal" v-show="activeTool === 'portal' && canPlaceMorePortals"
                 :style="{ 'background-color': nextPortalColor }"></div>
-            <div class="sprite-mouseover__particle sprite-mouseover__particle--positron" v-show="activeTool === 'positron'"></div>
-            <div class="sprite-mouseover__particle sprite-mouseover__particle--electron" v-show="activeTool === 'electron'"></div>
+            <div class="sprite-mouseover__particle sprite-mouseover__particle--positron"
+                v-show="activeTool === 'positron'">
+            </div>
+            <div class="sprite-mouseover__particle sprite-mouseover__particle--electron"
+                v-show="activeTool === 'electron'">
+            </div>
+            <div class="sprite-mouseover__remover" v-show="activeTool === 'remover'"></div>
         </div>
         <div class="sprite-container sprite-containers-container">
             <!-- All Container objects ie. Boards and Portals are listed here -->
-            <div class="sprite-board" v-for="board in containerBoards" :style="{
+            <div class="sprite-container-object sprite-board" v-for="board in containerBoards" :style="{
                 'top': `${board.y + originPosition.y}px`,
                 'left': `${board.x + originPosition.x}px`
             }"></div>
-            <div class="sprite-portal"></div>
+            <div v-for="(portalPair, index) in containerPortals">
+                <div class="sprite-container-object sprite-portal" v-for="portal in portalPair" :style="{
+                    'top': `${portal.y + originPosition.y}px`,
+                    'left': `${portal.x + originPosition.x}px`,
+                    'background-color': hexaToRgba(levelPortalCycleColor[index], levelMapPortalBackgroundAlpha),
+                    'border-color': levelPortalCycleColor[index]
+                }"></div>
+            </div>
         </div>
         <div class="sprite-container sprite-particles-container">
             <!-- All positrons and electrons are listed here -->
@@ -541,6 +677,11 @@ const deleteAll = () => {
             color: $map-editor-toolbar-electron-color;
         }
 
+        &.tool-container--remover:hover ion-icon,
+        &.tool-container--remover.tool-container--active {
+            color: $map-editor-toolbar-remover-color;
+        }
+
         &.tool-container--clear-all:hover {
             background-color: $map-editor-toolbar-clear-all-backdrop-color;
         }
@@ -582,22 +723,24 @@ const deleteAll = () => {
     .sprite-container {
         position: fixed;
 
-        .sprite-board {
-            position: fixed;
-            width: calc($level-map-grid-scale - 2 * $level-map-board-border-width);
-            height: calc($level-map-grid-scale - 2 * $level-map-board-border-width);
-            background-color: $level-map-board-background-color;
-            border: $level-map-board-border-width solid $level-map-board-border-color;
-            border-radius: $level-map-board-border-radius;
+        .sprite-container-object {
 
-            &::before {
-                content: "";
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                top: 0;
-                left: 0;
+            position: fixed;
+
+            &.sprite-board {
+                width: calc($level-map-grid-scale - 2 * $level-map-board-border-width);
+                height: calc($level-map-grid-scale - 2 * $level-map-board-border-width);
                 background-color: $level-map-board-background-color;
+                border: $level-map-board-border-width solid $level-map-board-border-color;
+                border-radius: $level-map-board-border-radius;
+            }
+
+            &.sprite-portal {
+                width: calc($level-map-grid-scale - 2 * $level-map-portal-border-width);
+                height: calc($level-map-grid-scale - 2 * $level-map-portal-border-width);
+                border-width: $level-map-portal-border-width;
+                border-style: solid;
+                border-radius: $level-map-portal-border-radius;
             }
         }
 
@@ -605,9 +748,9 @@ const deleteAll = () => {
             position: fixed;
             width: $level-map-particle-diameter;
             height: $level-map-particle-diameter;
-            translate:  calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width)
-                        calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width);
-            border: $level-map-particle-border-width solid;
+            translate: calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width) calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width);
+            border-width: $level-map-particle-border-width;
+            border-style: solid;
             border-radius: 50%;
 
             &.sprite-positron {
@@ -642,14 +785,20 @@ const deleteAll = () => {
             // The background color will be dynamically injected with inline styling.
         }
 
+        .sprite-mouseover__remover {
+            position: absolute;
+            width: calc($level-map-grid-scale - 2 * $map-editor-sprite-mouseover-remover-border-weight);
+            height: calc($level-map-grid-scale - 2 * $map-editor-sprite-mouseover-remover-border-weight);
+            border: $map-editor-sprite-mouseover-remover-border;
+        }
+
         .sprite-mouseover__particle {
             position: absolute;
             width: $level-map-particle-diameter;
             height: $level-map-particle-diameter;
             border: $level-map-particle-border-width solid;
             border-radius: 50%;
-            translate:  calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width)
-                        calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width);
+            translate: calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width) calc(($level-map-grid-scale - $level-map-particle-diameter) / 2 - $level-map-particle-border-width);
 
             &--positron {
                 background-color: $level-map-positron-background-color;

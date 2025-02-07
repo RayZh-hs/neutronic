@@ -6,6 +6,12 @@
     animation-fill-mode: forwards;
 }
 
+.a-fade-in-raw {
+    opacity: 0;
+    animation: fadeInRaw 0.6s ease-out;
+    animation-fill-mode: forwards;
+}
+
 @keyframes fadeIn {
     0% {
         opacity: 0;
@@ -14,6 +20,17 @@
     100% {
         opacity: 1;
         translate: 0 0;
+    }
+}
+
+@keyframes fadeInRaw {
+    0% {
+        opacity: 0;
+        // translate: 0 10px;
+    }
+    100% {
+        opacity: 1;
+        // translate: 0 0;
     }
 }
 

@@ -26,8 +26,11 @@ export const levelPortalCycleColor = [
     "#9b5de5",
 ];
 export const levelPortalCycleColorCount = levelPortalCycleColor.length;
+export const levelMapPortalBackgroundAlpha = 0.15;  // Is linked to $map-portal-background-alpha
 
 //: Level Editor
 export const levelEditorRefreshFrequency = 60;
+export const levelEditorPlaceFrequency = 45;
 export const originOffsetCellsX = 5;
 export const originOffsetCellsY = 5;
+export const leftClickCooldownTime = 100;

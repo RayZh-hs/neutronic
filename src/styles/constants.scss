@@ -38,13 +38,13 @@ $level-map-board-border-radius: 3.2px;
 $level-map-board-background-color: rgba($n-dark-grey, 0.2);
 $level-map-portal-border-width: 1px;
 $level-map-portal-border-radius: 2px;
-$level-map-portal-background-alpha: 0.25;
-$level-map-particle-diameter: 2.4rem;
+$level-map-portal-background-alpha: 0.15;   // Is linked to levelMapPortalBackgroundAlpha
+$level-map-particle-diameter: 1.8rem;
 $level-map-particle-border-width: 1px;
 $level-map-positron-background-color: rgba($n-red, 0.6);
-$level-map-positron-border-color: $n-red;
+$level-map-positron-border-color: rgba($n-light-grey, 0.5);
 $level-map-electron-background-color: rgba($n-blue, 0.6);
-$level-map-electron-border-color: $n-blue;
+$level-map-electron-border-color: rgba($n-light-grey, 0.5);
 
 //: Map Editor Setting
 
@@ -60,13 +60,16 @@ $map-editor-username-color: $n-grey;
 $map-editor-toolbar-icon-size: 1.8rem;
 $map-editor-toolbar-button-height: 3.6rem;
 $map-editor-toolbar-active-backdrop-color: rgba($n-dark-grey, 0.2);
-$map-editor-toolbar-board-color: orange;
-$map-editor-toolbar-portal-color: $n-primary;
+$map-editor-toolbar-board-color: $n-primary;
+$map-editor-toolbar-portal-color: orange;
 $map-editor-toolbar-positron-color: $n-red;
 $map-editor-toolbar-electron-color: $n-blue;
+$map-editor-toolbar-remover-color: #ffba08;
 $map-editor-toolbar-clear-all-backdrop-color: $n-red;
 $map-editor-toolbar-focus-backdrop-color: $n-blue;
 
 $map-editor-sprite-mouseover-board-color: $n-light-grey;
+$map-editor-sprite-mouseover-remover-border-weight: 4px;
+$map-editor-sprite-mouseover-remover-border: 4px dashed #ffba08;
 
 $map-editor-confirm-deletion-card-width: min(25rem, 60rem);
