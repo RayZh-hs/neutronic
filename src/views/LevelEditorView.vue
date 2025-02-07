@@ -1,7 +1,7 @@
 <script setup>
 //: Vue-specific imports
-import { onMounted, ref, computed } from "vue";
-import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys } from "@vueuse/core";
+import { onMounted, ref, computed, watch } from "vue";
+import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside } from "@vueuse/core";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -207,6 +207,127 @@ const removeFrontAt = (coord) => {
     }
 }
 
+// - right-click selecting and editing
+const rightSelectionStart = ref({ x: 0, y: 0 });
+const rightSelectionScale = ref({ width: 0, height: 0 });
+let rightSelectionTracker = null;   // This container is used to keep the repeated selection process
+const showSelectionEdit = ref(false);
+const selectionToolbar = ref(null);
+
+const onSelectStart = () => {
+    console.log("Right click down");
+    if (rightSelectionTracker !== null) { return; }
+    globalModeContext.value = 'select';
+    rightSelectionStart.value = {
+        x: toolSpritePosition.value.x - originPosition.value.x,
+        y: toolSpritePosition.value.y - originPosition.value.y,
+    }
+
+    rightSelectionTracker = setInterval(() => {
+        rightSelectionScale.value = {
+            width: toolSpritePosition.value.x - originPosition.value.x - rightSelectionStart.value.x + levelMapGridScalePx,
+            height: toolSpritePosition.value.y - originPosition.value.y - rightSelectionStart.value.y + levelMapGridScalePx
+        }
+    }, 1000 / levelEditorRefreshFrequency);
+}
+
+const onSelectEnd = () => {
+    console.log("Right click up");
+    if (rightSelectionTracker !== null) {
+        clearInterval(rightSelectionTracker);
+        rightSelectionTracker = null;
+        // Show the selection edit toolbar
+        showSelectionEdit.value = true;
+    }
+}
+
+const onSelectCancel = () => {
+    showSelectionEdit.value = false;
+    globalModeContext.value = 'place';
+}
+
+const removeParticlesInSelection = () => {
+    const selectionAlias = {
+        x: rightSelectionStart.value.x,
+        y: rightSelectionStart.value.y,
+        width: rightSelectionScale.value.width,
+        height: rightSelectionScale.value.height
+    }
+    particleElectrons.value = particleElectrons.value.filter(item => {
+        return item.x < selectionAlias.x || item.x >= selectionAlias.x + selectionAlias.width
+            || item.y < selectionAlias.y || item.y >= selectionAlias.y + selectionAlias.height;
+    })
+    particlePositrons.value = particlePositrons.value.filter(item => {
+        return item.x < selectionAlias.x || item.x >= selectionAlias.x + selectionAlias.width
+            || item.y < selectionAlias.y || item.y >= selectionAlias.y + selectionAlias.height;
+    })
+}
+
+const removeContainersInSelection = () => {
+    const selectionAlias = {
+        x: rightSelectionStart.value.x,
+        y: rightSelectionStart.value.y,
+        width: rightSelectionScale.value.width,
+        height: rightSelectionScale.value.height
+    }
+    containerBoards.value = containerBoards.value.filter(item => {
+        return item.x < selectionAlias.x || item.x >= selectionAlias.x + selectionAlias.width
+            || item.y < selectionAlias.y || item.y >= selectionAlias.y + selectionAlias.height;
+    })
+    containerPortals.value = containerPortals.value.map(pair => pair.filter(item => {
+        return item.x < selectionAlias.x || item.x >= selectionAlias.x + selectionAlias.width
+            || item.y < selectionAlias.y || item.y >= selectionAlias.y + selectionAlias.height;
+    }))
+    cleanupPortals();
+}
+
+const removeAllInSelection = () => {
+    removeParticlesInSelection();
+    removeContainersInSelection();
+}
+
+const applyToolToSelection = () => {
+    const selectionAlias = {
+        x: rightSelectionStart.value.x,
+        y: rightSelectionStart.value.y,
+        width: rightSelectionScale.value.width,
+        height: rightSelectionScale.value.height
+    }
+    const toolsToAction = {
+        'board': (x, y) => {
+            if (!existContainerAt({ x, y })) {
+                makeBoardAt({ x, y });
+            }
+        },
+        'positron': (x, y) => {
+            if (!existContainerAt({ x, y })) {
+                makeBoardAt({ x, y });
+            }
+            removeParticleAt({ x, y });
+            particlePositrons.value.push({ x, y });
+        },
+        'electron': (x, y) => {
+            if (!existContainerAt({ x, y })) {
+                makeBoardAt({ x, y });
+            }
+            removeParticleAt({ x, y });
+            particleElectrons.value.push({ x, y });
+        },
+    }
+    const toolAction = toolsToAction[activeTool.value];
+    if (!toolAction) {
+        // The tool selected cannot be used in fill mode!
+        message.error(`Tool ${activeTool.value} cannot be used in fill mode!`);
+        return;
+    }
+    // Perform the action on each of the planes
+    for (let x = selectionAlias.x; x < selectionAlias.x + selectionAlias.width; x += levelMapGridScalePx) {
+        for (let y = selectionAlias.y; y < selectionAlias.y + selectionAlias.height; y += levelMapGridScalePx) {
+            toolAction(x, y);
+        }
+    }
+}
+
 //: Import and Export
 
 
@@ -334,6 +455,23 @@ whenever(keys.Ctrl_S, () => {
     // ctrl+shift+s to save
     onSave();
 })
+whenever(computed(() => { return keys.Delete.value && !keys.Shift.value }), () => {
+    if (globalModeContext.value === 'select') {
+        removeParticlesInSelection()
+    }
+})
+whenever(computed(() => { return keys.Delete.value && keys.Shift.value }), () => {
+    if (globalModeContext.value === 'select') {
+        removeContainersInSelection()
+    }
+})
+onKeyStroke(['f', 'F'], (e) => {
+    applyToolToSelection();
+})
+onKeyStroke('Escape', (e) => {
+    onSelectCancel();
+})
+onClickOutside(selectionToolbar, onSelectCancel);
 
 //: Custom modals and popups
 
@@ -359,12 +497,14 @@ const deleteAll = () => {
         <div class="u-gap-5"></div>
         <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
         <p class="slash-separator a-fade-in a-delay-2">/</p>
-        <span class="level-name a-fade-in a-delay-3" contenteditable="" @input="onLevelNameChange">{{ levelName }}</span>
+        <span class="level-name a-fade-in a-delay-3" contenteditable="" @input="onLevelNameChange">{{ levelName
+            }}</span>
 
         <!-- The right side of the top section -->
         <div class="u-mla"></div>
         <!-- Developer tools -->
-        <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center" v-if="account.username === 'Neutronic'">
+        <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center"
+            v-if="account.username === 'Neutronic'">
             <span>Developer Tools:</span>
             <ion-button name="download-outline" size="1.6rem"></ion-button>
             <ion-button name="copy-outline" size="1.6rem"></ion-button>
@@ -381,8 +521,10 @@ const deleteAll = () => {
     {{ nextPortalColor }}
     {{ globalModeContext }} -->
     </code>
-    <div class="map-container a-fade-in-raw a-delay-6" @mousedown.middle="onPanStart" @mouseup.middle="onPanEnd" @mousedown.left="onPlaceStart"
-        @mouseup.left="onPlaceEnd" @mouseleave="onPanEnd(); onPlaceEnd();" ref="refMapContainer">
+    <div class="map-container a-fade-in-raw a-delay-6" @click.right.prevent @mousedown.middle="onPanStart"
+        @mouseup.middle="onPanEnd" @mousedown.left="onPlaceStart" @mouseup.left="onPlaceEnd"
+        @mousedown.right.prevent="onSelectStart" @mouseup.right.prevent="onSelectEnd"
+        @mouseleave="onPanEnd(); onPlaceEnd();" ref="refMapContainer">
         <div class="background-grid" :style="{
             'background-position-x': `${panningOffset.x}px`,
             'background-position-y': `${panningOffset.y}px`
@@ -471,7 +613,7 @@ const deleteAll = () => {
         <div class="sprite-container sprite-mouseover-container" :style="{
             'top': `${toolSpritePosition.y}px`,
             'left': `${toolSpritePosition.x}px`,
-            'visibility': mouseOutsideToolbar ? 'visible' : 'hidden'
+            'visibility': (mouseOutsideToolbar && globalModeContext === 'place') ? 'visible' : 'hidden'
         }">
             <div class="sprite-mouseover__board" v-show="activeTool === 'board'"></div>
             <div class="sprite-mouseover__portal" v-show="activeTool === 'portal' && canPlaceMorePortals"
@@ -484,6 +626,13 @@ const deleteAll = () => {
             </div>
             <div class="sprite-mouseover__remover" v-show="activeTool === 'remover'"></div>
         </div>
+        <div class="right-selection" :style="{
+            'top': `${rightSelectionStart.y + originPosition.y}px`,
+            'left': `${rightSelectionStart.x + originPosition.x}px`,
+            'width': `${rightSelectionScale.width}px`,
+            'height': `${rightSelectionScale.height}px`,
+            'visibility': globalModeContext === 'select' ? 'visible' : 'hidden'
+        }"></div>
         <div class="sprite-container sprite-containers-container">
             <!-- All Container objects ie. Boards and Portals are listed here -->
             <div class="sprite-container-object sprite-board" v-for="board in containerBoards" :style="{
@@ -510,6 +659,40 @@ const deleteAll = () => {
                 'left': `${electron.x + originPosition.x}px`
             }"></div>
         </div>
+    </div>
+
+    <!-- Selection Toolbar for Edit Mode -->
+    <div class="selection-toolbar" v-show="showSelectionEdit" :style="{
+        'top': `${rightSelectionStart.y + originPosition.y}px`,
+        'left': `${rightSelectionStart.x + rightSelectionScale.width + originPosition.x}px`
+    }" ref="selectionToolbar">
+        <n-tooltip placement="left">
+            <template #trigger>
+                <n-button class="selection-toolbar__button" @click="applyToolToSelection">
+                    <ion-icon name="color-fill-outline"></ion-icon>
+                </n-button>
+            </template>
+            Fill
+            <code>(F)</code>
+        </n-tooltip>
+        <n-tooltip placement="left">
+            <template #trigger>
+                <n-button class="selection-toolbar__button" @click="removeParticlesInSelection">
+                    <ion-icon name="close-circle-outline"></ion-icon>
+                </n-button>
+            </template>
+            Remove Particles
+            <code>(Del)</code>
+        </n-tooltip>
+        <n-tooltip placement="left">
+            <template #trigger>
+                <n-button class="selection-toolbar__button" @click="removeAllInSelection">
+                    <ion-icon name="trash-outline"></ion-icon>
+                </n-button>
+            </template>
+            Remove All
+            <code>(Shift + Del)</code>
+        </n-tooltip>
     </div>
 
     <!-- Modals and popups -->
@@ -720,6 +903,14 @@ const deleteAll = () => {
     pointer-events: none;
     clip-path: inset(0); // This removes outside-boundary mouseover
 
+    .right-selection {
+        position: fixed;
+        background-color: $map-editor-right-selection-background;
+        border: $map-editor-right-selection-border;
+        backdrop-filter: $map-editor-right-selection-backdrop-filter;
+        pointer-events: none;
+    }
+
     .sprite-container {
         position: fixed;
 
@@ -809,6 +1000,25 @@ const deleteAll = () => {
                 background-color: $level-map-electron-background-color;
                 border-color: $level-map-electron-border-color;
             }
+        }
+    }
+}
+
+.selection-toolbar {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    .selection-toolbar__button {
+        padding: 0;
+        width: $map-editor-right-selection-tools-button-size;
+        height: $map-editor-right-selection-tools-button-size;
+        backdrop-filter: brightness(60%);
+
+        ion-icon {
+            font-size: $map-editor-right-selection-tools-font-size;
         }
     }
 }

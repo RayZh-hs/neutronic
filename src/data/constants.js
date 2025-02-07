@@ -34,3 +34,4 @@ export const levelEditorPlaceFrequency = 45;
 export const originOffsetCellsX = 5;
 export const originOffsetCellsY = 5;
 export const leftClickCooldownTime = 100;
+export const levelEditorRightSelectBorderWidthPx = 2;   // Is linked to $map-editor-right-select-border

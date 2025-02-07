@@ -72,4 +72,10 @@ $map-editor-sprite-mouseover-board-color: $n-light-grey;
 $map-editor-sprite-mouseover-remover-border-weight: 4px;
 $map-editor-sprite-mouseover-remover-border: 4px dashed #ffba08;
 
+$map-editor-right-selection-border: 1px solid rgba($n-primary, 0.5);
+$map-editor-right-selection-background: rgba($n-primary, 0.1);
+$map-editor-right-selection-backdrop-filter: brightness(100%);
+$map-editor-right-selection-tools-button-size: 2rem;
+$map-editor-right-selection-tools-font-size: 1rem;
+
 $map-editor-confirm-deletion-card-width: min(25rem, 60rem);
