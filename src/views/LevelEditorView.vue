@@ -1,7 +1,7 @@
 <script setup>
 //: Vue-specific imports
 import { onMounted, ref, computed, watch } from "vue";
-import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog } from "@vueuse/core";
+import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog, get } from "@vueuse/core";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -362,6 +362,14 @@ const getBoundingBox = () => {
     return { minX, minY, maxX, maxY };
 }
 
+const getMapSize = () => {
+    const boundingBox = getBoundingBox();
+    return {
+        rows:    1 + Math.round((boundingBox.maxY - boundingBox.minY) / levelMapGridScalePx),
+        columns: 1 + Math.round((boundingBox.maxX - boundingBox.minX) / levelMapGridScalePx)
+    }
+}
+
 const coordToRc = (boundingBox, coordList) => {
     return coordList.map(coord => {
         return {
@@ -414,6 +422,8 @@ const buildLevelJson = () => {
                 "levelId": router.currentRoute.value.params.uuid,
                 "name": levelName.value,
                 "author": account.value.username,
+                // This is later added for centering purpose in the game viewport
+                ...getMapSize()
             },
             "content": (() => {
                 const boundingBox = getBoundingBox();
