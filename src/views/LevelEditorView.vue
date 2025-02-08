@@ -1,7 +1,7 @@
 <script setup>
 //: Vue-specific imports
 import { onMounted, ref, computed, watch } from "vue";
-import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside } from "@vueuse/core";
+import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard } from "@vueuse/core";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -330,6 +330,157 @@ const applyToolToSelection = () => {
 
 //: Import and Export
 
+const getBoundingBox = () => {
+    const minX = Math.min(...[...containerBoards.value, ...containerPortals.value.flat()].map(item => item.x));
+    const minY = Math.min(...[...containerBoards.value, ...containerPortals.value.flat()].map(item => item.y));
+    const maxX = Math.max(...[...containerBoards.value, ...containerPortals.value.flat()].map(item => item.x));
+    const maxY = Math.max(...[...containerBoards.value, ...containerPortals.value.flat()].map(item => item.y));
+    return { minX, minY, maxX, maxY };
+}
+
+const coordToRc = (boundingBox, coordList) => {
+    return coordList.map(coord => {
+        return {
+            row: Math.floor((coord.y - boundingBox.minY) / levelMapGridScalePx),
+            column: Math.floor((coord.x - boundingBox.minX) / levelMapGridScalePx)
+        }
+    })
+}
+
+const validateMap = () => {
+    // Check if the map is valid
+    if (containerPortals.value.some(pair => pair.length !== 2)) {
+        message.error("Incomplete portal pairs found!");
+        return false;
+    }
+    if (particlePositrons.value.length != particleElectrons.value.length) {
+        message.error("Unequal number of positrons and electrons!");
+        return false;
+    }
+    if (particlePositrons.value.length === 0) {
+        message.error("No particles found in the map!");
+        return false;
+    }
+    return true;
+}
+
+const buildLevelJson = () => {
+    // // First validate the map
+    // // This should only happen in the PLAY phase. the BUILD phase only checks for incomplete portals
+    // if (!validateMap()) {
+    //     return {
+    //         "status": "failure",
+    //         "level": null
+    //     }
+    // }
+    // First check for incomplete portal pairs, which will lead to load issues
+    if (containerPortals.value.some(pair => pair.length !== 2)) {
+        message.error("Incomplete portal pairs found!");
+        return {
+            "status": "failure",
+            "level": null
+        }
+    }
+    // Then build the map
+    return {
+        "status": "success",
+        // The level object is built here, in $return.level
+        "level": {
+            "meta": {
+                "levelId": router.currentRoute.value.params.uuid,
+                "name": levelName.value,
+                "author": account.value.username,
+            },
+            "content": (() => {
+                const boundingBox = getBoundingBox();
+                return {
+                    "containers": [
+                        // First the boards
+                        ...coordToRc(boundingBox, containerBoards.value).map(coord => {
+                            return {
+                                "type": "board",
+                                "row": coord.row,
+                                "column": coord.column
+                            }
+                        }),
+                        // Then the portals
+                        ...containerPortals.value.map((pair, index) => {
+                            return pair.map(coord => {
+                                return {
+                                    "type": "portal",
+                                    "row": Math.floor((coord.y - boundingBox.minY) / levelMapGridScalePx),
+                                    "column": Math.floor((coord.x - boundingBox.minX) / levelMapGridScalePx),
+                                    "index": index
+                                }
+                            })
+                        }).flat()
+                    ],
+                    "particles": [
+                        // First the electrons (blue)
+                        ...coordToRc(boundingBox, particleElectrons.value).map(coord => {
+                            return {
+                                "color": "blue",
+                                "row": coord.row,
+                                "column": coord.column
+                            }
+                        }),
+                        // Then the positrons (red)
+                        ...coordToRc(boundingBox, particlePositrons.value).map(coord => {
+                            return {
+                                "color": "red",
+                                "row": coord.row,
+                                "column": coord.column
+                            }
+                        })
+                    ]
+                }
+            })(),
+            "score": {
+                // TODO not implemented
+                "movesCount": null,
+                "movesDetails": []
+            }
+        }
+    }
+}
+
+const refLevelJson = ref('');
+const { copy: funcCopyLevelToClipboard, isSupported: clipboardApiIsSupported } = useClipboard();
+
+const copyLevelToClipboard = () => {
+    const levelWrapper = buildLevelJson();
+    console.log(levelWrapper);
+    // Check for failure
+    if (levelWrapper.status === "failure") { return; }
+    refLevelJson.value = JSON.stringify(levelWrapper.level);
+
+    if (clipboardApiIsSupported) {
+        funcCopyLevelToClipboard(refLevelJson.value)
+            .then(() => {
+                message.success("Level copied to clipboard!");
+            })
+            .catch((reason) => {
+                message.error("Failed to copy level to clipboard!");
+                console.log(reason);
+            });
+        // message.success("Level copied to clipboard!");
+    } else {
+        message.error("Clipboard API is not supported in your browser!");
+    }
+}
+
+import { downloadString } from "../functions/downloadUtils";
+
+const downloadLevel = () => {
+    const levelWrapper = buildLevelJson();
+    console.log(levelWrapper);
+    // Check for failure
+    if (levelWrapper.status === "failure") { return; }
+    refLevelJson.value = JSON.stringify(levelWrapper.level);
+    // console.log(refLevelJson.value);
+
+    downloadString(refLevelJson.value, 'text/json', `${router.currentRoute.value.params.uuid}.json`);
+}
 
 //: Custom Event Handlers
 
@@ -471,6 +622,9 @@ onKeyStroke(['f', 'F'], (e) => {
 onKeyStroke('Escape', (e) => {
     onSelectCancel();
 })
+whenever(keys.Ctrl_C, () => {
+    copyLevelToClipboard();
+})
 onClickOutside(selectionToolbar, onSelectCancel);
 
 //: Custom modals and popups
@@ -506,8 +660,8 @@ const deleteAll = () => {
         <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center"
             v-if="account.username === 'Neutronic'">
             <span>Developer Tools:</span>
-            <ion-button name="download-outline" size="1.6rem"></ion-button>
-            <ion-button name="copy-outline" size="1.6rem"></ion-button>
+            <ion-button name="download-outline" size="1.6rem" @click="downloadLevel"></ion-button>
+            <ion-button name="copy-outline" size="1.6rem" @click="copyLevelToClipboard"></ion-button>
         </n-flex>
         <div class="u-gap-1"></div>
         <span class="a-fade-in a-delay-5">Current best</span>
