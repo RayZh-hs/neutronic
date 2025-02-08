@@ -235,6 +235,12 @@ const getPositionForContainers = (item) => {
                 background: hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha),
                 border: `1px solid ${hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha * 3)}`,
                 borderRadius: `0.625rem`
+            } : {}),
+            top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`,
+            ...(item.type === 'portal' ? {
+                background: hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha),
+                border: `1px solid ${hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha * 3)}`,
+                borderRadius: `0.625rem`
             } : {})
         },
         className: item.classes.join(' ')
