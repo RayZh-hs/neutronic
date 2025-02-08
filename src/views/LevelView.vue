@@ -3,11 +3,13 @@ container
 //: Vue Imports
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
+import {hexaToRgba} from "../functions/colorUtils";
 import { useElementBounding } from '@vueuse/core';
 const router = useRouter();
 
 //: Custom Data and Components
 import { levelMapGridScaleRem, levelMapGridScalePx } from "@/data/constants"
+import { levelPortalCycleColor, levelMapPortalBackgroundAlpha } from "@/data/constants";
 
 //: Map Setup
 const name = ref('');
@@ -18,9 +20,6 @@ const selected = ref(null);
 const stepsCounter = ref(0);
 const levelId = router.currentRoute.value.params.levelId;
 const levelLoaded = ref(false);
-const refViewPort = ref(null);
-const globalMotionLock = ref(false);
-const isPanning = ref(false);
 
 const loadLevelConfig = async () => {
     try {
@@ -108,10 +107,11 @@ const handleCollision = (r, c) => {
     gameState.value.containers = gameState.value.containers.filter(item => item.row !== r || item.column !== c);
     gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
     selected.value = null;
+    isAnimating.value = false;
 };
 
 const moveParticle = (direction) => {
-    if (!selected.value) {
+    if (!selected.value||isAnimating.value) {
         return;
     }
     const index = gameState.value.particles.findIndex(p => p === selected.value);
@@ -163,7 +163,15 @@ const moveParticle = (direction) => {
                 gameState.value.particles[index].column = another.column;
                 const collidingParticles = gameState.value.particles.filter(particle => particle.row === another.row && particle.column === another.row);
                 collidingParticles.forEach(particle => particle.colliding = true);
-                setTimeout(() => { handleCollision(another.row, another.column); tmp.type = 'board'; }, 1000);
+                isAnimating.value = true;
+                setTimeout(() => {
+                    handleCollision(another.row, another.column);
+                    tmp.type = 'board';
+                    if(levelLoaded.value && gameState.value.particles.length === 0)
+                    {
+                        hasWon.value = true;
+                    }
+                }, 800);
                 return;
             }
             else if (gameState.value.particles.some(item => item.color === currentColor && item.row === another.row && item.column === another.column)) return;
@@ -212,7 +220,12 @@ const getPositionForContainers = (item) => {
         {
             position: 'absolute',
             left: `${left + panningOffset.value.x + additionalCenteringOffset.value.x}px`,
-            top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`
+            top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`,
+            ...(item.type === 'portal' ? {
+                background: hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha),
+                border: `1px solid ${hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha * 3)}`,
+                borderRadius: `0.625rem`
+            } : {})
         },
         className: item.classes.join(' ')
     };
@@ -241,9 +254,6 @@ onBeforeUnmount(() => {
     selected.value = null;
 });
 
-const hasWon = computed(() => {
-    return levelLoaded.value && gameState.value.particles.length === 0;
-});
 </script>
 
 <template>
@@ -266,7 +276,7 @@ const hasWon = computed(() => {
         {{ additionalCenteringOffset }}
         {{ mapSize }}
     </div>
-    <n-modal v-model:show="hasWon" class="slide-in-modal">
+    <n-modal v-model:show="hasWon" class="slide-in-modal" @update:show="(value) => { if (!value) router.go(-1); }">
         <n-card title="Congratulations" class="win-message">
             <p>You Win!</p>
             <n-divider></n-divider>
@@ -443,13 +453,6 @@ const hasWon = computed(() => {
             }
         }
 
-        &.container--portal {
-            border-radius: $level-map-board-border-radius;
-            // TODO: Inherit color
-            background: rgba(255, 141, 26, 0.2);
-            border: 1px solid rgba(255, 141, 26, 0.61);
-            box-shadow: 0px 2px 9px 1px rgba(0, 0, 0, 0.25);
-        }
     }
 
     .particle {
