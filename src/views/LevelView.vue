@@ -219,10 +219,10 @@ const additionalCenteringOffset = computed(() => {
 const getPositionForContainers = (item) => {
     item.classes = [];
     item.classes.push(item.type);
-    if (gameState.value.containers.some(tmp => tmp.row === item.row - 1 && tmp.column === item.column && tmp.type === 'board')) item.classes.push('top');
-    if (gameState.value.containers.some(tmp => tmp.row === item.row + 1 && tmp.column === item.column && tmp.type === 'board')) item.classes.push('bottom');
-    if (gameState.value.containers.some(tmp => tmp.row === item.row && tmp.column === item.column - 1 && tmp.type === 'board')) item.classes.push('left');
-    if (gameState.value.containers.some(tmp => tmp.row === item.row && tmp.column === item.column + 1 && tmp.type === 'board')) item.classes.push('right');
+    if (existBoardAt(item.row - 1, item.column))    item.classes.push('top');
+    if (existBoardAt(item.row + 1, item.column))    item.classes.push('bottom');
+    if (existBoardAt(item.row, item.column - 1))    item.classes.push('left');
+    if (existBoardAt(item.row, item.column + 1))    item.classes.push('right');
     const left = (item.column) * levelMapGridScalePx;
     const top = (item.row) * levelMapGridScalePx;
     return {
@@ -236,12 +236,6 @@ const getPositionForContainers = (item) => {
                 border: `1px solid ${hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha * 3)}`,
                 borderRadius: `0.625rem`
             } : {}),
-            top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`,
-            ...(item.type === 'portal' ? {
-                background: hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha),
-                border: `1px solid ${hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha * 3)}`,
-                borderRadius: `0.625rem`
-            } : {})
         },
         className: item.classes.join(' ')
     };
@@ -443,32 +437,32 @@ const hasWon = computed(() => {
         opacity: 1;
 
         &.container--board {
-            --border-top-left-radius: $level-map-board-border-radius;
-            --border-top-right-radius: $level-map-board-border-radius;
-            --border-bottom-left-radius: $level-map-board-border-radius;
-            --border-bottom-right-radius: $level-map-board-border-radius;
-            border-radius: var(--border-top-left-radius) var(--border-top-right-radius) var(--border-bottom-right-radius) var(--border-bottom-left-radius);
+            border-top-left-radius: $level-map-board-border-radius;
+            border-top-right-radius: $level-map-board-border-radius;
+            border-bottom-left-radius: $level-map-board-border-radius;
+            border-bottom-right-radius: $level-map-board-border-radius;
+            // border-radius: var(--border-top-left-radius) var(--border-top-right-radius) var(--border-bottom-right-radius) var(--border-bottom-left-radius);
             background: $game-grid-container-background-color;
             border: 1px solid $game-grid-container-border-color;
 
             &.top {
-                --border-top-left-radius: 0;
-                --border-top-right-radius: 0;
+                border-top-left-radius: 0;
+                border-top-right-radius: 0;
             }
 
             &.bottom {
-                --border-bottom-left-radius: 0;
-                --border-bottom-right-radius: 0;
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
             }
 
             &.left {
-                --border-top-left-radius: 0;
-                --border-bottom-left-radius: 0;
+                border-top-left-radius: 0;
+                border-bottom-left-radius: 0;
             }
 
             &.right {
-                --border-top-right-radius: 0;
-                --border-bottom-right-radius: 0;
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
             }
         }
 
