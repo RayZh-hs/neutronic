@@ -1,22 +1,34 @@
 container
 <script setup>
+//: Vue Imports
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
+import { useElementBounding } from '@vueuse/core';
 const router = useRouter();
+
+//: Custom Data and Components
+import { levelMapGridScaleRem, levelMapGridScalePx } from "@/data/constants"
+
+//: Map Setup
 const name = ref('');
 const author = ref('');
 const gameState = ref({ containers: [], particles: [] });
-const gridSize = ref({ width: 3.875, height: 3.875 });
+const mapSize = ref({ rows: 0, columns: 0 });
 const selected = ref(null);
-const cnt = ref(0);
+const stepsCounter = ref(0);
 const levelId = router.currentRoute.value.params.levelId;
 const levelLoaded = ref(false);
+const refViewPort = ref(null);
 
 const loadLevelConfig = async () => {
     try {
         let levelConfig = await import(`../data/maps/${levelId}.json`);
         name.value = levelConfig.meta.name;
         author.value = levelConfig.meta.author;
+        mapSize.value = {
+            rows: levelConfig.meta.rows,
+            columns: levelConfig.meta.columns
+        }
         gameState.value.containers = JSON.parse(JSON.stringify(levelConfig.content.containers));
         gameState.value.particles = JSON.parse(JSON.stringify(levelConfig.content.particles));
         levelLoaded.value = true;
@@ -25,6 +37,13 @@ const loadLevelConfig = async () => {
     }
 };
 
+//: Panning and Centering
+
+// - tracking the panning offset
+import { usePanning } from "@/functions/usePanning";
+const { panningOffset, onPanStart, onPanEnd } = usePanning(refViewPort);
+
+//: Game Logic
 const handleKeydown = (event) => {
     switch (event.key) {
         case 'ArrowUp':
@@ -41,14 +60,11 @@ const handleKeydown = (event) => {
             break;
     }
 };
-
-
 const handleCollision = (r, c) => {
     gameState.value.containers = gameState.value.containers.filter(item => item.row !== r || item.column !== c);
     gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
     selected.value = null;
 };
-
 const moveParticle = (direction) => {
     if (!selected.value) {
         return;
@@ -75,7 +91,7 @@ const moveParticle = (direction) => {
     }
     const valid = gameState.value.containers.some(item => item.row === r && item.column === c) && !gameState.value.particles.some(item => item.color === co && item.row === r && item.column === c);
     if (valid) {
-        cnt.value++;
+        stepsCounter.value++;
         gameState.value.particles[index].row = r;
         gameState.value.particles[index].column = c;
         const tmp = gameState.value.containers.find(item => item.row === r && item.column === c);
@@ -109,17 +125,15 @@ const moveParticle = (direction) => {
     }
     else return;
 };
-
 const selectParticle = (particle) => {
     if (particle === selected.value) selected.value = null;
     else {
         selected.value = particle;
     }
 };
-
 const boardsWithPositions = computed(() => {
     return gameState.value.containers.map(item => {
-        const position = getPosition1(item);
+        const position = getPositionForContainers(item);
         return {
             ...item,
             style: position.style,
@@ -128,44 +142,50 @@ const boardsWithPositions = computed(() => {
     });
 });
 
+const { width, height } = useElementBounding(refViewPort);
+const additionalCenteringOffset = computed(() => {
+    return {
+        x: (width.value - levelMapGridScalePx * (mapSize.value.rows)) / 2,
+        y: (height.value - levelMapGridScalePx * (mapSize.value.columns)) / 2
+    };
+})
 
-const getPosition1 = (item) => {
+const getPositionForContainers = (item) => {
     item.classes = [];
     item.classes.push(item.type);
     if (gameState.value.containers.some(tmp => tmp.row === item.row - 1 && tmp.column === item.column && tmp.type === 'board')) item.classes.push('top');
     if (gameState.value.containers.some(tmp => tmp.row === item.row + 1 && tmp.column === item.column && tmp.type === 'board')) item.classes.push('bottom');
     if (gameState.value.containers.some(tmp => tmp.row === item.row && tmp.column === item.column - 1 && tmp.type === 'board')) item.classes.push('left');
     if (gameState.value.containers.some(tmp => tmp.row === item.row && tmp.column === item.column + 1 && tmp.type === 'board')) item.classes.push('right');
-    const left = 18 + (item.column - 1) * gridSize.value.width;
-    const top = 10 + (item.row - 1) * gridSize.value.height;
+    const left = (item.column) * levelMapGridScalePx;
+    const top = (item.row) * levelMapGridScalePx;
     return {
         style:
         {
             position: 'absolute',
-            left: `${left}rem`,
-            top: `${top}rem`
+            left: `${left + panningOffset.value.x + additionalCenteringOffset.value.x}px`,
+            top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`
         },
         className: item.classes.join(' ')
     };
 };
-
-const getPosition2 = (particle) => {
-    const left = 18 + (particle.column - 1) * gridSize.value.width + 0.5*1.75;
-    const top = 10 + (particle.row - 1) * gridSize.value.height + 0.5*1.75;
+const getPositionForParticles = (item) => {
+    const left = (item.column) * levelMapGridScalePx;
+    const top = (item.row) * levelMapGridScalePx;
     return {
         position: 'absolute',
-        left: `${left}rem`,
-        top: `${top}rem`
+        left: `${left + panningOffset.value.x + additionalCenteringOffset.value.x}px`,
+        top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`
     };
 };
+
 onMounted(async () => {
     await loadLevelConfig();
-    cnt.value = 0;
+    stepsCounter.value = 0;
     gameState.value.particles.forEach((particle, index) => {
         particle.id = `particle-${index}`;
     });
     window.addEventListener('keydown', handleKeydown);
-    
 });
 
 onBeforeUnmount(() => {
@@ -180,18 +200,22 @@ const hasWon = computed(() => {
 
 <template>
     <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="router.go(-1)"></ion-icon>
-    <div class="steps-container">
+    <!-- <div class="steps-container">
         <div class="number">{{ cnt }}</div>
         <div class="string">Steps</div>
-    </div>
-    <div class="viewport" :class="{ disabled: hasWon }">
+    </div> -->
+    <div class="viewport" :class="{ disabled: hasWon }" @mousedown.middle.prevent="onPanStart"
+        @mouseup.middle.prevent="onPanEnd" @mouseleave="onPanEnd" ref="refViewPort">
         <div v-for="(item, index) in boardsWithPositions" :key="index" :style="item.style" class="container"
             :class="'container--' + item.className">
         </div>
-        <div v-for="particle in gameState.particles" :key="particle.id" :style="getPosition2(particle)" @click="selectParticle(particle)" class="particle"
-            :class="{ ['particle--' + particle.color]: true, ['particle--' + 'active']: selected === particle, collision: particle.colliding }"
-            >
+        <div v-for="particle in gameState.particles" :key="particle.id" :style="getPositionForParticles(particle)"
+            @click="selectParticle(particle)" class="particle"
+            :class="{ ['particle--' + particle.color]: true, ['particle--' + 'active']: selected === particle, collision: particle.colliding }">
         </div>
+        {{ panningOffset }}
+        {{ additionalCenteringOffset }}
+        {{ mapSize }}
     </div>
     <n-modal v-model:show="hasWon" class="slide-in-modal">
         <n-card title="Congratulations" class="win-message">
@@ -202,12 +226,12 @@ const hasWon = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-@font-face {
-    font-family: 'Game of Squids';
-    src: url(../assets/GameOfSquids.ttf) format('truetype');
-    font-weight: normal;
-    font-style: normal;
-}
+// @font-face {
+//     font-family: 'Game of Squids';
+//     src: url(../assets/GameOfSquids.ttf) format('truetype');
+//     font-weight: normal;
+//     font-style: normal;
+// }
 
 // @font-face {
 //     font-family: 'Borned';
@@ -229,14 +253,15 @@ const hasWon = computed(() => {
 }
 
 @keyframes slide-in {
-  from {
-    transform: translateY(-100%);
-    opacity: 0.2;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+    from {
+        transform: translateY(-100%);
+        opacity: 0.2;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .collision {
@@ -253,15 +278,14 @@ const hasWon = computed(() => {
     z-index: 1;
 }
 
-.win-message
-    {
-        // text-shadow: 0px 0px 0.5rem rgba(39, 236, 21, 0.3);
-        user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        z-index: 1;
-    }
+.win-message {
+    // text-shadow: 0px 0px 0.5rem rgba(39, 236, 21, 0.3);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    z-index: 1;
+}
 
 .back-to-home-btn {
     position: fixed;
@@ -274,57 +298,52 @@ const hasWon = computed(() => {
     transition: all 0.3s;
     z-index: 2;
     pointer-events: auto;
+
     &:hover {
         color: $n-primary;
         scale: 1.04;
     }
 }
 
-.steps-container {
-    position: fixed;
-    top: 2rem;
-    right: 4rem;
-    width: 7rem;
-    height: 5.5rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    background: $game-grid-container-background-color;
-    border: 1px solid $game-grid-container-border-color;
-    border-radius: 0.5rem;
-}
+// .steps-container {
+//     position: fixed;
+//     top: 2rem;
+//     right: 4rem;
+//     width: 7rem;
+//     height: 5.5rem;
+//     display: flex;
+//     flex-direction: column;
+//     justify-content: center;
+//     background: $game-grid-container-background-color;
+//     border: 1px solid $game-grid-container-border-color;
+//     border-radius: 0.5rem;
+// }
 
+// .number {
+//     font-family: 'Game of Squids';
+//     font-size: 3.5rem;
+//     height: 3.2rem;
+//     color: transparent;
+//     -webkit-text-stroke: 0.2rem rgba(227, 60, 100, 1);
+//     filter: blur(0.25px);
+//     display: flex;
+//     align-items: center;
+//     justify-content: center;
+//     user-select: none;
+//     -webkit-user-select: none;
+//     -moz-user-select: none;
+//     -ms-user-select: none;
+// }
 
-.number {
-    font-family: 'Game of Squids';
-    font-size: 3.5rem;
-    height: 3.2rem;
-    color: transparent;
-    -webkit-text-stroke: 0.2rem rgba(227, 60, 100, 1);
-    filter: blur(0.25px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-}
-
-.string {
-    // font-family: 'Borned';
-    font-size: 1rem;
-    color: rgba(237, 237, 237, 0.81);
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-}
-
-.disabled {
-    pointer-events: none;
-    opacity: 0.5;
-}
+// .string {
+//     // font-family: 'Borned';
+//     font-size: 1rem;
+//     color: rgba(237, 237, 237, 0.81);
+//     user-select: none;
+//     -webkit-user-select: none;
+//     -moz-user-select: none;
+//     -ms-user-select: none;
+// }
 
 .viewport {
     position: relative;
@@ -332,17 +351,23 @@ const hasWon = computed(() => {
     left: 0;
     width: 80vw;
     height: 80vh;
+    outline: 1px white solid;
+
+    &.disabled {
+        pointer-events: none;
+        opacity: 0.5;
+    }
 
     .container {
-        width: $game-grid-scale;
-        height: $game-grid-scale;
+        width: calc($level-map-grid-scale - $level-map-board-border-width * 2);
+        height: calc($level-map-grid-scale - $level-map-board-border-width * 2);
         opacity: 1;
 
         &.container--board {
-            --border-top-left-radius: 0.31rem;
-            --border-top-right-radius: 0.31rem;
-            --border-bottom-left-radius: 0.31rem;
-            --border-bottom-right-radius: 0.31rem;
+            --border-top-left-radius: $level-map-board-border-radius;
+            --border-top-right-radius: $level-map-board-border-radius;
+            --border-bottom-left-radius: $level-map-board-border-radius;
+            --border-bottom-right-radius: $level-map-board-border-radius;
             border-radius: var(--border-top-left-radius) var(--border-top-right-radius) var(--border-bottom-right-radius) var(--border-bottom-left-radius);
             background: $game-grid-container-background-color;
             border: 1px solid $game-grid-container-border-color;
@@ -369,7 +394,7 @@ const hasWon = computed(() => {
         }
 
         &.container--portal {
-            border-radius: $game-grid-portal-border;
+            border-radius: $level-map-board-border-radius;
             // TODO: Inherit color
             background: rgba(255, 141, 26, 0.2);
             border: 1px solid rgba(255, 141, 26, 0.61);
@@ -377,56 +402,54 @@ const hasWon = computed(() => {
         }
     }
 
-        .particle {
-            width: 1.875rem;
-            height: 1.875rem;
-            border-radius: 50%;
-            opacity: 0.85;
+    .particle {
+        width: $level-map-particle-diameter;
+        height: $level-map-particle-diameter;
+        border-radius: 50%;
+        transform: translate(calc(-50% + $level-map-grid-scale / 2), calc(-50% + $level-map-grid-scale / 2));
+        transform-origin: calc($level-map-grid-scale / 2) calc($level-map-grid-scale / 2);
+        // opacity: 0.85;
 
-            transition: all 0.2s ease-out;
-            transform-origin: center center;
+        transition: all 0.2s ease-out;
 
-            &.particle--red {
-                background: $n-red;
-                // border: 0.2rem solid $n-red;
+        &.particle--red {
+            background: $level-map-positron-background-color;
+            border: $level-map-particle-border-width solid $level-map-positron-border-color;
+        }
+
+        &.particle--blue {
+            background: $level-map-electron-background-color;
+            border: $level-map-particle-border-width solid $level-map-electron-border-color;
+        }
+
+        &.particle--active {
+            opacity: 1;
+            border: none;
+            filter: brightness(125%);
+
+            &::after {
+                position: absolute;
+                content: '';
+                top: calc(($level-map-particle-diameter - $level-map-active-particle-ring-diameter) / 2 - $level-map-active-particle-ring-weight);
+                left: calc(($level-map-particle-diameter - $level-map-active-particle-ring-diameter) / 2 - $level-map-active-particle-ring-weight);
+                width: $level-map-active-particle-ring-diameter;
+                height: $level-map-active-particle-ring-diameter;
+                border-radius: 50%;
             }
 
-            &.particle--blue {
-                background: $n-blue;
-                // border: 0.2rem solid $n-blue;
+            &.particle--blue::after {
+                border: $level-map-active-particle-ring-weight solid $level-map-active-electron-border-color;
             }
 
-            &.particle--active {
-                scale: 0.8;
-                opacity: 1;
-                
-                // background-color: wheat;
-
-                &::after {
-                    scale: calc(1/0.8);
-                    content: '';
-                    position: absolute;
-                    top: -0.1rem;
-                    left: -0.1rem;
-                    width: 1.875rem;
-                    height: 1.875rem;
-                    border-radius: 50%;
-                }
-
-                &.particle--blue::after {
-                    border: 0.1rem solid $n-blue;
-                }
-
-                &.particle--red::after {
-                    border: 0.1rem solid $n-red;
-                }
-            }
-
-            &:hover:not(.particle--active) {
-                scale: 1.1;
-                opacity: 0.9;
+            &.particle--red::after {
+                border: $level-map-active-particle-ring-weight solid $level-map-active-positron-border-color;
             }
         }
-}
 
+        &:hover:not(.particle--active) {
+            scale: 1.1;
+            // opacity: 0.9;
+        }
+    }
+}
 </style>

@@ -15,7 +15,8 @@ export const customSelectionWindowSize = 5;
 
 //: Level Setup
 export const levelMapGridScale = "4rem";    // Is linked to $map-editor-header-height
-export const levelMapGridScalePx = Number(levelMapGridScale.split('rem')[0]) * parseFloat(getComputedStyle(document.documentElement).fontSize);  // Is linked to $map-editor-header-height
+export const levelMapGridScaleRem = Number(levelMapGridScale.split('rem')[0]);
+export const levelMapGridScalePx = levelMapGridScaleRem * parseFloat(getComputedStyle(document.documentElement).fontSize);  // Is linked to $map-editor-header-height
 export const levelPortalCycleColor = [
     "#f3722c",
     "#90be6d",
@@ -27,6 +28,7 @@ export const levelPortalCycleColor = [
 ];
 export const levelPortalCycleColorCount = levelPortalCycleColor.length;
 export const levelMapPortalBackgroundAlpha = 0.15;  // Is linked to $map-portal-background-alpha
+export const gameRefreshFrequency = 60;
 
 //: Level Editor
 export const levelEditorRefreshFrequency = 60;
