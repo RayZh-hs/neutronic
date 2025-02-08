@@ -19,6 +19,8 @@ const stepsCounter = ref(0);
 const levelId = router.currentRoute.value.params.levelId;
 const levelLoaded = ref(false);
 const refViewPort = ref(null);
+const globalMotionLock = ref(false);
+const isPanning = ref(false);
 
 const loadLevelConfig = async () => {
     try {
@@ -32,6 +34,7 @@ const loadLevelConfig = async () => {
         gameState.value.containers = JSON.parse(JSON.stringify(levelConfig.content.containers));
         gameState.value.particles = JSON.parse(JSON.stringify(levelConfig.content.particles));
         levelLoaded.value = true;
+        globalMotionLock.value = false;
     } catch (error) {
         console.error('Failed to load level config:', error);
     }
@@ -43,74 +46,119 @@ const loadLevelConfig = async () => {
 import { usePanning } from "@/functions/usePanning";
 const { panningOffset, onPanStart, onPanEnd } = usePanning(refViewPort);
 
+const onPanStartWrapper = (event) => {
+    globalMotionLock.value = true;
+    isPanning.value = true;
+    onPanStart(event);
+};
+
+const onPanEndWrapper = () => {
+    onPanEnd();
+    globalMotionLock.value = false;
+    isPanning.value = false;
+};
+
 //: Game Logic
-const handleKeydown = (event) => {
-    switch (event.key) {
-        case 'ArrowUp':
-            moveParticle('up');
-            break;
-        case 'ArrowDown':
-            moveParticle('down');
-            break;
-        case 'ArrowLeft':
-            moveParticle('left');
-            break;
-        case 'ArrowRight':
-            moveParticle('right');
-            break;
+// - auxiliary functions
+const existBoardAt = (r, c) => {
+    return gameState.value.containers.some(item => item.row === r && item.column === c && item.type === 'board');
+};
+const existPortalAt = (r, c) => {
+    return gameState.value.containers.some(item => item.row === r && item.column === c && item.type === 'portal');
+};
+const existContainerAt = (r, c) => {
+    return gameState.value.containers.some(item => item.row === r && item.column === c);
+};
+const existParticleAt = (r, c) => {
+    return gameState.value.particles.some(item => item.row === r && item.column === c);
+};
+const existParticleWithColorAt = (r, c, color) => {
+    return gameState.value.particles.some(item => item.row === r && item.column === c && item.color === color);
+};
+const getPortalIndexAt = (r, c) => {
+    return gameState.value.containers.find(item => item.row === r && item.column === c)?.index;
+};
+const getOtherPortal = (r, c) => {
+    const index = getPortalIndexAt(r, c);
+    if (index === undefined) return null;
+    else return gameState.value.containers.find(item => item.index === index && (item.row !== r || item.column !== c));
+}
+
+const isMoveValid = (currentColor, newPos) => {
+    if (!existContainerAt(newPos.row, newPos.column)) return false;
+    if (existParticleWithColorAt(newPos.row, newPos.column, currentColor)) return false;
+    if (existPortalAt(newPos.row, newPos.column)) {
+        const otherPortal = getOtherPortal(newPos.row, newPos.column);
+        console.log(otherPortal);
+        if (existParticleWithColorAt(otherPortal.row, otherPortal.column, currentColor)) return false;
     }
+    return true;
+}
+
+const handleKeydown = (event) => {
+    const keyMapping = {
+        'ArrowUp': 'up',
+        'ArrowDown': 'down',
+        'ArrowLeft': 'left',
+        'ArrowRight': 'right'
+    }
+    if (keyMapping[event.key]) moveParticle(keyMapping[event.key]);
 };
 const handleCollision = (r, c) => {
     gameState.value.containers = gameState.value.containers.filter(item => item.row !== r || item.column !== c);
     gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
     selected.value = null;
 };
+
 const moveParticle = (direction) => {
     if (!selected.value) {
         return;
     }
     const index = gameState.value.particles.findIndex(p => p === selected.value);
-    let co = gameState.value.particles[index].color;
-    let r = gameState.value.particles[index].row;
-    let c = gameState.value.particles[index].column;
+    let currentColor = gameState.value.particles[index].color;
+    let currentRow = gameState.value.particles[index].row;
+    let currentColumn = gameState.value.particles[index].column;
     if (index !== -1) {
         switch (direction) {
             case 'up':
-                r -= 1;
+                currentRow -= 1;
                 break;
             case 'down':
-                r += 1;
+                currentRow += 1;
                 break;
             case 'left':
-                c -= 1;
+                currentColumn -= 1;
                 break;
             case 'right':
-                c += 1;
+                currentColumn += 1;
                 break;
         }
     }
-    const valid = gameState.value.containers.some(item => item.row === r && item.column === c) && !gameState.value.particles.some(item => item.color === co && item.row === r && item.column === c);
-    if (valid) {
+    // const valid = gameState.value.containers.some(item => item.row === currentRow && item.column === currentColumn) && !gameState.value.particles.some(item => item.color === currentColor && item.row === currentRow && item.column === currentColumn);
+    const isValid = isMoveValid(currentColor, { row: currentRow, column: currentColumn });
+    if (isValid) {
         stepsCounter.value++;
-        gameState.value.particles[index].row = r;
-        gameState.value.particles[index].column = c;
-        const tmp = gameState.value.containers.find(item => item.row === r && item.column === c);
-        if (tmp.type === 'board') {
-            if (gameState.value.particles.some(item => item.color !== co && item.row === r && item.column === c)) {
-                const collidingParticles = gameState.value.particles.filter(particle => particle.row === r && particle.column === c);
+        gameState.value.particles[index].row = currentRow;
+        gameState.value.particles[index].column = currentColumn;
+        // const tmp = gameState.value.containers.find(item => item.row === currentRow && item.column === currentColumn);
+        if (existBoardAt(currentRow, currentColumn)) {
+            if (gameState.value.particles.some(item => item.color !== currentColor && item.row === currentRow && item.column === currentColumn)) {
+                const collidingParticles = gameState.value.particles.filter(particle => particle.row === currentRow && particle.column === currentColumn);
                 collidingParticles.forEach(particle => particle.colliding = true);
-                setTimeout(() => handleCollision(r, c), 1000);
+                // Remove the selection
+                selected.value = null;
+                setTimeout(() => handleCollision(currentRow, currentColumn), 1000);
             }
         }
-        else if (tmp.type === 'portal') {
-            const another = gameState.value.containers.find(item => item.type === 'portal' && item.label === tmp.label && item.row !== r && item.column !== c);
-            if (gameState.value.particles.some(item => item.color !== co && item.row === r && item.column === c)) {
-                const collidingParticles = gameState.value.particles.filter(particle => particle.row === r && particle.column === c);
+        else if (existPortalAt(currentRow, currentColumn)) {
+            const another = getOtherPortal(currentRow, currentColumn);
+            if (gameState.value.particles.some(item => item.color !== currentColor && item.row === currentRow && item.column === currentColumn)) {
+                const collidingParticles = gameState.value.particles.filter(particle => particle.row === currentRow && particle.column === currentColumn);
                 collidingParticles.forEach(particle => particle.colliding = true);
-                setTimeout(() => { handleCollision(r, c); another.type = 'board'; }, 1000);
+                setTimeout(() => { handleCollision(currentRow, currentColumn); another.type = 'board'; }, 1000);
                 return;
             }
-            else if (gameState.value.particles.some(item => item.color !== co && item.row === another.row && item.column === another.column)) {
+            else if (gameState.value.particles.some(item => item.color !== currentColor && item.row === another.row && item.column === another.column)) {
                 gameState.value.particles[index].row = another.row;
                 gameState.value.particles[index].column = another.column;
                 const collidingParticles = gameState.value.particles.filter(particle => particle.row === another.row && particle.column === another.row);
@@ -118,20 +166,20 @@ const moveParticle = (direction) => {
                 setTimeout(() => { handleCollision(another.row, another.column); tmp.type = 'board'; }, 1000);
                 return;
             }
-            else if (gameState.value.particles.some(item => item.color === co && item.row === another.row && item.column === another.column)) return;
+            else if (gameState.value.particles.some(item => item.color === currentColor && item.row === another.row && item.column === another.column)) return;
             gameState.value.particles[index].row = another.row;
             gameState.value.particles[index].column = another.column;
         }
     }
     else return;
 };
-const selectParticle = (particle) => {
+const handleSelectParticle = (particle) => {
     if (particle === selected.value) selected.value = null;
     else {
         selected.value = particle;
     }
 };
-const boardsWithPositions = computed(() => {
+const boardsWithAttr = computed(() => {
     return gameState.value.containers.map(item => {
         const position = getPositionForContainers(item);
         return {
@@ -205,13 +253,14 @@ const hasWon = computed(() => {
         <div class="string">Steps</div>
     </div> -->
     <div class="viewport" :class="{ disabled: hasWon }" @mousedown.middle.prevent="onPanStart"
-        @mouseup.middle.prevent="onPanEnd" @mouseleave="onPanEnd" ref="refViewPort">
-        <div v-for="(item, index) in boardsWithPositions" :key="index" :style="item.style" class="container"
+        @mouseup.middle.prevent="onPanEndWrapper" @mouseleave="onPanEndWrapper" ref="refViewPort">
+        <div v-for="(item, index) in boardsWithAttr" :key="index" :style="item.style" class="container"
             :class="'container--' + item.className">
         </div>
         <div v-for="particle in gameState.particles" :key="particle.id" :style="getPositionForParticles(particle)"
-            @click="selectParticle(particle)" class="particle"
-            :class="{ ['particle--' + particle.color]: true, ['particle--' + 'active']: selected === particle, collision: particle.colliding }">
+            @click="handleSelectParticle(particle)" class="particle"
+            :class="{ ['particle--' + particle.color]: true, ['particle--' + 'active']: selected === particle, collision: particle.colliding }"
+            >
         </div>
         {{ panningOffset }}
         {{ additionalCenteringOffset }}
@@ -240,15 +289,15 @@ const hasWon = computed(() => {
 //     font-style: normal;
 // }
 
-@keyframes flicker {
-
-    0%,
-    100% {
+@keyframes fade-away {
+    0% {
         opacity: 1;
+        scale: 1;
     }
 
-    50% {
-        opacity: 0.2;
+    100% {
+        opacity: 0;
+        scale: 1.2;
     }
 }
 
@@ -265,7 +314,8 @@ const hasWon = computed(() => {
 }
 
 .collision {
-    animation: flicker 0.4s 3;
+    background-color: rgba($color: $n-primary, $alpha: 0.25);
+    animation: fade-away 1s infinite;
 }
 
 .slide-in-modal {
@@ -410,7 +460,7 @@ const hasWon = computed(() => {
         transform-origin: calc($level-map-grid-scale / 2) calc($level-map-grid-scale / 2);
         // opacity: 0.85;
 
-        transition: all 0.2s ease-out;
+        // transition: all 0.2s ease-out;
 
         &.particle--red {
             background: $level-map-positron-background-color;
