@@ -61,43 +61,9 @@ const onLevelNameChange = (event) => {
 
 // - tracking the panning offset
 const { x: mouseX, y: mouseY, sourceType } = useMouse();
-const panningOffset = ref({ x: 0, y: 0 });
-let panningOffsetStart = { x: 0, y: 0 };
-let panningStart = { x: 0, y: 0 };
-let panningTracker = null;
 
-const onPanStart = () => {
-    console.log("Middle mouse down");
-    // This shouldn't happen, but just in case
-    if (panningTracker) {
-        return;
-    }
-    // Start tracking the mouse movement
-    panningStart = {
-        x: mouseX.value,
-        y: mouseY.value
-    }
-    panningOffsetStart = panningOffset.value;
-    panningTracker = setInterval(() => {
-        panningOffset.value = {
-            x: panningOffsetStart.x + mouseX.value - panningStart.x,
-            y: panningOffsetStart.y + mouseY.value - panningStart.y
-        }
-    }, 1000 / levelEditorRefreshFrequency);
-    // Change the cursor
-    document.body.style.cursor = "move";
-}
-
-const onPanEnd = () => {
-    console.log("Middle mouse up");
-    // Stop tracking the mouse movement
-    if (panningTracker) {
-        // Reset the cursor
-        document.body.style.cursor = "default";
-        clearInterval(panningTracker);
-        panningTracker = null;
-    }
-}
+import { usePanning } from "@/functions/usePanning";
+const { panningOffset, onPanStart, onPanEnd } = usePanning();
 
 // - global context management
 
