@@ -67,7 +67,6 @@ $map-editor-toolbar-electron-color: $n-blue;
 $map-editor-toolbar-remover-color: #ffba08;
 $map-editor-toolbar-clear-all-backdrop-color: $n-red;
 $map-editor-toolbar-focus-backdrop-color: $n-blue;
-
 $map-editor-sprite-mouseover-board-color: $n-light-grey;
 $map-editor-sprite-mouseover-remover-border-weight: 4px;
 $map-editor-sprite-mouseover-remover-border: 4px dashed #ffba08;
@@ -79,3 +78,12 @@ $map-editor-right-selection-tools-button-size: 2rem;
 $map-editor-right-selection-tools-font-size: 1rem;
 
 $map-editor-confirm-deletion-card-width: min(25rem, 60rem);
+
+//: Game Setting
+
+$game-grid-scale: 3.625rem;
+$game-grid-board-border: 0.31rem;
+$game-grid-portal-border: 0.625rem;
+$game-grid-container-background-color: rgba(230, 230, 230, 0.07);
+$game-grid-container-border-color: rgba(237, 237, 237, 0.15);
+

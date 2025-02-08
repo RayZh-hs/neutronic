@@ -2,12 +2,10 @@
     "meta": {
         "levelId": "528a89f9-4a9f-4ad2-86ac-3b184f218a48",
         "name": "A simple level",
-        "author": "yjx",
-        "description": "This is a simple level.",
-        "difficulty": "easy"
+        "author": "yjx"
     },
     "content": {
-        "boards": [
+        "containers": [
             {
                 "type": "board",
                 "row": 1,
