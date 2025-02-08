@@ -2,6 +2,8 @@ container
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
+import { levelPortalCycleColor, levelMapPortalBackgroundAlpha } from "../data/constants";
+import {hexaToRgba} from "../functions/colorUtils";
 const router = useRouter();
 const name = ref('');
 const author = ref('');
@@ -11,6 +13,8 @@ const selected = ref(null);
 const cnt = ref(0);
 const levelId = router.currentRoute.value.params.levelId;
 const levelLoaded = ref(false);
+const isAnimating = ref(false);
+const hasWon=ref(false);
 
 const loadLevelConfig = async () => {
     try {
@@ -47,10 +51,11 @@ const handleCollision = (r, c) => {
     gameState.value.containers = gameState.value.containers.filter(item => item.row !== r || item.column !== c);
     gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
     selected.value = null;
+    isAnimating.value = false;
 };
 
 const moveParticle = (direction) => {
-    if (!selected.value) {
+    if (!selected.value||isAnimating.value) {
         return;
     }
     const index = gameState.value.particles.findIndex(p => p === selected.value);
@@ -83,15 +88,32 @@ const moveParticle = (direction) => {
             if (gameState.value.particles.some(item => item.color !== co && item.row === r && item.column === c)) {
                 const collidingParticles = gameState.value.particles.filter(particle => particle.row === r && particle.column === c);
                 collidingParticles.forEach(particle => particle.colliding = true);
-                setTimeout(() => handleCollision(r, c), 1000);
+                isAnimating.value = true;
+                setTimeout(() =>
+                {
+                    handleCollision(r, c);
+                    if(levelLoaded.value && gameState.value.particles.length === 0)
+                    {
+                        hasWon.value = true;
+                    }
+                }, 800);
+                return;
             }
         }
         else if (tmp.type === 'portal') {
-            const another = gameState.value.containers.find(item => item.type === 'portal' && item.label === tmp.label && item.row !== r && item.column !== c);
+            const another = gameState.value.containers.find(item => item.index === tmp.index && item !== tmp);
             if (gameState.value.particles.some(item => item.color !== co && item.row === r && item.column === c)) {
                 const collidingParticles = gameState.value.particles.filter(particle => particle.row === r && particle.column === c);
                 collidingParticles.forEach(particle => particle.colliding = true);
-                setTimeout(() => { handleCollision(r, c); another.type = 'board'; }, 1000);
+                isAnimating.value = true;
+                setTimeout(() => {
+                    handleCollision(r, c); 
+                    another.type = 'board'; 
+                    if(levelLoaded.value && gameState.value.particles.length === 0)
+                    {
+                        hasWon.value = true;
+                    }
+                }, 800);
                 return;
             }
             else if (gameState.value.particles.some(item => item.color !== co && item.row === another.row && item.column === another.column)) {
@@ -99,7 +121,15 @@ const moveParticle = (direction) => {
                 gameState.value.particles[index].column = another.column;
                 const collidingParticles = gameState.value.particles.filter(particle => particle.row === another.row && particle.column === another.row);
                 collidingParticles.forEach(particle => particle.colliding = true);
-                setTimeout(() => { handleCollision(another.row, another.column); tmp.type = 'board'; }, 1000);
+                isAnimating.value = true;
+                setTimeout(() => {
+                    handleCollision(another.row, another.column);
+                    tmp.type = 'board';
+                    if(levelLoaded.value && gameState.value.particles.length === 0)
+                    {
+                        hasWon.value = true;
+                    }
+                }, 800);
                 return;
             }
             else if (gameState.value.particles.some(item => item.color === co && item.row === another.row && item.column === another.column)) return;
@@ -132,21 +162,39 @@ const boardsWithPositions = computed(() => {
 const getPosition1 = (item) => {
     item.classes = [];
     item.classes.push(item.type);
-    if (gameState.value.containers.some(tmp => tmp.row === item.row - 1 && tmp.column === item.column && tmp.type === 'board')) item.classes.push('top');
-    if (gameState.value.containers.some(tmp => tmp.row === item.row + 1 && tmp.column === item.column && tmp.type === 'board')) item.classes.push('bottom');
-    if (gameState.value.containers.some(tmp => tmp.row === item.row && tmp.column === item.column - 1 && tmp.type === 'board')) item.classes.push('left');
-    if (gameState.value.containers.some(tmp => tmp.row === item.row && tmp.column === item.column + 1 && tmp.type === 'board')) item.classes.push('right');
     const left = 18 + (item.column - 1) * gridSize.value.width;
     const top = 10 + (item.row - 1) * gridSize.value.height;
-    return {
-        style:
-        {
-            position: 'absolute',
-            left: `${left}rem`,
-            top: `${top}rem`
-        },
-        className: item.classes.join(' ')
-    };
+    if(item.type === 'board')
+    {
+        if (gameState.value.containers.some(tmp => tmp.row === item.row - 1 && tmp.column === item.column && tmp.type === 'board')) item.classes.push('top');
+        if (gameState.value.containers.some(tmp => tmp.row === item.row + 1 && tmp.column === item.column && tmp.type === 'board')) item.classes.push('bottom');
+        if (gameState.value.containers.some(tmp => tmp.row === item.row && tmp.column === item.column - 1 && tmp.type === 'board')) item.classes.push('left');
+        if (gameState.value.containers.some(tmp => tmp.row === item.row && tmp.column === item.column + 1 && tmp.type === 'board')) item.classes.push('right');
+        return {
+            style:
+            {
+                position: 'absolute',
+                left: `${left}rem`,
+                top: `${top}rem`
+            },
+            className: item.classes.join(' ')
+        };
+    }
+    else if(item.type === 'portal')
+    {
+        return {
+            style:
+            {
+                position: 'absolute',
+                left: `${left}rem`,
+                top: `${top}rem`,
+                background: hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha),
+                border: `1px solid ${hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha*3)}`,
+                borderRadius: `0.625rem`
+            },
+            className: item.classes.join(' ')
+        };
+    }
 };
 
 const getPosition2 = (particle) => {
@@ -173,9 +221,6 @@ onBeforeUnmount(() => {
     selected.value = null;
 });
 
-const hasWon = computed(() => {
-    return levelLoaded.value && gameState.value.particles.length === 0;
-});
 </script>
 
 <template>
@@ -193,7 +238,7 @@ const hasWon = computed(() => {
             >
         </div>
     </div>
-    <n-modal v-model:show="hasWon" class="slide-in-modal">
+    <n-modal v-model:show="hasWon" class="slide-in-modal" @update:show="(value) => { if (!value) router.go(-1); }">
         <n-card title="Congratulations" class="win-message">
             <p>You Win!</p>
             <n-divider></n-divider>
@@ -240,7 +285,7 @@ const hasWon = computed(() => {
 }
 
 .collision {
-    animation: flicker 0.4s 3;
+    animation: flicker 0.2s 3;
 }
 
 .slide-in-modal {
@@ -368,13 +413,6 @@ const hasWon = computed(() => {
             }
         }
 
-        &.container--portal {
-            border-radius: $game-grid-portal-border;
-            // TODO: Inherit color
-            background: rgba(255, 141, 26, 0.2);
-            border: 1px solid rgba(255, 141, 26, 0.61);
-            box-shadow: 0px 2px 9px 1px rgba(0, 0, 0, 0.25);
-        }
     }
 
         .particle {

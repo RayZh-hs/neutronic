@@ -6,6 +6,7 @@ import SubAlbumView from './views/SubAlbumView.vue'
 import CustomSelectionView from './views/CustomSelectionView.vue'
 import LevelView from './views/LevelView.vue'
 import LevelEditorView from './views/LevelEditorView.vue'
+import UserLoginView from './views/UserLoginView.vue'
 
 const routes = [
     { path: '/', component: HomeView },
@@ -14,6 +15,7 @@ const routes = [
     { path: '/custom', component: CustomSelectionView },
     { path: '/album/:id/:levelId', component: LevelView },
     { path: '/custom/edit/:uuid', component: LevelEditorView },
+    { path: '/login', component: UserLoginView },
 ]
 
 export const router = createRouter({
