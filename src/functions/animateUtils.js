@@ -66,3 +66,32 @@ export const refAnimateTo =
             }
         }, animationRefreshInterval);
     }
+
+/**
+ * Animates a vue reference to an object.
+ * 
+ * @param {import("vue").Ref} refObject The vue reference to animate;
+ * @param {Object} dest The dictionary to animate to;
+ * @param {number} time Time(in ms) to animate to the destination;
+ * @param {Function} easingFunction A function [0, 1] -> [0, 1 ~ ] that determines the easing of the animation;
+ */
+export const refAnimateToObject =
+    (refObject, dest, time, easingFunction = easeLinear) => {
+        const start = refObject.value;
+        const animationStepsTotal = time / animationRefreshInterval;
+        let animationStep = 0;
+
+        var animationContainer = setInterval(() => {
+            for (const key in dest) {
+                refObject.value[key] = lerp(start[key], dest[key], easingFunction(animationStep / animationStepsTotal));
+            }
+            animationStep++;
+            if (animationStep > animationStepsTotal) {
+                // Move to end and clear interval
+                for (const key in dest) {
+                    refObject.value[key] = dest[key];
+                }
+                clearInterval(animationContainer);
+            }
+        }, animationRefreshInterval);
+    }
