@@ -1,7 +1,7 @@
 <script setup>
 //: Vue-specific imports
 import { onMounted, ref, computed, watch } from "vue";
-import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard } from "@vueuse/core";
+import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog } from "@vueuse/core";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -468,6 +468,52 @@ const buildLevelJson = () => {
     }
 }
 
+const loadLevelJson = (levelJson) => {
+    var level = JSON.parse(levelJson);
+    console.log(level);
+    // Load meta
+    levelName.value = level.meta.name;
+    // Load content
+    containerBoards.value = level.content.containers
+        .filter(item => item.type === 'board')
+        .map(item => {
+            return {
+                x: item.column * levelMapGridScalePx,
+                y: item.row * levelMapGridScalePx
+            }
+        });
+    containerPortals.value = level.content.containers
+        .filter(item => item.type === 'portal')
+        .reduce((acc, item) => {
+            if (!acc[item.index]) {
+                acc[item.index] = [];
+            }
+            acc[item.index].push({
+                x: item.column * levelMapGridScalePx,
+                y: item.row * levelMapGridScalePx
+            });
+            return acc;
+        }, []);
+    particleElectrons.value = level.content.particles
+        .filter(item => item.color === 'blue')
+        .map(item => {
+            return {
+                x: item.column * levelMapGridScalePx,
+                y: item.row * levelMapGridScalePx
+            }
+        });
+    particlePositrons.value = level.content.particles
+        .filter(item => item.color === 'red')
+        .map(item => {
+            return {
+                x: item.column * levelMapGridScalePx,
+                y: item.row * levelMapGridScalePx
+            }
+        });
+    cleanupPortals();
+    callCenterMap();
+}
+
 const refLevelJson = ref('');
 const { copy: funcCopyLevelToClipboard, isSupported: clipboardApiIsSupported } = useClipboard();
 
@@ -503,8 +549,27 @@ const downloadLevel = () => {
     refLevelJson.value = JSON.stringify(levelWrapper.level);
     // console.log(refLevelJson.value);
 
-    downloadString(refLevelJson.value, 'text/json', `${router.currentRoute.value.params.uuid}.json`);
+    downloadString(refLevelJson.value, 'application/json', `${router.currentRoute.value.params.uuid}.json`);
 }
+
+const { onChange: onImportLevelJson, open: openUploadLevelDialog } = useFileDialog({
+    accept: '.json',
+    multiple: false,
+});
+
+onImportLevelJson((files) => {
+    const file = files[0];
+    console.log(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const levelJson = e.target.result;
+        // console.log(levelJson);
+        loadLevelJson(levelJson);
+    }
+    if (file) {
+        reader.readAsText(file);
+    }
+})
 
 //: Custom Event Handlers
 
@@ -684,6 +749,7 @@ const deleteAll = () => {
         <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center"
             v-if="account.username === 'Neutronic'">
             <span>Developer Tools:</span>
+            <ion-button name="cloud-upload-outline" size="1.6rem" @click="openUploadLevelDialog"></ion-button>
             <ion-button name="download-outline" size="1.6rem" @click="downloadLevel"></ion-button>
             <ion-button name="copy-outline" size="1.6rem" @click="copyLevelToClipboard"></ion-button>
         </n-flex>
