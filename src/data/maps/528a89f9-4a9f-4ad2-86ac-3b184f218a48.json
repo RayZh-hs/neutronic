@@ -49,13 +49,28 @@
             {
                 "type": "portal",
                 "row": 4,
-                "column": 5
+                "column": 5,
+                "index": 0
             },
             {
                 "type": "portal",
                 "row": 5,
-                "column": 6
+                "column": 6,
+                "index": 0
+            },
+            {
+                "type": "portal",
+                "row": 5,
+                "column": 5,
+                "index": 1
+            },
+            {
+                "type": "portal",
+                "row": 4,
+                "column": 6,
+                "index": 1
             }
+            
         ],
         "particles":[
             {
