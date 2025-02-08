@@ -13,10 +13,34 @@ import IonButton from "@/components/IonButton.vue"
 
 //: Custom Functions
 import { hexaToRgba } from "@/functions/colorUtils"
-import { sleep } from "@/functions/timeUtils"
+import { easeOutCubic, easeOutSine, refAnimateToObject } from "../functions/animateUtils";
+
+/**
+ * This function is called to center the map on the screen.
+ * It can be directly called via the FOCUS button, and is programmatically invoked when the map is loaded.
+ */
+const callCenterMap = () => {
+    let dest = { x: 0, y: 0 };
+    const boundingBox = getBoundingBox();
+    const centerPos = {
+        x: (boundingBox.minX + boundingBox.maxX) / 2 + levelMapGridScalePx / 2,
+        y: (boundingBox.minY + boundingBox.maxY) / 2 + levelMapGridScalePx / 2
+    }
+    console.log(centerPos);
+    console.log(getMapBoundingBox());
+    if (!isNaN(centerPos.x)) {   // When there is no container in the map, the centerPos becomes NaN
+        const mapBoundingBox = getMapBoundingBox();
+        dest = {
+            x: mapBoundingBox.width / 2 - centerPos.x,
+            y: mapBoundingBox.height / 2 - centerPos.y
+        }
+    }
+    console.log("dest=", dest);
+    refAnimateToObject(panningOffset, dest, levelEditorCenterDuration, easeOutSine);
+}
 
 //: Custom Data
-import { levelEditorRefreshFrequency, leftClickCooldownTime } from "../data/constants";
+import { levelEditorRefreshFrequency, leftClickCooldownTime, levelEditorCenterDuration } from "../data/constants";
 
 // - account info: TODO
 const account = ref({
@@ -89,7 +113,7 @@ const activeTool = ref("board");
 import { levelMapGridScalePx } from "../data/constants";
 
 const refMapContainer = ref(null);
-const getMapBasePosition = () => {
+const getMapBoundingBox = () => {
     if (refMapContainer.value == null)
         return { x: 0, y: 0 };
     return refMapContainer.value.getBoundingClientRect();
@@ -111,8 +135,8 @@ const toolSpritePosition = ref({ x: 0, y: 0 });
 const originPosition = ref({ x: 0, y: 0 });
 const updateToolSpritePosition = () => {
     originPosition.value = {
-        x: getMapBasePosition().x + panningOffset.value.x,
-        y: getMapBasePosition().y + panningOffset.value.y
+        x: getMapBoundingBox().x + panningOffset.value.x,
+        y: getMapBoundingBox().y + panningOffset.value.y
     }
     // console.log(originPosition);
     toolSpritePosition.value = {
@@ -124,7 +148,7 @@ const updateToolSpritePosition = () => {
 const { isOutside: mouseOutsideToolbar } = useMouseInElement(refToolbar);
 
 onMounted(() => {
-    console.log(getMapBasePosition());
+    // console.log(getMapBasePosition());
     setInterval(updateToolSpritePosition, 1000 / levelEditorRefreshFrequency);
 });
 
@@ -671,9 +695,9 @@ const deleteAll = () => {
         <div class="u-gap-30"></div>
     </div>
     <code>
-    <!-- {{ panningOffset }}
-    {{ nextPortalColor }}
-    {{ globalModeContext }} -->
+    <!-- {{ panningOffset }} -->
+    <!-- {{ getBoundingBox() }} -->
+    <!-- {{ getMapBoundingBox() }} -->
     </code>
     <div class="map-container a-fade-in-raw a-delay-6" @click.right.prevent @mousedown.middle="onPanStart"
         @mouseup.middle="onPanEnd" @mousedown.left="onPlaceStart" @mouseup.left="onPlaceEnd"
@@ -752,7 +776,7 @@ const deleteAll = () => {
         </n-tooltip>
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
-                <div class="tool-container tool-container--focus">
+                <div class="tool-container tool-container--focus" @click="callCenterMap">
                     <ion-icon name="locate-outline"></ion-icon>
                     <span class="tool-container__tooltip">Focus</span>
                 </div>
