@@ -3,12 +3,16 @@
         "name": "Naive",
         "levels": [
             {
-                "name": "Demo",
-                "uuid": "6863dc53-5ba1-48d0-ada8-1ef1ecf11adb"
+                "name": "Tutorial Level",
+                "uuid": "2451607c-4c1a-4cee-a509-79d2fd89af88"
             },
             {
-                "name": "Level 2",
-                "uuid": "528a89f9-41"
+                "name": "Active Level",
+                "uuid": "ac676649-331a-4e2c-b520-0f6d7e0a11d4"
+            },
+            {
+                "name": "Debug Level",
+                "uuid": "6863dc53-5ba1-48d0-ada8-1ef1ecf11adb"
             },
             {
                 "name": "Level 3",
