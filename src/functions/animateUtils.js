@@ -28,6 +28,23 @@ export const easeOutExpo = (t) => {
     return 1 - Math.pow(2, -10 * t);
 }
 
+export const easeOutBack = (t) => {
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+// This is special animation that does forth then back to the starting point
+export const easeNope = (t) => {
+    return Math.sin(t * Math.PI);
+}
+
+export const easeNopeGenerator = (amplitude = 1) => {
+    return (t) => {
+        return Math.sin(t * Math.PI) * amplitude;
+    }
+}
+
 //: Animation tools :
 
 /**
@@ -51,20 +68,38 @@ const lerp = (start, end, ratio) => {
  * @param {Function} easingFunction A function [0, 1] -> [0, 1 ~ ] that determines the easing of the animation;
  */
 export const refAnimateTo =
-    (refObject, dest, time, easingFunction = easeLinear) => {
-        const start = refObject.value;
+    (refObject, dest, time, easingFunction = easeLinear, finalSnapTo = dest) => {
+        const start = { ...refObject.value };
         const animationStepsTotal = time / animationRefreshInterval;
         let animationStep = 0;
-        
+        let onUpdateCallback = () => { };
+        let onFinishCallback = () => { };
+
         var animationContainer = setInterval(() => {
+            onUpdateCallback(refObject);
             refObject.value = lerp(start, dest, easingFunction(animationStep / animationStepsTotal));
             animationStep++;
             if (animationStep > animationStepsTotal) {
-                // Move to end and clear interval
-                refObject.value = dest;
+                if (finalSnapTo) {
+                    // Move to end and clear interval
+                    refObject.value = finalSnapTo;
+                    onUpdateCallback(refObject);
+                }
                 clearInterval(animationContainer);
+                onFinishCallback();
             }
         }, animationRefreshInterval);
+
+        return {
+            onUpdate(callback) {
+                onUpdateCallback = callback;
+                return this;
+            },
+            onFinish(callback) {
+                onFinishCallback = callback;
+                return this;
+            }
+        };
     }
 
 /**
@@ -74,24 +109,46 @@ export const refAnimateTo =
  * @param {Object} dest The dictionary to animate to;
  * @param {number} time Time(in ms) to animate to the destination;
  * @param {Function} easingFunction A function [0, 1] -> [0, 1 ~ ] that determines the easing of the animation;
+ * @param {Object} finalSnapTo The object to snap to after the animation is done, defaults to dest;
  */
-export const refAnimateToObject =
-    (refObject, dest, time, easingFunction = easeLinear) => {
-        const start = refObject.value;
-        const animationStepsTotal = time / animationRefreshInterval;
-        let animationStep = 0;
+export const refAnimateToObject = (refObject, dest, time, easingFunction = easeLinear, finalSnapTo = dest) => {
+    const start = { ...refObject.value };
+    const animationStepsTotal = time / animationRefreshInterval;
+    let animationStep = 0;
+    let onUpdateCallback = () => { };
+    let onFinishCallback = () => { };
 
-        var animationContainer = setInterval(() => {
-            for (const key in dest) {
-                refObject.value[key] = lerp(start[key], dest[key], easingFunction(animationStep / animationStepsTotal));
-            }
-            animationStep++;
-            if (animationStep > animationStepsTotal) {
-                // Move to end and clear interval
-                for (const key in dest) {
-                    refObject.value[key] = dest[key];
+    var animationContainer = setInterval(() => {
+        onUpdateCallback(refObject);
+        for (const key in dest) {
+            refObject.value[key] = lerp(
+                start[key],
+                dest[key],
+                easingFunction(animationStep / animationStepsTotal)
+            );
+        }
+        animationStep++;
+        if (animationStep > animationStepsTotal) {
+            // Move to end and clear interval
+            if (finalSnapTo) {
+                for (const key in finalSnapTo) {
+                    refObject.value[key] = finalSnapTo[key];
                 }
-                clearInterval(animationContainer);
+                onUpdateCallback(refObject);
             }
-        }, animationRefreshInterval);
-    }
+            clearInterval(animationContainer);
+            onFinishCallback();
+        }
+    }, animationRefreshInterval);
+
+    return {
+        onUpdate(callback) {
+            onUpdateCallback = callback;
+            return this;
+        },
+        onFinish(callback) {
+            onFinishCallback = callback;
+            return this;
+        }
+    };
+};
