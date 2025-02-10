@@ -18,7 +18,7 @@ const showInfo = ref(false);
                 <ion-icon name="information-outline" class="form-button" size="large"></ion-icon>
             </div>
             <div class="r-divider-bg clickable a-fade-in a-delay-3"
-                @click="router.push('/album')"
+                @click="router.push('/login')"
                 @mouseover="curAtButton = 'play'" @mouseleave="curAtButton = 'none'">
                 <ion-icon name="play-outline" class="form-button" size="large"></ion-icon>
             </div>

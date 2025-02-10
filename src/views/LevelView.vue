@@ -210,7 +210,7 @@ onMounted(async () => {
     await loadLevelConfig();
     cnt.value = 0;
     gameState.value.particles.forEach((particle, index) => {
-        particle.id = `particle-${index}`;
+        particle.id = `p-${index}`;
     });
     window.addEventListener('keydown', handleKeydown);
     

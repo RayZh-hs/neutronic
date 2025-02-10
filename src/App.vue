@@ -3,7 +3,8 @@ import { c, darkTheme } from 'naive-ui';
 import AbstractBackground from './components/AbstractBackground.vue';
 import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
-//import { username, password } from './views/UserLoginView.vue';
+import { ref, computed } from 'vue';
+
 const openGitHub = () => {
   window.open("https://github.com/RayZh-hs/neutronic", "_blank");
 };
@@ -16,6 +17,12 @@ const showUserInfo = ref(false);
 const toggleUserInfo = (state) => {
   showUserInfo.value = state;
 };
+
+const userCredentials = ref({ username: '', password: '' });
+
+const handleUpdateCredentials = (credentials) => {
+  userCredentials.value = credentials;
+};
 </script>
 
 <template>
@@ -27,19 +34,19 @@ const toggleUserInfo = (state) => {
           <!-- main starts here -->
           <main>
             <div class="header">
-              <!--<IonButton v-if="showUserButton" name="person-circle-outline" size="2rem"
+              <IonButton v-if="showUserButton" name="person-circle-outline" size="2rem"
                 class="user-info"
                 @mouseover="toggleUserInfo(true)"
-                @mouseleave="toggleUserInfo(false)" />
-                <div v-if="showUserInfo" class="user-info-box">
-                <p>Username: {{ username }}</p>
-                <p>Password: {{ password }}</p>
-                </div>-->
+                @mouseleave="toggleUserInfo(false)"/>
+              <div v-if="showUserInfo" class="user-info__box">
+                <p>Username:</p>
+                <p>{{ userCredentials.username }}</p>
+              </div>
               <IonButton name="logo-github" size="2rem" aria-label="github" @click="openGitHub" />
             </div>
             <router-view v-slot="{ Component }">
               <!-- <transition name="zoom" mode="out-in"> -->
-                <component :is="Component" />
+                <component :is="Component" @updateCredentials="handleUpdateCredentials"/>
               <!-- </transition> -->
             </router-view>
             <div class="footer">
@@ -59,7 +66,6 @@ const toggleUserInfo = (state) => {
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-
   font-size: 0.8rem;
   color: $footnote-color;
 }
@@ -86,15 +92,22 @@ const toggleUserInfo = (state) => {
   display: flex;
   justify-content: flex-end;
 
-  /*&.user-info{
-    margin-right: 1rem;
-    &.user-info-box {
+  .user-info {
+    margin-right: 0.5rem;
+  }
+  .user-info__box {
       position: absolute;
-      top: 1rem;
-      background-color: rgba(230, 230, 230, 0.07);
-      border:1px solid rgba(237, 237, 237, 0.15);
-      box-shadow: 0 0 1rem rgba(0, 0, 0, 0.1);
-    }
-  }*/
+      top: 2rem;
+      width: 7rem;
+      height: 4rem;
+      background: $n-black;
+      border: 1px solid $n-dark-grey;
+      border-radius: 5%;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      p{
+        text-align: center;
+        margin: 0.5rem;
+      }
+  }
 }
 </style>
