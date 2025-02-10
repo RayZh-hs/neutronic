@@ -373,7 +373,7 @@ onMounted(async () => {
     await loadLevelConfig();
     stepsCounter.value = 0;
     gameState.value.particles.forEach((particle, index) => {
-        particle.id = `particle-${index}`;
+        particle.id = `p-${index}`;
     });
     gameState.value.containers.forEach((container, index) => {
         container.id = `container-${index}`;
