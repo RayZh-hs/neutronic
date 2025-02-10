@@ -83,11 +83,8 @@ $map-editor-right-selection-tools-font-size: 1rem;
 
 $map-editor-confirm-deletion-card-width: min(25rem, 60rem);
 
-//: Game Setting
+//: Game Animation Setting
 
-$game-grid-scale: 3.625rem;
-$game-grid-board-border: 0.31rem;
-$game-grid-portal-border: 0.625rem;
-$game-grid-container-background-color: rgba(230, 230, 230, 0.07);
-$game-grid-container-border-color: rgba(237, 237, 237, 0.15);
-
+$game-default-animation-duration: 0.2s;   // Is linked to gameDefaultAnimationDuration
+$game-dropout-animation-duration: 1s;     // Is linked to gameDropoutAnimationDuration
+$game-transport-animation-duration: 0.2s  // Is linked to gameTransportAnimationDuration

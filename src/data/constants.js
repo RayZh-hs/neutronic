@@ -29,6 +29,9 @@ export const levelPortalCycleColor = [
 export const levelPortalCycleColorCount = levelPortalCycleColor.length;
 export const levelMapPortalBackgroundAlpha = 0.15;  // Is linked to $map-portal-background-alpha
 export const gameRefreshFrequency = 60;
+export const gameDefaultAnimationDuration = 200;    // Is linked to $game-default-animation-duration
+export const gameDropoutAnimationDuration = 1000;   // Is linked to $game-dropout-animation-duration
+export const gameTransportAnimationDuration = 200;  // Is linked to $game-transport-animation-duration
 
 //: Level Editor
 export const levelEditorRefreshFrequency = 60;

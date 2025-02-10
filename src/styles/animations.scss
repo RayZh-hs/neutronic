@@ -77,3 +77,55 @@
         border-left: 1.2px solid $n-border-color;
     }
 }
+
+/* Common animations used in game */
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes fadeOutAndGrow {
+    0% {
+        opacity: 1;
+        scale: 1;
+    }
+
+    100% {
+        opacity: 0;
+        scale: 1.5;
+    }
+}
+
+@keyframes shrink {
+    0% {
+        scale: 1;
+    }
+
+    99% {
+        scale: 0;
+    }
+
+    100% {
+        scale: 0;
+        display: none;
+    }
+}
+
+@keyframes growAndBounceBack {
+    0% {
+        scale: 0;
+    }
+
+    50% {
+        scale: 1.2;
+    }
+
+    100% {
+        scale: 1;
+    }
+}
