@@ -46,7 +46,7 @@ const handleUpdateCredentials = (credentials) => {
             </div>
             <router-view v-slot="{ Component }">
               <!-- <transition name="zoom" mode="out-in"> -->
-                <component :is="Component" @updateCredentials="handleUpdateCredentials"/>
+                <component :is="Component" />
               <!-- </transition> -->
             </router-view>
             <div class="footer">
