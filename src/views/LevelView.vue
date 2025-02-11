@@ -7,6 +7,7 @@ import { useElementBounding } from '@vueuse/core';
 const router = useRouter();
 
 //: Custom Data and Components
+import IonButton from '@/components/IonButton.vue';
 import { levelMapGridScaleRem, levelMapGridScalePx } from "@/data/constants"
 import { levelPortalCycleColor, levelMapPortalBackgroundAlpha, gameDefaultAnimationDuration, gameDropoutAnimationDuration } from "@/data/constants";
 import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
@@ -16,6 +17,7 @@ import { randomIntFromInterval } from '@/functions/mathUtils';
 //: Map Setup
 const name = ref('');
 const author = ref('');
+const stepsGoal = ref(0);
 const levelId = router.currentRoute.value.params.levelId;
 const gameState = ref({ containers: [], particles: [] });
 const mapSize = ref({ rows: 0, columns: 0 });
@@ -28,8 +30,10 @@ const refViewPort = ref(null);
 const isLevelLoaded = ref(false);
 const isPanning = ref(false);
 const isCustomAnimating = ref(false);
-const isStartingOrEndingAnimation = ref(false);
+const isStartingAnimation = ref(false);
+// const isEndingAnimation     = ref(false);
 const disableInteraction = ref(false);
+const hasWon = ref(false);
 
 const canInteract = computed(() => isLevelLoaded.value && !isPanning.value && !disableInteraction.value);
 const doSmoothAnimate = computed(() => isLevelLoaded.value && !isPanning.value && !isCustomAnimating.value);
@@ -47,6 +51,7 @@ const loadLevelConfig = async () => {
         console.log("level config:", levelConfig);
         gameState.value.containers = JSON.parse(JSON.stringify(levelConfig.content.containers));
         gameState.value.particles = JSON.parse(JSON.stringify(levelConfig.content.particles));
+        stepsGoal.value = levelConfig.score.movesCount;
         isLevelLoaded.value = true;
     } catch (error) {
         console.error('Failed to load level config:', error);
@@ -113,9 +118,9 @@ const isMoveValid = (currentColor, currentId, newPos) => {
     if (existParticleWithColorAt(newPos.row, newPos.column, currentColor)) return false;
     if (existPortalAt(newPos.row, newPos.column)) {
         const otherPortal = getOtherPortal(newPos.row, newPos.column);
-        console.log(otherPortal);
-        console.log("current id: ", currentId);
-        console.log("getParticleAt: ", getParticleAt(otherPortal.row, otherPortal.column));
+        // console.log(otherPortal);
+        // console.log("current id: ", currentId);
+        // console.log("getParticleAt: ", getParticleAt(otherPortal.row, otherPortal.column));
         if (existParticleWithColorAt(otherPortal.row, otherPortal.column, currentColor) && getParticleAt(otherPortal.row, otherPortal.column).id != currentId) return false;
     }
     return true;
@@ -142,6 +147,7 @@ const updateMapAfterCollision = (r, c) => {
     gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
 
     selected.value = null;
+    updateHasWon();
 };
 
 const animateInvalidMove = (particleId, direction) => {
@@ -149,7 +155,7 @@ const animateInvalidMove = (particleId, direction) => {
     const refOffset = ref({ x: 0, y: 0 });
     const shakeOffset = levelMapGridScalePx;
     const selectedParticleDOM = document.getElementById(particleId);
-    console.log(selectedParticleDOM);
+    // console.log(selectedParticleDOM);
     refAnimateToObject(
         refOffset,
         {
@@ -178,16 +184,16 @@ const createShadowParticleFrom = (source) => {
     var shadowParticleNode = source.cloneNode(true);
     shadowParticleNode.id = `shadow-${source.id}`;
     shadowParticleNode.classList.add('shadow-particle');
-    console.log(shadowParticleNode);
+    // console.log(shadowParticleNode);
     refViewPort.value.appendChild(shadowParticleNode);
 }
 const collapseContainerAt = (r, c) => {
     const container = getContainerAt(r, c);
-    console.log(container);
+    // console.log(container);
     if (container) {
         const containerNode = document.getElementById(container.id);
         containerNode.classList.add('container--collapse');
-        console.log(containerNode);
+        // console.log(containerNode);
     }
 }
 const makeBoardFrom = (r, c) => {
@@ -196,6 +202,16 @@ const makeBoardFrom = (r, c) => {
         const containerNode = document.getElementById(container.id);
         containerNode.classList.add('container--becoming-board');
     }
+}
+const updateHasWon = () => {
+    console.log("particles: ", gameState.value.particles.length);
+    if (gameState.value.particles.length === 0) {
+        hasWon.value = true;
+        triggerEndingAnimation();
+    }
+}
+const triggerEndingAnimation = () => {
+    changeObscurityForAll(true, gameEntranceFocusAnimationRange);
 }
 
 const moveParticle = (direction) => {
@@ -275,7 +291,7 @@ const moveParticle = (direction) => {
                     const collidingParticles = getParticlesAt(otherPortalCoord.row, otherPortalCoord.column);
                     collidingParticles.forEach(particle => particle.colliding = true);
                     collapseContainerAt(otherPortalCoord.row, otherPortalCoord.column);
-                    console.log("currentBoard: ", currentRow, currentColumn);
+                    // console.log("currentBoard: ", currentRow, currentColumn);
                     makeBoardFrom(currentRow, currentColumn);
 
                     setTimeout(() => {
@@ -330,7 +346,7 @@ const containersWithAttr = computed(() => {
 
 const { width, height } = useElementBounding(refViewPort);
 const additionalCenteringOffset = computed(() => {
-    console.log(width.value, height.value, levelMapGridScalePx * (mapSize.value.rows));
+    // console.log(width.value, height.value, levelMapGridScalePx * (mapSize.value.rows));
     return {
         x: (width.value - levelMapGridScalePx * (mapSize.value.columns)) / 2,
         y: (height.value - levelMapGridScalePx * (mapSize.value.rows)) / 2
@@ -384,9 +400,14 @@ const changeObscurityForAll = (value, delayRange) => {
             }, randomIntFromInterval(delayRange.min, delayRange.max));
         });
 }
+const getGameRank = () => {
+    return stepsCounter.value <= stepsGoal.value ? 'Perfect' : 'Pass';
+}
 
+import { gameEntranceTitleFadeOutDuration } from '@/data/constants';
 onMounted(async () => {
-    isStartingOrEndingAnimation.value = true;
+    hasWon.value = false;
+    isStartingAnimation.value = true;
     disableInteraction.value = true;    // Wait for entrance animation to finish
     setTimeout(() => {
         while (!isLevelLoaded.value);
@@ -397,8 +418,11 @@ onMounted(async () => {
             document.querySelector('.viewport__level-name').classList.add('obscure-fade-out');
             // Finally, enable interaction
             disableInteraction.value = false;
-            isStartingOrEndingAnimation.value = false;
         }, gameEntranceFocusAnimationRange.min);
+        setTimeout(() => {
+            // This value, used in determining the v-show for the level name, is set to false last
+            isStartingAnimation.value = false;
+        }, gameEntranceFocusAnimationRange.max);
     }, gameEntranceTitleAnimationDuration);
     await loadLevelConfig();
     stepsCounter.value = 0;
@@ -417,28 +441,31 @@ onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleKeydown);
     selected.value = null;
 });
-
-const hasWon = computed(() => {
-    return isLevelLoaded.value && gameState.value.particles.length === 0;
-});
 </script>
 
 <template>
     <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="router.go(-1)"></ion-icon>
-    <!-- <div class="steps-container">
-        <div class="number">{{ stepsCounter }}</div>
-        <div class="string">Steps</div>
-    </div> -->
-    <div class="viewport" :class="{ disabled: hasWon }" @mousedown.middle.prevent="onPanStartWrapper"
-        @mouseup.middle.prevent="onPanEndWrapper" @mouseleave="onPanEndWrapper" ref="refViewPort">
-        <h1 class="viewport__level-name a-fade-in">{{ name }}</h1>
+    <div class="viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
+        @mouseleave="onPanEndWrapper" ref="refViewPort">
+        <div class="steps-complex a-fade-in" v-show="!isStartingAnimation && !hasWon">
+            <div class="steps-wrapper u-rel">
+                <span class="steps-complex__steps-count">{{ stepsCounter }}</span>
+                <span class="steps-complex__steps-label">/</span>
+                <span class="steps-complex__steps-aim">{{ stepsGoal }}</span>
+                <div class="u-rel u-gap-14"></div>
+                <ion-button name="refresh-outline" size="1.6rem" class="reset-btn"
+                    @click="router.go(router.currentRoute.value)"
+                ></ion-button>
+            </div>
+        </div>
+        <h1 class="viewport__level-name a-fade-in" v-show="isStartingAnimation">{{ name }}</h1>
 
         <div v-for="(container, index) in containersWithAttr" :key="container.id" :style="container.style"
             class="container" :class="{
                 ['container--' + container.className]: true,
                 'obscure': container.obscure,
-                'a-fade-in-raw': isStartingOrEndingAnimation,
-                'a-delay-12': isStartingOrEndingAnimation
+                'a-fade-in-raw': isStartingAnimation,
+                'a-delay-12': isStartingAnimation
             }" :id="container.id">
         </div>
         <div v-for="particle in gameState.particles" :key="particle.id" :style="getPositionForParticles(particle)"
@@ -447,8 +474,8 @@ const hasWon = computed(() => {
                 ['particle--' + 'active']: selected === particle,
                 'particle--collided': particle.colliding,
                 'obscure': particle.obscure,
-                'a-fade-in-raw': isStartingOrEndingAnimation,
-                'a-delay-12': isStartingOrEndingAnimation
+                'a-fade-in-raw': isStartingAnimation,
+                'a-delay-12': isStartingAnimation
             }" :id="particle.id">
         </div>
         <!-- <p style="position: absolute; top: 1rem">
@@ -456,47 +483,43 @@ const hasWon = computed(() => {
             {{ mapSize }}
             {{ { isCustomAnimating, disableInteraction } }}
         </p> -->
+        <!-- Messages shown when the game ends -->
+        <div class="end-info-container" v-show="hasWon">
+            <h1 class="end-info-container__rank a-fade-in a-delay-12" :class="{
+                'end-info-container__rank--perfect': stepsCounter <= stepsGoal,
+                'end-info-container__rank--pass': stepsCounter > stepsGoal
+            }">{{ getGameRank() }}</h1>
+            <h2 class="end-info-container__score a-fade-in a-delay-4">Your score: <span>
+                    {{ stepsCounter }}/{{ stepsGoal }}
+                </span></h2>
+            <div class="end-info__button-group">
+                <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
+                    <template #trigger>
+                        <ion-button name="refresh-outline" class="a-fade-in a-delay-12"></ion-button>
+                    </template>
+                    <span>Restart</span>
+                </n-tooltip>
+                <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
+                    <template #trigger>
+                        <ion-button name="apps-outline" class="a-fade-in a-delay-14"></ion-button>
+                    </template>
+                    <span>Level Select</span>
+                </n-tooltip>
+                <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
+                    <template #trigger>
+                        <ion-button name="chevron-forward-outline" class="a-fade-in a-delay-16"></ion-button>
+                    </template>
+                    <span>Next Level</span>
+                </n-tooltip>
+                <!-- <ion-button name="refresh-outline"></ion-button>
+                <ion-button name="apps-outline"></ion-button>
+                <ion-button name="chevron-forward-outline"></ion-button> -->
+            </div>
+        </div>
     </div>
-    <n-modal v-model:show="hasWon" class="slide-in-modal" @update:show="(value) => { if (!value) router.go(-1); }">
-        <n-card title="Congratulations" class="win-message">
-            <p>You Win!</p>
-            <n-divider></n-divider>
-        </n-card>
-    </n-modal>
 </template>
 
 <style lang="scss" scoped>
-@keyframes slide-in {
-    from {
-        transform: translateY(-100%);
-        opacity: 0.2;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.slide-in-modal {
-    width: 20rem;
-    height: 10rem;
-    animation: slide-in 0.4s ease-out;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1;
-}
-
-.win-message {
-    // text-shadow: 0px 0px 0.5rem rgba(39, 236, 21, 0.3);
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    z-index: 1;
-}
-
 .back-to-home-btn {
     position: fixed;
     left: 0;
@@ -515,50 +538,37 @@ const hasWon = computed(() => {
     }
 }
 
-.steps-container {
-    position: fixed;
-    top: 8rem;
-    right: 12rem;
-    width: 7rem;
-    height: 5.5rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    // background: $game-grid-container-background-color;
-    // border: 1px solid $game-grid-container-border-color;
-    border-radius: 0.5rem;
+.steps-complex {
+    position: absolute;
+    left: 50%;
+    top: 1rem;
+    font-family: "Electrolize", serif;
+    transition: all 0.3s;
 
-
-    .number {
-        font-family: 'Game of Squids';
-        font-size: 3.5rem;
-        height: 3.2rem;
-        color: transparent;
-        -webkit-text-stroke: 0.2rem rgba(227, 60, 100, 1);
-        filter: blur(0.25px);
+    .steps-wrapper {
+        transform: translateX(-50%);
         display: flex;
-        align-items: center;
-        justify-content: center;
-        user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-    }
+        align-items: baseline;
 
-    .string {
-        // font-family: 'Borned';
-        font-size: 1rem;
-        color: rgba(237, 237, 237, 0.81);
-        user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
+        .steps-complex__steps-count {
+            font-size: 1.5rem;
+            color: $n-primary;
+        }
+
+        .steps-complex__steps-label {
+            margin: 0.25rem;
+        }
+
+        .reset-btn {
+            margin: auto 0;
+        }
     }
 }
 
 .viewport {
     position: relative;
     display: flex;
+    flex-direction: column;
     top: 0;
     left: 0;
     width: 80vw;
@@ -575,12 +585,7 @@ const hasWon = computed(() => {
         letter-spacing: $level-name-letter-spacing;
 
         animation-duration: $game-entrance-title-animation-duration;
-        ;
-    }
 
-    &.disabled {
-        pointer-events: none;
-        opacity: 0.5;
     }
 
     .container {
@@ -695,12 +700,56 @@ const hasWon = computed(() => {
     }
 }
 
+.end-info-container {
+    display: flex;
+    flex-direction: column;
+
+    h1,
+    h2 {
+        margin: 0;
+    }
+
+    h1.end-info-container__rank {
+        font-family: "Electrolize", serif;
+        font-size: $level-end-info-rank-font-size;
+        text-transform: uppercase;
+        letter-spacing: $level-end-info-rank-letter-spacing;
+        color: $n-primary;
+
+        margin-bottom: 1.2rem;
+
+        &.end-info-container__rank--perfect {
+            color: $level-map-rank-perfect-color;
+        }
+
+        &.end-info-container__rank--pass {
+            color: $level-map-rank-pass-color;
+        }
+    }
+
+    h2.end-info-container__score {
+        font-family: "Electrolize", serif;
+        font-size: $level-end-info-score-font-size;
+        letter-spacing: $level-end-info-score-letter-spacing;
+
+        margin-bottom: 2rem;
+    }
+
+    .end-info__button-group {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+// Utility classes come last
 .obscure {
     filter: blur(0.5rem);
     opacity: 0 !important;
 }
 
 .obscure-fade-out {
-    animation: blurAndFadeOut 4s forwards;
+    animation: blurAndFadeOut forwards;
 }
 </style>

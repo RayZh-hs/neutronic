@@ -10,7 +10,21 @@ $n-light-grey: #f8f9fa;
 $n-grey: #6c757d;
 $n-dark-grey: #484d52;
 
-//: Color Binding
+// The most important colors and bound to the CSS variables
+body {
+    --n-red: #f03c24;
+    --n-blue: #007bff;
+    --n-primary: #6af5b9;
+
+    --n-white: #efefef;
+    --n-black: #212121;
+
+    --n-light-grey: #f8f9fa;
+    --n-grey: #6c757d;
+    --n-dark-grey: #484d52;
+}
+
+//: Misc Color Binding
 
 $footnote-color: $n-grey;
 $n-ion-button-hover-color: $n-primary;
@@ -31,7 +45,12 @@ $level-select-grid-gap: 1rem;
 
 $level-name-font-size: 1.2rem;
 $level-name-letter-spacing: 5pt;
-$game-entrance-title-animation-duration: 1s;   // Is linked to gameEntranceTitleAnimationDuration
+$game-entrance-title-animation-duration: 1s;    // Is linked to gameEntranceTitleAnimationDuration
+$game-entrance-title-fade-out-duration: 4s;     // Is linked to gameEntranceTitleFadeOutDuration
+
+$step-counter-font-size: 2.8rem;
+$step-counter-label-font-size: 1rem;
+$step-counter-aim-font-size: 1.5rem;
 
 $level-map-grid-scale: 4rem;    // Is linked to levelMapGridScale, levelMapGridScalePx
 $level-map-grid-color: rgba($n-white, 0.5);
@@ -53,6 +72,14 @@ $level-map-active-particle-ring-diameter: 2.2rem;
 $level-map-active-particle-ring-weight: 0.18rem;
 $level-map-active-positron-border-color: rgba($n-red, 1);
 $level-map-active-electron-border-color: rgba($n-blue, 1);
+
+$level-map-rank-pass-color: $n-blue;
+$level-map-rank-perfect-color: $n-primary;
+
+$level-end-info-rank-font-size: 2.5rem;
+$level-end-info-rank-letter-spacing: 2pt;
+$level-end-info-score-font-size: 1.5rem;
+$level-end-info-score-letter-spacing: 0.5pt;
 
 //: Map Editor Setting
 

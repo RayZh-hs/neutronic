@@ -32,10 +32,11 @@ export const gameRefreshFrequency = 60;
 export const gameDefaultAnimationDuration = 200;    // Is linked to $game-default-animation-duration
 export const gameDropoutAnimationDuration = 1000;   // Is linked to $game-dropout-animation-duration
 export const gameTransportAnimationDuration = 200;  // Is linked to $game-transport-animation-duration
-export const gameEntranceTitleAnimationDuration = 1000;  // Is linked to $game-entrance-title-animation-duration
+export const gameEntranceTitleAnimationDuration = 1000; // Is linked to $game-entrance-title-animation-duration
+export const gameEntranceTitleFadeOutDuration = 4000;   // Is linked to $game-entrance-title-fade-out-duration
 export const gameEntranceFocusAnimationRange = {
-    min: 600,
-    max: 1200,
+    min: 0,
+    max: 600,
 }
 
 //: Level Editor
