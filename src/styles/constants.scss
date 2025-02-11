@@ -29,6 +29,10 @@ $level-select-grid-gap: 1rem;
 
 //: Level Map Setting
 
+$level-name-font-size: 1.2rem;
+$level-name-letter-spacing: 5pt;
+$game-entrance-title-animation-duration: 1s;   // Is linked to gameEntranceTitleAnimationDuration
+
 $level-map-grid-scale: 4rem;    // Is linked to levelMapGridScale, levelMapGridScalePx
 $level-map-grid-color: rgba($n-white, 0.5);
 $level-map-background-color: rgba($n-dark-grey, 0.05);

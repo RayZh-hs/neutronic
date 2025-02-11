@@ -9,7 +9,9 @@ const router = useRouter();
 //: Custom Data and Components
 import { levelMapGridScaleRem, levelMapGridScalePx } from "@/data/constants"
 import { levelPortalCycleColor, levelMapPortalBackgroundAlpha, gameDefaultAnimationDuration, gameDropoutAnimationDuration } from "@/data/constants";
+import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
 import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils';
+import { randomIntFromInterval } from '@/functions/mathUtils';
 
 //: Map Setup
 const name = ref('');
@@ -26,6 +28,7 @@ const refViewPort = ref(null);
 const isLevelLoaded = ref(false);
 const isPanning = ref(false);
 const isCustomAnimating = ref(false);
+const isStartingOrEndingAnimation = ref(false);
 const disableInteraction = ref(false);
 
 const canInteract = computed(() => isLevelLoaded.value && !isPanning.value && !disableInteraction.value);
@@ -354,6 +357,7 @@ const getPositionForContainers = (item) => {
                 border: `1px solid ${hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha * 3)}`,
                 borderRadius: `0.625rem`
             } : {}),
+            transition: doSmoothAnimate.value ? `all ${gameDefaultAnimationDuration}ms ease-out` : 'none'
         },
         className: item.classes.join(' ')
     };
@@ -369,14 +373,42 @@ const getPositionForParticles = (item) => {
     };
 };
 
+const changeObscurityForAll = (value, delayRange) => {
+    // Give a random time offset before removing the blur
+    [gameState.value.particles, gameState.value.containers].flat()
+        .forEach(obj => {
+            setTimeout(() => {
+                // const particleNode = document.getElementById(`p-${index}`);
+                // particleNode.classList.remove('obscure');
+                obj.obscure = value;
+            }, randomIntFromInterval(delayRange.min, delayRange.max));
+        });
+}
+
 onMounted(async () => {
+    isStartingOrEndingAnimation.value = true;
+    disableInteraction.value = true;    // Wait for entrance animation to finish
+    setTimeout(() => {
+        while (!isLevelLoaded.value);
+        console.log("Level loaded");
+        // Disable the blur effect
+        changeObscurityForAll(false, gameEntranceFocusAnimationRange);
+        setTimeout(() => {
+            document.querySelector('.viewport__level-name').classList.add('obscure-fade-out');
+            // Finally, enable interaction
+            disableInteraction.value = false;
+            isStartingOrEndingAnimation.value = false;
+        }, gameEntranceFocusAnimationRange.min);
+    }, gameEntranceTitleAnimationDuration);
     await loadLevelConfig();
     stepsCounter.value = 0;
     gameState.value.particles.forEach((particle, index) => {
         particle.id = `p-${index}`;
+        particle.obscure = true;
     });
     gameState.value.containers.forEach((container, index) => {
         container.id = `container-${index}`;
+        container.obscure = true;
     });
     window.addEventListener('keydown', handleKeydown);
 });
@@ -399,17 +431,31 @@ const hasWon = computed(() => {
     </div> -->
     <div class="viewport" :class="{ disabled: hasWon }" @mousedown.middle.prevent="onPanStartWrapper"
         @mouseup.middle.prevent="onPanEndWrapper" @mouseleave="onPanEndWrapper" ref="refViewPort">
+        <h1 class="viewport__level-name a-fade-in">{{ name }}</h1>
+
         <div v-for="(container, index) in containersWithAttr" :key="container.id" :style="container.style"
-            class="container" :class="'container--' + container.className" :id="container.id">
+            class="container" :class="{
+                ['container--' + container.className]: true,
+                'obscure': container.obscure,
+                'a-fade-in-raw': isStartingOrEndingAnimation,
+                'a-delay-12': isStartingOrEndingAnimation
+            }" :id="container.id">
         </div>
         <div v-for="particle in gameState.particles" :key="particle.id" :style="getPositionForParticles(particle)"
-            @click="handleSelectParticle(particle)" class="particle"
-            :class="{ ['particle--' + particle.color]: true, ['particle--' + 'active']: selected === particle, 'particle--collided': particle.colliding }"
-            :id="particle.id">
+            @click="handleSelectParticle(particle)" class="particle" :class="{
+                ['particle--' + particle.color]: true,
+                ['particle--' + 'active']: selected === particle,
+                'particle--collided': particle.colliding,
+                'obscure': particle.obscure,
+                'a-fade-in-raw': isStartingOrEndingAnimation,
+                'a-delay-12': isStartingOrEndingAnimation
+            }" :id="particle.id">
         </div>
-        {{ panningOffset }}
-        {{ mapSize }}
-        {{ { isCustomAnimating, disableInteraction } }}
+        <!-- <p style="position: absolute; top: 1rem">
+            {{ panningOffset }}
+            {{ mapSize }}
+            {{ { isCustomAnimating, disableInteraction } }}
+        </p> -->
     </div>
     <n-modal v-model:show="hasWon" class="slide-in-modal" @update:show="(value) => { if (!value) router.go(-1); }">
         <n-card title="Congratulations" class="win-message">
@@ -512,11 +558,25 @@ const hasWon = computed(() => {
 
 .viewport {
     position: relative;
+    display: flex;
     top: 0;
     left: 0;
     width: 80vw;
     height: 80vh;
     outline: 1px white solid;
+    align-items: center;
+    justify-content: center;
+
+    h1.viewport__level-name {
+        font-family: "Electrolize", serif;
+        font-size: $level-name-font-size;
+        text-transform: uppercase;
+        font-variant-caps: small-caps;
+        letter-spacing: $level-name-letter-spacing;
+
+        animation-duration: $game-entrance-title-animation-duration;
+        ;
+    }
 
     &.disabled {
         pointer-events: none;
@@ -526,14 +586,14 @@ const hasWon = computed(() => {
     .container {
         width: calc($level-map-grid-scale - $level-map-board-border-width * 2);
         height: calc($level-map-grid-scale - $level-map-board-border-width * 2);
-        opacity: 1;
+        // opacity: 1;
 
         &.container--collapse {
             animation: fadeOut $game-dropout-animation-duration forwards;
         }
 
         &.container--becoming-board {
-            transition: all $game-dropout-animation-duration ease-out;
+            transition: all $game-dropout-animation-duration ease-out !important;
             background: $level-map-board-background-color !important;
             border: $level-map-board-border-width solid $level-map-board-border-color !important;
             border-radius: 0 !important;
@@ -633,5 +693,14 @@ const hasWon = computed(() => {
             // opacity: 0.9;
         }
     }
+}
+
+.obscure {
+    filter: blur(0.5rem);
+    opacity: 0 !important;
+}
+
+.obscure-fade-out {
+    animation: blurAndFadeOut 4s forwards;
 }
 </style>
