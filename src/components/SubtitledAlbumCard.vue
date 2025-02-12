@@ -75,6 +75,7 @@ const emits = defineEmits(['click']);
     margin-bottom: 2rem;
 
     span {
+        font-size: min(1rem, 2vw);
         font-weight: 200;
         letter-spacing: 2pt;
         margin: 0;
