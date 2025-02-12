@@ -30,6 +30,11 @@ $footnote-color: $n-grey;
 $n-ion-button-hover-color: $n-primary;
 $n-border-color: #d4d4d498;
 
+//: Login Setting
+
+$user-login-methods-container-width: max(min(55vw, 44rem), 30rem);
+$user-login-methods-button-height: 50vh;
+
 //: Pagination Setting
 
 $pagination-bg-color: $n-light-grey;

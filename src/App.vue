@@ -11,18 +11,11 @@ const openGitHub = () => {
 const route = useRoute();
 
 const showUserButton = computed(() => {
-  return route.path !== '/' && route.path !== '/login';
+  return ![
+    '/',
+    '/login',
+  ].includes(route.path);
 });
-const showUserInfo = ref(false);
-const toggleUserInfo = (state) => {
-  showUserInfo.value = state;
-};
-
-const userCredentials = ref({ username: '', password: '' });
-
-const handleUpdateCredentials = (credentials) => {
-  userCredentials.value = credentials;
-};
 </script>
 
 <template>
@@ -34,19 +27,20 @@ const handleUpdateCredentials = (credentials) => {
           <!-- main starts here -->
           <main>
             <div class="header">
-              <IonButton v-if="showUserButton" name="person-circle-outline" size="2rem"
-                class="user-info"
-                @mouseover="toggleUserInfo(true)"
-                @mouseleave="toggleUserInfo(false)"/>
-              <div v-if="showUserInfo" class="user-info__box">
-                <p>Username:</p>
-                <p>{{ userCredentials.username }}</p>
-              </div>
+              <n-popover trigger="hover" raw :show-arrow="false">
+                <template #trigger>
+                  <div>
+                    <IonButton name="person-circle-outline" size="2rem" class="header__user-button"
+                      v-if="showUserButton" />
+                  </div>
+                </template>
+                <div>Something</div>
+              </n-popover>
               <IonButton name="logo-github" size="2rem" aria-label="github" @click="openGitHub" />
             </div>
             <router-view v-slot="{ Component }">
               <!-- <transition name="zoom" mode="out-in"> -->
-                <component :is="Component" />
+              <component :is="Component" />
               <!-- </transition> -->
             </router-view>
             <div class="footer">
@@ -75,11 +69,13 @@ const handleUpdateCredentials = (credentials) => {
   transform: scale(1.04);
 }
 
-.zoom-enter-active, .zoom-leave-active {
+.zoom-enter-active,
+.zoom-leave-active {
   transition: opacity 0.3s, transform 0.3s;
 }
 
-.zoom-enter-to, .zoom-leave-from {
+.zoom-enter-to,
+.zoom-leave-from {
   opacity: 1;
   transform: scale(1);
 }
@@ -92,22 +88,8 @@ const handleUpdateCredentials = (credentials) => {
   display: flex;
   justify-content: flex-end;
 
-  .user-info {
-    margin-right: 0.5rem;
-  }
-  .user-info__box {
-      position: absolute;
-      top: 2rem;
-      width: 7rem;
-      height: 4rem;
-      background: $n-black;
-      border: 1px solid $n-dark-grey;
-      border-radius: 5%;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      p{
-        text-align: center;
-        margin: 0.5rem;
-      }
+  .header__user-button {
+    margin-right: 1rem;
   }
 }
 </style>
