@@ -23,6 +23,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+webstorm.config.js
+jsconfig.json
 
 # Custom Snippets
 load.sh
