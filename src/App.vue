@@ -1,9 +1,11 @@
 <script setup>
 import { c, darkTheme } from 'naive-ui';
 import AbstractBackground from './components/AbstractBackground.vue';
+import AccountCard from './components/AccountCard.vue';
 import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
-import { ref, computed } from 'vue';
+import { ref, computed, onBeforeMount } from 'vue';
+import { useCookies } from '@vueuse/integrations/useCookies';
 
 const openGitHub = () => {
   window.open("https://github.com/RayZh-hs/neutronic", "_blank");
@@ -16,6 +18,15 @@ const showUserButton = computed(() => {
     '/login',
   ].includes(route.path);
 });
+
+//: Account info
+
+const cookies = useCookies(['neutronic-account-auth']);
+
+onBeforeMount(() => {
+  // Setup the account info as visitor
+  cookies.set('neutronic-account-auth', { 'type': 'local', 'username': null, 'hashedPassword': null })
+})
 </script>
 
 <template>
@@ -27,14 +38,14 @@ const showUserButton = computed(() => {
           <!-- main starts here -->
           <main>
             <div class="header">
-              <n-popover trigger="hover" raw :show-arrow="false">
+              <n-popover trigger="hover" raw placement="bottom-end">
                 <template #trigger>
-                  <div>
+                  <div class="header__user-button-wrapper">
                     <IonButton name="person-circle-outline" size="2rem" class="header__user-button"
                       v-if="showUserButton" />
                   </div>
                 </template>
-                <div>Something</div>
+                <AccountCard />
               </n-popover>
               <IonButton name="logo-github" size="2rem" aria-label="github" @click="openGitHub" />
             </div>
@@ -88,7 +99,7 @@ const showUserButton = computed(() => {
   display: flex;
   justify-content: flex-end;
 
-  .header__user-button {
+  .header__user-button-wrapper {
     margin-right: 1rem;
   }
 }
