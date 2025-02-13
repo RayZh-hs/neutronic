@@ -36,13 +36,14 @@ import { router } from '../router';
 
 //: Custom json setup
 
-import { SERVER_URL } from '@/data/constants';
+// import { SERVER_URL } from '@/data/constants';
 // import album from "../data/album.json";
 // import player from "../data/player.json";
-import { useAxiosWithStore } from '@/functions/useAxiosWithStore';
+// import { useAxiosWithStore } from '@/functions/useAxiosWithStore';
 import { getAccountProgress } from '@/functions/useAccount';
+import { album, isAlbumLoaded } from '@/functions/useAlbum';
 // let album = ref(null);
-const { data: album, isFinished: isAlbumLoaded } = useAxiosWithStore('neutronic-album', SERVER_URL + "/albums", 'GET');
+// const { data: album, isFinished: isAlbumLoaded } = useAxiosWithStore('neutronic-album', SERVER_URL + "/albums", 'GET');
 const player = getAccountProgress();
 
 console.log(album);
