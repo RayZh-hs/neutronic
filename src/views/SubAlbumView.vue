@@ -1,6 +1,7 @@
 <script setup>
 
 import { useRouter } from 'vue-router';
+import { ref } from 'vue';
 
 const router = useRouter();
 
@@ -11,14 +12,18 @@ import SimpleLevelCard from '../components/SimpleLevelCard.vue';
 
 //: Custom json setup
 
-import album from "../data/album.json";
-import player from "../data/player.json";
-import { ref } from 'vue';
+// import album from "../data/album.json";
+// import player from "../data/player.json";
+import { album, isAlbumLoaded } from '@/functions/useAlbum';
+import { getAccountProgress } from '@/functions/useAccount';
+
+const player = getAccountProgress();
 
 const albumId = Number(router.currentRoute.value.params.id);
-const total = album[albumId].levels.length;
-const perfects = player.progress[albumId].perfected.length;
-const passes = player.progress[albumId].passed.length;
+const total = album.value[albumId].levels.length;
+const playerProgress = player.lookup[album.value[albumId].name];
+const perfects = playerProgress.perfected;
+const passes = playerProgress.passed;
 
 const sliceWindow = ref({
     begin: 0,
@@ -38,11 +43,11 @@ const prevWindow = () => {
 }
 
 const getStatus = (level) => {
-    if (player.progress[albumId].perfected.includes(album[albumId].levels[level - 1].uuid)){
+    if (player.perfected.includes(album.value[albumId].levels[level - 1].uuid)){
         return 'perfect';
-    } else if (player.progress[albumId].passed.includes(album[albumId].levels[level - 1].uuid)){
+    } else if (player.passed.includes(album.value[albumId].levels[level - 1].uuid)){
         return 'finished';
-    } else if (level <= player.progress[albumId].openAt){
+    } else if (level <= playerProgress.passed + playerProgress.perfected + 1){
         return 'open';
     } else {
         return 'locked';
@@ -54,7 +59,7 @@ const getStatus = (level) => {
 <template>
     <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in"
         @click="router.push('/album')"></ion-icon>
-    <div class="wrapper">
+    <div class="wrapper" v-if="isAlbumLoaded">
         <div class="header-container">
             <h1 class="album-title a-fade-in">{{ album[albumId].name }}</h1>
             <div class="header-container__right a-fade-in a-delay-1">
@@ -81,6 +86,10 @@ const getStatus = (level) => {
             @click="nextWindow"
             :class="{disabled: sliceWindow.end >= total}"
         ></ion-icon>
+    </div>
+    <div class="not-found" v-else>
+        <h1>Album not loaded</h1>
+        <p>Please go to the front page.</p>
     </div>
 </template>
 
