@@ -5,7 +5,6 @@ import AccountCard from './components/AccountCard.vue';
 import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
 import { ref, computed, onBeforeMount } from 'vue';
-import { useCookies } from '@vueuse/integrations/useCookies';
 import { useStorage } from '@vueuse/core';
 
 const openGitHub = () => {
@@ -23,14 +22,13 @@ const showUserButton = computed(() => {
 //: Account info
 
 import defaultPlayerProgress from './data/defaultPlayerProgress.json';
-const cookies = useCookies(['neutronic-account-auth']);
 const accountProgress = useStorage('neutronic-account-progress', defaultPlayerProgress);
+const accountAuth = useStorage('neutronic-account-auth', { 'type': 'local', 'username': null, 'hashedPassword': null }, sessionStorage);
+// This will be built in time
+const accountMemory = useStorage('neutronic-account-memory', {
+  'lastLoginAccountId': null, 'lastAlbum': 0
+});
 
-onBeforeMount(() => {
-  // Setup the account info as visitor
-  cookies.set('neutronic-account-auth', { 'type': 'local', 'username': null, 'hashedPassword': null })
-  console.log(accountProgress.value)
-})
 </script>
 
 <template>

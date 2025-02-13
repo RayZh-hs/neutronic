@@ -1,24 +1,23 @@
 import { useStorage } from "@vueuse/core";
-import { useCookies } from "@vueuse/integrations/useCookies";
 
 import defaultPlayerProgress from "@/data/defaultPlayerProgress";
-const accountProgress = useStorage("account-progress", defaultPlayerProgress);
-
-const cookies = useCookies(['neutronic-account-auth']);
+const accountProgress = useStorage("neutronic-account-progress", defaultPlayerProgress);
+const accountAuth = useStorage("neutronic-account-auth", { type: 'local', username: null, password: null }, sessionStorage);
 
 export const getAccountAuth = () => {
-    return cookies.get('neutronic-account-auth');
+    return accountAuth.value;
 }
 
 export const getAccountProgress = () => {
     return accountProgress.value;
 }
 
-export const setAccountProgress = (newProgress) => {
-    if (getAccountAuth().value['type'] === 'regular') {
-        // The progress should be uploaded to the server
-        pushAccountProgress();
-    }
+export const setAndPushAccountProgress = (newProgress) => {
+    const accountAuth = getAccountAuth();
+    // if (accountAuth.value['type'] === 'regular') {
+    //     // The progress should be uploaded to the server
+    //     pushAccountProgress();
+    // }
     accountProgress.value = newProgress;
 }
 

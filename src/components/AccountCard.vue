@@ -1,14 +1,12 @@
 <script setup>
 
 import { onBeforeMount, onMounted, ref } from 'vue';
-import { useCookies } from '@vueuse/integrations/useCookies';
+import { useSessionStorage } from '@vueuse/core';
 
-const cookies = useCookies(['neutronic-account-auth']);
-const accountInfo = ref(null);
+const accountInfo = useSessionStorage('neutronic-account-auth', {});
 
 onMounted(() => {
     // This should be refreshed every time the card is mounted (ie. shown)
-    accountInfo.value = cookies.get('neutronic-account-auth');
     console.log(accountInfo.value)
 })
 
