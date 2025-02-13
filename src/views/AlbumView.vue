@@ -38,10 +38,12 @@ import { router } from '../router';
 
 import { SERVER_URL } from '@/data/constants';
 // import album from "../data/album.json";
-import player from "../data/player.json";
+// import player from "../data/player.json";
 import { useAxiosWithStore } from '@/functions/useAxiosWithStore';
+import { getAccountProgress } from '@/functions/useAccount';
 // let album = ref(null);
 const { data: album, isFinished: isAlbumLoaded } = useAxiosWithStore('neutronic-album', SERVER_URL + "/albums", 'GET');
+const player = getAccountProgress();
 
 console.log(album);
 
@@ -70,7 +72,7 @@ const jumpToReferent = () => {
             nextEl: '.forward-btn'
         }" :mousewheel="true" @swiper="updatePage" @slideChange="updatePage">
             <swiper-slide v-for="(item, num) in album.slice(0, 3)" :key="num">
-                <album-card :name="item.name" :locked="player.progress[num].locked" :total="item.levels.length" :passes="player.progress[num].passed.length" :perfects="player.progress[num].perfected.length" class="a-fade-in" 
+                <album-card :name="item.name" :locked="player.lookup[item.name] == undefined" :total="item.levels.length" :passes="player.lookup[item.name]?.passed" :perfects="player.lookup[item.name]?.perfected" class="a-fade-in" 
                     @click="jumpToReferent"
                 />
             </swiper-slide>
