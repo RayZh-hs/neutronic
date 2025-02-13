@@ -3,7 +3,7 @@
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { hexaToRgba } from "../functions/colorUtils";
-import { useElementBounding } from '@vueuse/core';
+import { useElementBounding, useSessionStorage } from '@vueuse/core';
 const router = useRouter();
 
 //: Custom Data and Components
@@ -13,6 +13,8 @@ import { levelPortalCycleColor, levelMapPortalBackgroundAlpha, gameDefaultAnimat
 import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
 import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils';
 import { randomIntFromInterval } from '@/functions/mathUtils';
+
+const levelViewConfig = useSessionStorage('level-view-config', {});
 
 //: Map Setup
 const name = ref('');
@@ -207,11 +209,32 @@ const updateHasWon = () => {
     console.log("particles: ", gameState.value.particles.length);
     if (gameState.value.particles.length === 0) {
         hasWon.value = true;
+        accountInsertHasWon();
         triggerEndingAnimation();
     }
 }
 const triggerEndingAnimation = () => {
     changeObscurityForAll(true, gameEntranceFocusAnimationRange);
+}
+
+import { getAccountProgress, setAndPushAccountProgress } from '@/functions/useAccount';
+const accountInsertHasWon = () => {
+    const account = getAccountProgress();
+    const rank = getGameRank();
+    if (rank === 'Perfect' && !account.perfected.includes(levelId)) {
+        account.perfected.push(levelId);
+        account.lookup[levelViewConfig.value.albumName].perfected += 1;
+        if (account.passed.includes(levelId)) {
+            account.passed = account.passed.filter(item => item !== levelId);
+            account.lookup[levelViewConfig.value.albumName].passed -= 1;
+        }
+    }
+    else if (rank === 'Pass' && !account.passed.includes(levelId) && !account.perfected.includes(levelId)) {
+        account.passed.push(levelId);
+        account.lookup[levelViewConfig.value.albumName].passed += 1;
+    }
+    else {return}
+    setAndPushAccountProgress(account);
 }
 
 const moveParticle = (direction) => {
@@ -404,8 +427,22 @@ const getGameRank = () => {
     return stepsCounter.value <= stepsGoal.value ? 'Perfect' : 'Pass';
 }
 
-import { gameEntranceTitleFadeOutDuration } from '@/data/constants';
+const restartGame = () => {
+    router.go(0)
+}
+const gotoLevelSelect = () => {
+    router.push(`/album/${router.currentRoute.value.params.id}`);
+}
+const gotoNextLevel = () => {
+    router.replace(levelViewConfig.value.next)
+    // refresh for the replacement to take effect
+    setTimeout(() => {
+        router.go(0);
+    }, 100);
+}
+
 onMounted(async () => {
+    
     hasWon.value = false;
     isStartingAnimation.value = true;
     disableInteraction.value = true;    // Wait for entrance animation to finish
@@ -444,7 +481,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="router.go(-1)"></ion-icon>
+    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="gotoLevelSelect"></ion-icon>
     <div class="viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
         @mouseleave="onPanEndWrapper" ref="refViewPort">
         <div class="steps-complex a-fade-in" v-show="!isStartingAnimation && !hasWon">
@@ -495,19 +532,25 @@ onBeforeUnmount(() => {
             <div class="end-info__button-group">
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                     <template #trigger>
-                        <ion-button name="refresh-outline" class="a-fade-in a-delay-12"></ion-button>
+                        <ion-button name="refresh-outline" class="a-fade-in a-delay-12"
+                            @click="router.go(0)"
+                        ></ion-button>
                     </template>
                     <span>Restart</span>
                 </n-tooltip>
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                     <template #trigger>
-                        <ion-button name="apps-outline" class="a-fade-in a-delay-14"></ion-button>
+                        <ion-button name="apps-outline" class="a-fade-in a-delay-14"
+                            @click="router.push('/album/$id'.replace('$id', router.currentRoute.value.params.id))"
+                        ></ion-button>
                     </template>
                     <span>Level Select</span>
                 </n-tooltip>
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                     <template #trigger>
-                        <ion-button name="chevron-forward-outline" class="a-fade-in a-delay-16"></ion-button>
+                        <ion-button name="chevron-forward-outline" class="a-fade-in a-delay-16"
+                            @click="gotoNextLevel"
+                        ></ion-button>
                     </template>
                     <span>Next Level</span>
                 </n-tooltip>
@@ -585,7 +628,6 @@ onBeforeUnmount(() => {
         letter-spacing: $level-name-letter-spacing;
 
         animation-duration: $game-entrance-title-animation-duration;
-
     }
 
     .container {

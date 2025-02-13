@@ -2,6 +2,7 @@
 
 import { useRouter } from 'vue-router';
 import { ref } from 'vue';
+import { useSessionStorage } from '@vueuse/core';
 
 const router = useRouter();
 
@@ -20,8 +21,9 @@ import { getAccountProgress } from '@/functions/useAccount';
 const player = getAccountProgress();
 
 const albumId = Number(router.currentRoute.value.params.id);
-const total = album.value[albumId].levels.length;
-const playerProgress = player.lookup[album.value[albumId].name];
+const albumObj = album.value[albumId];
+const total = albumObj.levels.length;
+const playerProgress = player.lookup[albumObj.name];
 const perfects = playerProgress.perfected;
 const passes = playerProgress.passed;
 
@@ -43,15 +45,31 @@ const prevWindow = () => {
 }
 
 const getStatus = (level) => {
-    if (player.perfected.includes(album.value[albumId].levels[level - 1].uuid)){
+    if (player.perfected.includes(albumObj.levels[level - 1].uuid)){
         return 'perfect';
-    } else if (player.passed.includes(album.value[albumId].levels[level - 1].uuid)){
+    } else if (player.passed.includes(albumObj.levels[level - 1].uuid)){
         return 'finished';
     } else if (level <= playerProgress.passed + playerProgress.perfected + 1){
         return 'open';
     } else {
         return 'locked';
     }
+}
+
+const enterLevel = (level) => {
+    sessionStorage.setItem('level-view-config', JSON.stringify({
+        type: 'album',
+        albumName: albumObj.name,
+        next: (() => {
+            if (level < albumObj.levels.length){
+                return `/album/${albumId}/${albumObj.levels[level].uuid}`;
+            } else {
+                // Is the last level in the album
+                return `/album/${albumId}`;
+            }
+        })(),
+    }));
+    router.push(`/album/${albumId}/${albumObj.levels[level-1].uuid}`);
 }
 
 </script>
@@ -75,7 +93,7 @@ const getStatus = (level) => {
                 :key="num + 1 + sliceWindow.begin"
                 :level="num + 1 + sliceWindow.begin"
                 :status="getStatus(num + 1 + sliceWindow.begin)"
-                @click="router.push(`/album/${albumId}/${item.uuid}`)"
+                @click="enterLevel(num + 1 + sliceWindow.begin)"
                 ></simple-level-card>
         </div>
         <ion-icon name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in"
