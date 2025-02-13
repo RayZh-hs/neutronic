@@ -1,6 +1,6 @@
 <script setup>
 
-import { ref } from 'vue';
+import { onBeforeMount, ref } from 'vue';
 
 //: Swiper-specific setup
 
@@ -36,8 +36,12 @@ import { router } from '../router';
 
 //: Custom json setup
 
-import album from "../data/album.json";
+import { SERVER_URL } from '@/data/constants';
+// import album from "../data/album.json";
 import player from "../data/player.json";
+import { useAxiosWithStore } from '@/functions/useAxiosWithStore';
+// let album = ref(null);
+const { data: album, isFinished: isAlbumLoaded } = useAxiosWithStore('neutronic-album', SERVER_URL + "/albums", 'GET');
 
 console.log(album);
 
@@ -58,21 +62,13 @@ const jumpToReferent = () => {
 
 <template>
     <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="router.push('/')"></ion-icon>
-    <div class="side-container">
+    <!-- <p v-if="isAlbumLoaded">{{ album }}</p> -->
+    <div class="side-container" v-if="isAlbumLoaded">
         <ion-icon name="chevron-back-outline" class="backward-btn"></ion-icon>
         <swiper ref="swiperRef" :pagination="pagination" :modules="modules" class="swiper" :navigation="{
             prevEl: '.backward-btn',
             nextEl: '.forward-btn'
         }" :mousewheel="true" @swiper="updatePage" @slideChange="updatePage">
-            <!-- <swiper-slide>
-                <album-card name="Naive" :locked="false" :total="20" :passes="12" :perfects="10" class="a-fade-in" />
-            </swiper-slide>
-            <swiper-slide>
-                <album-card name="Medium" :locked="false" :total="24" :passes="2" :perfects="0" class="a-fade-in" />
-            </swiper-slide>
-            <swiper-slide>
-                <album-card name="Difficult" :locked="true" :total="32" :passes="0" :perfects="0" class="a-fade-in" />
-            </swiper-slide> -->
             <swiper-slide v-for="(item, num) in album.slice(0, 3)" :key="num">
                 <album-card :name="item.name" :locked="player.progress[num].locked" :total="item.levels.length" :passes="player.progress[num].passed.length" :perfects="player.progress[num].perfected.length" class="a-fade-in" 
                     @click="jumpToReferent"

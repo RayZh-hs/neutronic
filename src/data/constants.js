@@ -10,6 +10,9 @@
  * It is also hoped that this added flexibility will allow for better maintainability in the future.
  */
 
+//: API
+export const SERVER_URL = "http://localhost:9721/api";
+
 //: Custom Selection
 export const customSelectionWindowSize = 5;
 

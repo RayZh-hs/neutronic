@@ -6,6 +6,7 @@ import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
 import { ref, computed, onBeforeMount } from 'vue';
 import { useCookies } from '@vueuse/integrations/useCookies';
+import { useStorage } from '@vueuse/core';
 
 const openGitHub = () => {
   window.open("https://github.com/RayZh-hs/neutronic", "_blank");
@@ -21,11 +22,14 @@ const showUserButton = computed(() => {
 
 //: Account info
 
+import defaultPlayerProgress from './data/defaultPlayerProgress.json';
 const cookies = useCookies(['neutronic-account-auth']);
+const accountProgress = useStorage('neutronic-account-progress', defaultPlayerProgress);
 
 onBeforeMount(() => {
   // Setup the account info as visitor
   cookies.set('neutronic-account-auth', { 'type': 'local', 'username': null, 'hashedPassword': null })
+  console.log(accountProgress.value)
 })
 </script>
 
