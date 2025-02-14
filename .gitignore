@@ -31,5 +31,6 @@ load.sh
 
 # Databases
 api/data/*.db
-api/data/maps/*
+api/data/*.db-*
+api/data/maps/extended/*
 api/data/backups/*
