@@ -15,7 +15,7 @@ const initDatabases = () => {
         levelId TEXT PRIMARY KEY,
         levelName TEXT NOT NULL,
         author TEXT NOT NULL,
-        lastUpdatedTime TEXT NOT NULL,
+        lastUpdatedTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         levelType INTEGER NOT NULL
     )
     `);
@@ -40,9 +40,8 @@ const getLevel = (levelId) => {
 
 // Insert a level into the database
 const insertLevel = (levelId, levelName, author, levelType) => {
-    const lastUpdatedTime = new Date().toISOString();
-    const stmt = levelDb.prepare('INSERT INTO levelTable VALUES (?, ?, ?, ?, ?)');
-    stmt.run(levelId, levelName, author, lastUpdatedTime, levelType);
+    const stmt = levelDb.prepare('INSERT INTO levelTable VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)');
+    stmt.run(levelId, levelName, author, levelType);
 }
 
 module.exports = {

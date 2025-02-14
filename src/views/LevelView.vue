@@ -4,11 +4,12 @@ import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { hexaToRgba } from "../functions/colorUtils";
 import { useElementBounding, useSessionStorage } from '@vueuse/core';
+import axios from 'axios';
 const router = useRouter();
 
 //: Custom Data and Components
 import IonButton from '@/components/IonButton.vue';
-import { levelMapGridScaleRem, levelMapGridScalePx } from "@/data/constants"
+import { levelMapGridScaleRem, levelMapGridScalePx, SERVER_URL } from "@/data/constants"
 import { levelPortalCycleColor, levelMapPortalBackgroundAlpha, gameDefaultAnimationDuration, gameDropoutAnimationDuration } from "@/data/constants";
 import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
 import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils';
@@ -17,6 +18,7 @@ import { randomIntFromInterval } from '@/functions/mathUtils';
 const levelViewConfig = useSessionStorage('level-view-config', {});
 
 //: Map Setup
+const responseCode = ref(0);
 const name = ref('');
 const author = ref('');
 const stepsGoal = ref(0);
@@ -41,23 +43,36 @@ const canInteract = computed(() => isLevelLoaded.value && !isPanning.value && !d
 const doSmoothAnimate = computed(() => isLevelLoaded.value && !isPanning.value && !isCustomAnimating.value);
 
 const loadLevelConfig = async () => {
-    try {
-        let levelConfig = await import(`../data/maps/${levelId}.json`);
-        name.value = levelConfig.meta.name;
-        author.value = levelConfig.meta.author;
-        mapSize.value = {
-            rows: levelConfig.meta.rows,
-            columns: levelConfig.meta.columns
-        }
-        console.log("map size:", mapSize);
-        console.log("level config:", levelConfig);
-        gameState.value.containers = JSON.parse(JSON.stringify(levelConfig.content.containers));
-        gameState.value.particles = JSON.parse(JSON.stringify(levelConfig.content.particles));
-        stepsGoal.value = levelConfig.score.movesCount;
-        isLevelLoaded.value = true;
-    } catch (error) {
-        console.error('Failed to load level config:', error);
-    }
+    // let levelConfig = await import(`../data/maps/${levelId}.json`);
+    console.log(SERVER_URL + '/level?levelId=' + String(levelId));
+    await axios
+        .get(SERVER_URL + '/level?levelId=' + String(levelId))
+        .then((res) => {
+            console.log(res);
+            responseCode.value = res.status;
+            if (res.status == 200) {
+                // Response for ok, proceed on to loading the level
+                const levelConfig = res.data;
+                name.value = levelConfig.meta.name;
+                author.value = levelConfig.meta.author;
+                mapSize.value = {
+                    rows: levelConfig.meta.rows,
+                    columns: levelConfig.meta.columns
+                }
+                console.log("map size:", mapSize);
+                console.log("level config:", levelConfig);
+                gameState.value.containers = JSON.parse(JSON.stringify(levelConfig.content.containers));
+                gameState.value.particles = JSON.parse(JSON.stringify(levelConfig.content.particles));
+                stepsGoal.value = levelConfig.score.movesCount;
+                isLevelLoaded.value = true;
+            }
+            return res;
+        })
+        .catch((err) => {
+            responseCode.value = err.status;
+            console.log(err);
+            return err;
+        });
 };
 
 //: Panning and Centering
@@ -157,7 +172,8 @@ const animateInvalidMove = (particleId, direction) => {
     const refOffset = ref({ x: 0, y: 0 });
     const shakeOffset = levelMapGridScalePx;
     const selectedParticleDOM = document.getElementById(particleId);
-    // console.log(selectedParticleDOM);
+    console.log({ particleId })
+    console.log({ selectedParticleDOM });
     refAnimateToObject(
         refOffset,
         {
@@ -233,7 +249,7 @@ const accountInsertHasWon = () => {
         account.passed.push(levelId);
         account.lookup[levelViewConfig.value.albumName].passed += 1;
     }
-    else {return}
+    else { return }
     setAndPushAccountProgress(account);
 }
 
@@ -243,6 +259,7 @@ const moveParticle = (direction) => {
         return;
     }
     const currentIndex = gameState.value.particles.findIndex(p => p === selected.value);    // Not to be confused with ID
+    console.log(currentIndex)
     let currentColor = gameState.value.particles[currentIndex].color;
     let currentRow = gameState.value.particles[currentIndex].row;
     let currentColumn = gameState.value.particles[currentIndex].column;
@@ -345,7 +362,7 @@ const moveParticle = (direction) => {
         // Create an animation for invalid move
         disableInteraction.value = true;
         isCustomAnimating.value = true;
-        animateInvalidMove(gameState.value.particles[currentIndex].id, direction)
+        animateInvalidMove(currentId, direction)
             .onFinish(() => {
                 isCustomAnimating.value = false;
                 disableInteraction.value = false;
@@ -442,12 +459,16 @@ const gotoNextLevel = () => {
 }
 
 onMounted(async () => {
-    
     hasWon.value = false;
     isStartingAnimation.value = true;
     disableInteraction.value = true;    // Wait for entrance animation to finish
     setTimeout(() => {
-        while (!isLevelLoaded.value);
+        while (!isLevelLoaded.value || responseCode.value !== 200) {
+            if (responseCode.value === 404) {
+                console.log("404");
+                return;
+            }
+        }
         console.log("Level loaded");
         // Disable the blur effect
         changeObscurityForAll(false, gameEntranceFocusAnimationRange);
@@ -462,16 +483,22 @@ onMounted(async () => {
         }, gameEntranceFocusAnimationRange.max);
     }, gameEntranceTitleAnimationDuration);
     await loadLevelConfig();
-    stepsCounter.value = 0;
-    gameState.value.particles.forEach((particle, index) => {
-        particle.id = `p-${index}`;
-        particle.obscure = true;
-    });
-    gameState.value.containers.forEach((container, index) => {
-        container.id = `container-${index}`;
-        container.obscure = true;
-    });
-    window.addEventListener('keydown', handleKeydown);
+    if (responseCode.value === 200) {
+        console.log('after loading')
+        stepsCounter.value = 0;
+
+        console.log(gameState.value);
+        gameState.value.particles.forEach((particle, index) => {
+            particle.id = `p-${index}`;
+            particle.obscure = true;
+        });
+        gameState.value.containers.forEach((container, index) => {
+            container.id = `container-${index}`;
+            container.obscure = true;
+        });
+        console.log(gameState.value);
+        window.addEventListener('keydown', handleKeydown);
+    }
 });
 
 onBeforeUnmount(() => {
@@ -491,8 +518,7 @@ onBeforeUnmount(() => {
                 <span class="steps-complex__steps-aim">{{ stepsGoal }}</span>
                 <div class="u-rel u-gap-14"></div>
                 <ion-button name="refresh-outline" size="1.6rem" class="reset-btn"
-                    @click="router.go(router.currentRoute.value)"
-                ></ion-button>
+                    @click="router.go(router.currentRoute.value)"></ion-button>
             </div>
         </div>
         <h1 class="viewport__level-name a-fade-in" v-show="isStartingAnimation">{{ name }}</h1>
@@ -533,24 +559,21 @@ onBeforeUnmount(() => {
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                     <template #trigger>
                         <ion-button name="refresh-outline" class="a-fade-in a-delay-12"
-                            @click="router.go(0)"
-                        ></ion-button>
+                            @click="router.go(0)"></ion-button>
                     </template>
                     <span>Restart</span>
                 </n-tooltip>
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                     <template #trigger>
                         <ion-button name="apps-outline" class="a-fade-in a-delay-14"
-                            @click="router.push('/album/$id'.replace('$id', router.currentRoute.value.params.id))"
-                        ></ion-button>
+                            @click="router.push('/album/$id'.replace('$id', router.currentRoute.value.params.id))"></ion-button>
                     </template>
                     <span>Level Select</span>
                 </n-tooltip>
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                     <template #trigger>
                         <ion-button name="chevron-forward-outline" class="a-fade-in a-delay-16"
-                            @click="gotoNextLevel"
-                        ></ion-button>
+                            @click="gotoNextLevel"></ion-button>
                     </template>
                     <span>Next Level</span>
                 </n-tooltip>
@@ -558,6 +581,10 @@ onBeforeUnmount(() => {
                 <ion-button name="apps-outline"></ion-button>
                 <ion-button name="chevron-forward-outline"></ion-button> -->
             </div>
+        </div>
+
+        <div class="bad-responses-container" v-if="responseCode !== 200">
+            <h1 class="a-fade-in" v-if="responseCode === 404">Map is not found</h1>
         </div>
     </div>
 </template>
