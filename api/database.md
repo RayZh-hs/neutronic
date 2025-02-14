@@ -16,11 +16,11 @@ Here is a detailed explanation of the structure of each database:
 
 ### level.db
 
-This is a single-table database.
+This is a single-table database with the table named `levelTable`.
 
 | levelId * | levelName | author | lastUpdatedTime | levelType |
 |-----------|-----------|--------|-----------------|-----------|
-| TEXT      | TEXT      | TEXT   | INTEGER         | INTEGER   |
+| TEXT      | TEXT      | TEXT   | TEXT            | INTEGER   |
 
 - The `levelId` is the primary key for this table.
 - The `levelType` is an integer, corresponding to this enum:
