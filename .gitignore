@@ -28,3 +28,8 @@ jsconfig.json
 
 # Custom Snippets
 load.sh
+
+# Databases
+api/data/*.db
+api/data/maps/*
+api/data/backups/*
