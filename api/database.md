@@ -31,3 +31,5 @@ This is a single-table database with the table named `levelTable`.
 
 The type of a map will first be queried following any GET request received by the server.
 Regular and local accounts only have access to public levels. The Neutronic team has access to the first three types. The last type can only be accessed by the user who created the level.
+
+All levels with $levelType\geq 1$ are stored in api/maps/extended, and are not shipped with the repo in Github. The pre-made maps, with $levelType=1$, are stored in api/maps/base.
