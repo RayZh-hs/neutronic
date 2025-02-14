@@ -7,6 +7,11 @@
 </template>
 
 <style lang="scss">
+
+$background-size-1: 50rem;
+$background-size-2: 40rem;
+$background-size-3: 40rem;
+
 .bg {
     position: absolute;
     left: 0;
@@ -19,19 +24,19 @@
     &.bg-lay- {
         &1 {
             background-image: url(@/assets/dotgrid/JS-dotGrid-0.png);
-            background-size: 50rem;
+            background-size: $background-size-1;
             opacity: 30%;
             animation: scroll-bg-1 40s linear infinite; /* Added animation */
         }
         &2 {
             background-image: url(@/assets/dotgrid/JS-dotGrid-1.png);
-            background-size: 40rem;
+            background-size: $background-size-2;
             opacity: 20%;
             animation: scroll-bg-2 60s linear infinite; /* Added animation */
         }
         &3 {
             background-image: url(@/assets/dotgrid/JS-dotGrid-2.png);
-            background-size: 40rem;
+            background-size: $background-size-3;
             opacity: 20%;
             animation: scroll-bg-3 80s linear infinite; /* Added animation */
         }
@@ -40,28 +45,28 @@
 
 @keyframes scroll-bg-1 {
     from {
-        background-position-x: -100%;
+        background-position-x: -$background-size-1;
     }
     to {
-        background-position-x: 100%;
+        background-position-x: $background-size-1;
     }
 }
 
 @keyframes scroll-bg-2 {
     from {
-        background-position-x: -100%;
+        background-position-x: -$background-size-2;
     }
     to {
-        background-position-x: 100%;
+        background-position-x: $background-size-2;
     }
 }
 
 @keyframes scroll-bg-3 {
     from {
-        background-position-x: -100%;
+        background-position-x: -$background-size-3;
     }
     to {
-        background-position-x: 100%;
+        background-position-x: $background-size-3;
     }
 }
 </style>
