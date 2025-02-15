@@ -15,6 +15,7 @@ const routes = [
     { path: '/custom', component: CustomSelectionView },
     { path: '/album/:id/:levelId', component: LevelView },
     { path: '/custom/edit/:uuid', component: LevelEditorView },
+    { path: '/custom/play/:uuid', component: LevelView },
     // { path: '/login', component: UserLoginView },
 ]
 

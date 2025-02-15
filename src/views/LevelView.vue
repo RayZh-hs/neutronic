@@ -22,6 +22,7 @@ const responseCode = ref(0);
 const name = ref('');
 const author = ref('');
 const stepsGoal = ref(0);
+const currentBest = ref(null);
 const levelId = router.currentRoute.value.params.levelId;
 const gameState = ref({ containers: [], particles: [] });
 const mapSize = ref({ rows: 0, columns: 0 });
@@ -42,37 +43,49 @@ const hasWon = ref(false);
 const canInteract = computed(() => isLevelLoaded.value && !isPanning.value && !disableInteraction.value);
 const doSmoothAnimate = computed(() => isLevelLoaded.value && !isPanning.value && !isCustomAnimating.value);
 
+const loadLevelFromString = (levelString) => {
+    name.value = levelString.meta.name;
+    author.value = levelString.meta.author;
+    mapSize.value = {
+        rows: levelString.meta.rows,
+        columns: levelString.meta.columns
+    }
+    console.log("map size:", mapSize);
+    console.log("level config:", levelString);
+    gameState.value.containers = JSON.parse(JSON.stringify(levelString.content.containers));
+    gameState.value.particles = JSON.parse(JSON.stringify(levelString.content.particles));
+    stepsGoal.value = levelString.content.goal;
+    isLevelLoaded.value = true;
+}
+
 const loadLevelConfig = async () => {
-    // let levelConfig = await import(`../data/maps/${levelId}.json`);
-    console.log(SERVER_URL + '/level?levelId=' + String(levelId));
-    await axios
-        .get(SERVER_URL + '/level?levelId=' + String(levelId))
-        .then((res) => {
-            console.log(res);
-            responseCode.value = res.status;
-            if (res.status == 200) {
-                // Response for ok, proceed on to loading the level
-                const levelConfig = res.data;
-                name.value = levelConfig.meta.name;
-                author.value = levelConfig.meta.author;
-                mapSize.value = {
-                    rows: levelConfig.meta.rows,
-                    columns: levelConfig.meta.columns
+    console.log({ levelViewConfig })
+    if ((levelViewConfig.value.context) !== 'editor') {
+        // let levelConfig = await import(`../data/maps/${levelId}.json`);
+        console.log(SERVER_URL + '/level?levelId=' + String(levelId));
+        await axios
+            .get(SERVER_URL + '/level?levelId=' + String(levelId))
+            .then((res) => {
+                console.log(res);
+                responseCode.value = res.status;
+                if (res.status == 200) {
+                    // Response for ok, proceed on to loading the level
+                    const levelConfig = res.data;
+                    loadLevelFromString(levelConfig);
                 }
-                console.log("map size:", mapSize);
-                console.log("level config:", levelConfig);
-                gameState.value.containers = JSON.parse(JSON.stringify(levelConfig.content.containers));
-                gameState.value.particles = JSON.parse(JSON.stringify(levelConfig.content.particles));
-                stepsGoal.value = levelConfig.content.goal;
-                isLevelLoaded.value = true;
-            }
-            return res;
-        })
-        .catch((err) => {
-            responseCode.value = err.status;
-            console.log(err);
-            return err;
-        });
+                return res;
+            })
+            .catch((err) => {
+                responseCode.value = err.status;
+                console.log(err);
+                return err;
+            });
+    }
+    else {
+        // Read from the config itself
+        loadLevelFromString(levelViewConfig.value.levelData);
+        responseCode.value = 200;
+    }
 };
 
 //: Panning and Centering
@@ -225,7 +238,10 @@ const updateHasWon = () => {
     console.log("particles: ", gameState.value.particles.length);
     if (gameState.value.particles.length === 0) {
         hasWon.value = true;
-        accountInsertHasWon();
+        if (levelViewConfig.value.context === 'album') {
+            accountInsertHasWon();
+        }
+        currentBest.value = currentBest ? stepsCounter.value : Math.min(currentBest, stepsCounter.value);
         triggerEndingAnimation();
     }
 }
@@ -505,17 +521,46 @@ onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleKeydown);
     selected.value = null;
 });
+
+const updateViewConfig = () => {
+    if (levelViewConfig.value.context === 'editor') {
+        levelViewConfig.value.context = 'finished';
+        levelViewConfig.value.bestMovesCount = stepsCounter.value;
+    }
+}
+
+const levelEditorConfig = useSessionStorage('levelEditorConfig', {
+    newLevel: true,
+    localFetch: false,
+})
+const handleGoBack = () => {
+    if (levelViewConfig.value.context === 'editor') {
+        updateViewConfig();
+        levelEditorConfig.value = {
+            newLevel: false,
+            localFetch: true
+        }
+        router.push(router.currentRoute.value.fullPath.replace('/play/', '/edit/'));
+    }
+    else if (levelViewConfig.value.context === 'album') {
+        gotoLevelSelect();
+    }
+    else {
+        router.go(-1);
+    }
+}
+
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="gotoLevelSelect"></ion-icon>
+    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="handleGoBack"></ion-icon>
     <div class="viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
         @mouseleave="onPanEndWrapper" ref="refViewPort">
         <div class="steps-complex a-fade-in" v-show="!isStartingAnimation && !hasWon">
             <div class="steps-wrapper u-rel">
                 <span class="steps-complex__steps-count">{{ stepsCounter }}</span>
-                <span class="steps-complex__steps-label">/</span>
-                <span class="steps-complex__steps-aim">{{ stepsGoal }}</span>
+                <span class="steps-complex__steps-label" v-if="stepsGoal">/</span>
+                <span class="steps-complex__steps-aim" v-if="stepsGoal">{{ stepsGoal }}</span>
                 <div class="u-rel u-gap-14"></div>
                 <ion-button name="refresh-outline" size="1.6rem" class="reset-btn"
                     @click="router.go(router.currentRoute.value)"></ion-button>
@@ -551,10 +596,14 @@ onBeforeUnmount(() => {
             <h1 class="end-info-container__rank a-fade-in a-delay-12" :class="{
                 'end-info-container__rank--perfect': stepsCounter <= stepsGoal,
                 'end-info-container__rank--pass': stepsCounter > stepsGoal
-            }">{{ getGameRank() }}</h1>
-            <h2 class="end-info-container__score a-fade-in a-delay-4">Your score: <span>
+            }"
+            v-if="stepsGoal">{{ getGameRank() }}</h1>
+            <h2 class="end-info-container__score a-fade-in a-delay-4" v-if="stepsGoal"
+                :style="{'margin-bottom': levelViewConfig.context === 'editor' ? '0.5rem' : 0}"
+            >Your score: <span>
                     {{ stepsCounter }}/{{ stepsGoal }}
                 </span></h2>
+            <h2 v-if="levelViewConfig.context === 'editor'" class="a-fade-in a-delay-5">Current best: {{ currentBest }}</h2>
             <div class="end-info__button-group">
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                     <template #trigger>
@@ -563,19 +612,27 @@ onBeforeUnmount(() => {
                     </template>
                     <span>Restart</span>
                 </n-tooltip>
-                <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
+                <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :disabled="levelViewConfig.context !== 'album'">
                     <template #trigger>
                         <ion-button name="apps-outline" class="a-fade-in a-delay-14"
-                            @click="router.push('/album/$id'.replace('$id', router.currentRoute.value.params.id))"></ion-button>
+                            @click="router.push('/album/$id'.replace('$id', router.currentRoute.value.params.id))"
+                            :disabled="levelViewConfig.context !== 'album'"></ion-button>
                     </template>
                     <span>Level Select</span>
                 </n-tooltip>
-                <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
+                <n-tooltip placement="bottom" raw style="color: var(--n-primary)" v-if="levelViewConfig.context === 'album'">
                     <template #trigger>
                         <ion-button name="chevron-forward-outline" class="a-fade-in a-delay-16"
                             @click="gotoNextLevel"></ion-button>
                     </template>
                     <span>Next Level</span>
+                </n-tooltip>
+                <n-tooltip placement="bottom" raw style="color: var(--n-primary)" v-else>
+                    <template #trigger>
+                        <ion-button name="chevron-back-outline" class="a-fade-in a-delay-16"
+                            @click="handleGoBack"></ion-button>
+                    </template>
+                    <span>Back</span>
                 </n-tooltip>
                 <!-- <ion-button name="refresh-outline"></ion-button>
                 <ion-button name="apps-outline"></ion-button>
@@ -796,7 +853,7 @@ onBeforeUnmount(() => {
         }
     }
 
-    h2.end-info-container__score {
+    h2 {
         font-family: "Electrolize", serif;
         font-size: $level-end-info-score-font-size;
         letter-spacing: $level-end-info-score-letter-spacing;

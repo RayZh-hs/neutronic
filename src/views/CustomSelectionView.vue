@@ -3,6 +3,7 @@
 //: Vue and Router
 
 import { useRouter } from 'vue-router';
+import { useSessionStorage } from '@vueuse/core';
 const router = useRouter();
 
 //: Custom components
@@ -50,8 +51,18 @@ const getUUID = () => {
 
 const enterLevelEditor = () => {
     const uuid = getUUID();
+    levelEditorConfig.value = {
+        newLevel: true,
+        localFetch: false,
+    }
     router.push(`/custom/edit/${uuid}`);
 }
+
+//: Hooks for updating the levelEditorConfig
+const levelEditorConfig = useSessionStorage('levelEditorConfig', {
+    newLevel: true,
+    localFetch: false,
+})
 
 </script>
 

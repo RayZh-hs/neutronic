@@ -1,7 +1,7 @@
 <script setup>
 //: Vue-specific imports
 import { onMounted, ref, computed, watch } from "vue";
-import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog, get } from "@vueuse/core";
+import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog, get, assert } from "@vueuse/core";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -59,6 +59,19 @@ const onLevelNameChange = (event) => {
     levelName.value = newLevelName;
 }
 
+// - tracking the level goal and custom best
+const stepsGoal = ref(null);
+const currentBest = ref(null);
+
+const onStepsGoalChange = (event) => {
+    let newStepsGoal = parseInt(event.target.innerText);
+    if (isNaN(newStepsGoal)) {
+        newStepsGoal = null;
+        event.target.innerText = "NA";
+    }
+    stepsGoal.value = newStepsGoal;
+}
+
 // - tracking the panning offset
 const { x: mouseX, y: mouseY, sourceType } = useMouse();
 
@@ -112,11 +125,6 @@ const updateToolSpritePosition = () => {
 }
 
 const { isOutside: mouseOutsideToolbar } = useMouseInElement(refToolbar);
-
-onMounted(() => {
-    // console.log(getMapBasePosition());
-    setInterval(updateToolSpritePosition, 1000 / levelEditorRefreshFrequency);
-});
 
 // - active portal coloring
 
@@ -432,20 +440,19 @@ const buildLevelJson = () => {
                                 "column": coord.column
                             }
                         })
-                    ]
+                    ],
+                    "goal": stepsGoal.value,
                 }
             })(),
-            "score": {
-                // TODO not implemented
-                "movesCount": null,
-                "movesDetails": []
-            }
         }
     }
 }
 
-const loadLevelJson = (levelJson) => {
-    var level = JSON.parse(levelJson);
+const loadLevelJson = (levelJson, parse = true) => {
+    let level = levelJson;
+    if (parse) {
+        level = JSON.parse(level);
+    }
     console.log(level);
     // Load meta
     levelName.value = level.meta.name;
@@ -486,6 +493,7 @@ const loadLevelJson = (levelJson) => {
                 y: item.row * levelMapGridScalePx
             }
         });
+    stepsGoal.value = level.content.goal;
     cleanupPortals();
     callCenterMap();
 }
@@ -546,6 +554,28 @@ onImportLevelJson((files) => {
         reader.readAsText(file);
     }
 })
+
+//: Playing the game
+
+import { useSessionStorage } from "@vueuse/core";
+const levelViewConfig = useSessionStorage('level-view-config', {});
+
+const playLevel = () => {
+    // A check for the validity of the map is performed before playing
+    if (!validateMap()) {
+        message.error("The map is not valid!");
+        return;
+    }
+    // The level is built and sent to the game
+    const levelWrapper = buildLevelJson();
+    levelViewConfig.value = {
+        context: 'editor',
+        levelData: levelWrapper.level,
+        levelName: levelName.value
+    }
+    onSave();
+    router.push(router.currentRoute.value.fullPath.replace('/edit/', '/play/'));
+}
 
 //: Custom Event Handlers
 
@@ -705,13 +735,47 @@ const deleteAll = () => {
 
     message.success("Deleted all items");
 }
+
+const levelEditorConfig = useSessionStorage('levelEditorConfig', {
+    newLevel: true,
+    localFetch: false,
+})
+
+//: Lifecycle hooks
+onMounted(() => {
+    // Load the level if the route is not new
+    debugger;
+    if (!levelEditorConfig.value.newLevel) {
+        if (levelEditorConfig.value.localFetch) {
+            // Load the level from the local storage
+            // It should be a callback from the LevelView
+            assert(levelViewConfig.value.context === 'finished');
+            loadLevelJson(levelViewConfig.value.levelData, false);
+            const bestMovesCountFeedback = levelViewConfig.value.bestMovesCount;
+            if (bestMovesCountFeedback && (!currentBest.value || currentBest.value < bestMovesCountFeedback)) {
+                currentBest.value = bestMovesCountFeedback;
+                if (!stepsGoal.value) {
+                    stepsGoal.value = bestMovesCountFeedback;
+                }
+            }
+        }
+        else {
+            // Load the level from the server
+            message.error('Not implemented error');
+            console.error('Server hosted custom level loading is not supported at the present time!')
+        }
+    }
+    // Create sprite positioning hook
+    setInterval(updateToolSpritePosition, 1000 / levelEditorRefreshFrequency);
+});
+
 </script>
 
 <template>
     <div class="top-container">
         <!-- The left side of the top section -->
         <div class="u-gap-16"></div>
-        <ion-button name="arrow-back-circle-outline" size="1.6rem" @click="router.back" class="a-fade-in" />
+        <ion-button name="arrow-back-circle-outline" size="1.6rem" @click="router.push('/custom')" class="a-fade-in" />
         <ion-button name="save-outline" size="1.6rem" class="a-fade-in a-delay-1" />
         <div class="u-gap-5"></div>
         <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
@@ -730,10 +794,14 @@ const deleteAll = () => {
             <ion-button name="copy-outline" size="1.6rem" @click="copyLevelToClipboard"></ion-button>
         </n-flex>
         <div class="u-gap-1"></div>
+        <span class="steps-goal-label a-fade-in a-delay-5">Steps Goal</span>
+        <span class="steps-goal a-fade-in a-delay-5 score" contenteditable="" @input="onStepsGoalChange">{{ stepsGoal || 'NA' }}</span>
+        <div class="u-gap-1"></div>
         <span class="a-fade-in a-delay-5">Current best</span>
-        <span class="score score--na a-fade-in a-delay-6">NA</span>
+        <span class="score a-fade-in a-delay-6"
+        :class="{'score--na': !currentBest}">{{ currentBest || 'NA' }}</span>
         <div class="u-gap-4"></div>
-        <ion-button name="play-outline" class="a-fade-in a-delay-7" size="1.6rem" />
+        <ion-button name="play-outline" class="a-fade-in a-delay-7" size="1.6rem" @click="playLevel"/>
         <div class="u-gap-30"></div>
     </div>
     <code>
