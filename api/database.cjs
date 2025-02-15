@@ -25,7 +25,7 @@ const initDatabases = () => {
 // Load the pre-made levels into the database
 // This is a one-time operation, and should be manually called
 const loadPremadeLevels = () => {
-    const premade = require('./premade.json');
+    const premade = require('./data/premade.json');
     // console.log(premade);
     for (let level of premade) {
         insertLevel(level.levelId, level.levelName, level.author, 0);
