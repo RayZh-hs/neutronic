@@ -3,10 +3,12 @@
 import { onMounted, ref, computed, watch } from "vue";
 import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog, get, assert } from "@vueuse/core";
 import { useRouter } from "vue-router";
+import { useDialog } from "naive-ui";
 
 const router = useRouter();
 const message = useMessage();
 const keys = useMagicKeys();
+const dialog = useDialog();
 
 //: Custom Components
 import IonButton from "@/components/IonButton.vue"
@@ -62,6 +64,7 @@ const onLevelNameChange = (event) => {
 // - tracking the level goal and custom best
 const stepsGoal = ref(null);
 const currentBest = ref(null);
+const activeRecording = ref(null);
 
 const onStepsGoalChange = (event) => {
     let newStepsGoal = parseInt(event.target.innerText);
@@ -444,6 +447,9 @@ const buildLevelJson = () => {
                     "goal": stepsGoal.value,
                 }
             })(),
+            "appendix": {
+                ...(activeRecording.value ? { "recording": activeRecording.value } : {})
+            }
         }
     }
 }
@@ -758,6 +764,18 @@ onMounted(() => {
                     stepsGoal.value = bestMovesCountFeedback;
                 }
             }
+            if (levelViewConfig.value.recording.length > 0) {
+                dialog.warning({
+                    title: 'Recording',
+                    content: 'Do you want to replace the recording with the new version?',
+                    positiveText: 'Yes',
+                    negativeText: 'No',
+                    draggable: false,
+                    onPositiveClick: () => {
+                        activeRecording.value = levelViewConfig.value.recording;
+                    }
+                })
+            }
         }
         else {
             // Load the level from the server
@@ -805,7 +823,7 @@ onMounted(() => {
         <div class="u-gap-30"></div>
     </div>
     <code>
-    <!-- {{ panningOffset }} -->
+    <!-- {{ activeRecording }} -->
     <!-- {{ getBoundingBox() }} -->
     <!-- {{ getMapBoundingBox() }} -->
     </code>

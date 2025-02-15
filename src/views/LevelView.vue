@@ -270,6 +270,20 @@ const accountInsertHasWon = () => {
     setAndPushAccountProgress(account);
 }
 
+const recording = ref([]);
+const recordMove = (particleId, direction) => {
+    const particleIdRaw = Number(particleId.split('-')[1]);
+    if (recording.value.length === 0 || recording.value.at(-1).id !== particleIdRaw) {
+        recording.value.push({
+            id: particleIdRaw,
+            direction: [direction]
+        });
+    }
+    else {
+        recording.value.at(-1).direction.push(direction);
+    }
+}
+
 const moveParticle = (direction) => {
     // if (!selected.value||isAnimating.value) {
     if (!selected.value || !canInteract.value) {
@@ -304,6 +318,8 @@ const moveParticle = (direction) => {
     if (isValid) {
         // Increment the steps counter
         stepsCounter.value++;
+        // Record the move
+        recordMove(currentId, direction);
         // This drives the animation of the move
         gameState.value.particles[currentIndex].row = currentRow;
         gameState.value.particles[currentIndex].column = currentColumn;
@@ -521,7 +537,7 @@ onMounted(async () => {
 
         console.log(gameState.value);
         gameState.value.particles.forEach((particle, index) => {
-            particle.id = `p-${index}`;
+            particle.id = `particle-${index}`;
             particle.obscure = true;
         });
         gameState.value.containers.forEach((container, index) => {
@@ -542,6 +558,7 @@ const updateViewConfig = () => {
     if (levelViewConfig.value.context === 'editor') {
         levelViewConfig.value.context = 'finished';
         levelViewConfig.value.bestMovesCount = currentBest.value;
+        levelViewConfig.value.recording = recording.value;
     }
 }
 
@@ -602,8 +619,8 @@ const handleGoBack = () => {
                 'a-delay-12': isStartingAnimation
             }" :id="particle.id">
         </div>
-        <!-- <p style="position: absolute; top: 1rem">
-            {{ levelViewConfig }}
+        <!-- <p style="position: absolute; top: 2rem">
+            {{ recording }}
         </p> -->
         <!-- Messages shown when the game ends -->
         <div class="end-info-container" v-show="hasWon">

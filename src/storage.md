@@ -56,12 +56,13 @@ A recording is the steps recorded for passing a single level:
 {
     "type": "recording",
     "meta": {
+        "recordingId": $level-uuid,
         "levelId": $level-uuid,
         "author": $author,
         "moves": $moves-count
     },
     "content": [
-        {"id": $particle-id, "moves": [
+        {"id": $particle-id, "direction": [
             "up"/"down"/"left"/"right",
         ]}
         ...
@@ -103,7 +104,7 @@ This storage keeps track of transporting level information, centering upon the L
         "context": "finished",
         "levelData": $json-of-the-level,
         "bestMovesCount": $number-of-moves,
-        "bestMoves": [
+        "recording": [
             {"row": $row, "col": $col, "dir": $direction},
             ...
         ]
