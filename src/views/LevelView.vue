@@ -254,6 +254,13 @@ import { getAccountProgress, setAndPushAccountProgress } from '@/functions/useAc
 const accountInsertHasWon = () => {
     const account = getAccountProgress();
     const rank = getGameRank();
+    // If the album is NOT in the account, a new entry should be inserted
+    if (!account.lookup[levelViewConfig.value.albumName]) {
+        account.lookup[levelViewConfig.value.albumName] = {
+            perfected: 0,
+            passed: 0
+        }
+    }
     if (rank === 'Perfect' && !account.perfected.includes(levelId)) {
         account.perfected.push(levelId);
         account.lookup[levelViewConfig.value.albumName].perfected += 1;

@@ -56,10 +56,13 @@ const getStatus = (level) => {
     }
 }
 
+const levelViewConfig = useSessionStorage('level-view-config', {}, { mergeDefaults: true })
+
 const enterLevel = (level) => {
-    sessionStorage.setItem('level-view-config', JSON.stringify({
+    console
+    levelViewConfig.value = {
         context: 'album',
-        albumName: albumObj.name,
+        albumName: albumObj.meta.name,
         next: (() => {
             if (level < albumObj.content.length){
                 return `/album/${albumId}/${albumObj.content[level].levelId}`;
@@ -68,8 +71,10 @@ const enterLevel = (level) => {
                 return `/album/${albumId}`;
             }
         })(),
-    }));
-    router.push(`/album/${albumId}/${albumObj.content[level - 1].levelId}`);
+    };
+    setTimeout(() => {
+        router.push(`/album/${albumId}/${albumObj.content[level - 1].levelId}`);
+    }, 100);
 }
 
 </script>
