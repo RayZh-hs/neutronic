@@ -63,7 +63,7 @@ const loadLevelConfig = async () => {
                 console.log("level config:", levelConfig);
                 gameState.value.containers = JSON.parse(JSON.stringify(levelConfig.content.containers));
                 gameState.value.particles = JSON.parse(JSON.stringify(levelConfig.content.particles));
-                stepsGoal.value = levelConfig.score.movesCount;
+                stepsGoal.value = levelConfig.content.goal;
                 isLevelLoaded.value = true;
             }
             return res;

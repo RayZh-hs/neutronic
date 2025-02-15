@@ -55,10 +55,7 @@
                 "row": 1,
                 "column": 1
             }
-        ]
-    },
-    "score": {
-        "movesCount": 6,
-        "movesDetails": []
+        ],
+        "goal": 6
     }
 }
