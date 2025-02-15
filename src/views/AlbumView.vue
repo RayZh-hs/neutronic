@@ -1,6 +1,6 @@
 <script setup>
 
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 //: Swiper-specific setup
 
@@ -30,9 +30,9 @@ const updatePage = (swiper) => {
 
 //: Custom component setup
 
-import AlbumCard from '../components/AlbumCard.vue';
-import SubtitledAlbumCard from '../components/SubtitledAlbumCard.vue';
-import { router } from '../router';
+import AlbumCard from '@/components/AlbumCard.vue';
+import SubtitledAlbumCard from '@/components/SubtitledAlbumCard.vue';
+import { router } from '@/router';
 
 //: Custom json setup
 
@@ -47,14 +47,15 @@ import { album, isAlbumLoaded } from '@/functions/useAlbum';
 const player = getAccountProgress();
 
 console.log(album);
+const albumLength = computed(() => album.value.length)
 
 //: Jump to referring page
 const jumpToReferent = () => {
     const id = swiperPage.value;
     console.log("Jumping to ", id);
-    if (id === 3) {
+    if (id === albumLength.value) {
         router.push('/custom');
-    } else if (id === 4) {
+    } else if (id === albumLength.value + 1) {
         router.push('/online');
     } else {
         router.push(`/album/${id}`);
@@ -72,8 +73,8 @@ const jumpToReferent = () => {
             prevEl: '.backward-btn',
             nextEl: '.forward-btn'
         }" :mousewheel="true" @swiper="updatePage" @slideChange="updatePage">
-            <swiper-slide v-for="(item, num) in album.slice(0, 3)" :key="num">
-                <album-card :name="item.name" :locked="player.lookup[item.name] == undefined" :total="item.levels.length" :passes="player.lookup[item.name]?.passed" :perfects="player.lookup[item.name]?.perfected" class="a-fade-in" 
+            <swiper-slide v-for="(item, num) in album" :key="num">
+                <album-card :name="item.meta.name" :locked="player.lookup[item.meta.name] == undefined" :total="item.content.length" :passes="player.lookup[item.meta.name]?.passed" :perfects="player.lookup[item.meta.name]?.perfected" class="a-fade-in" 
                     @click="jumpToReferent"
                 />
             </swiper-slide>

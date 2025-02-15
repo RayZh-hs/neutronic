@@ -61,7 +61,9 @@ A recording is the steps recorded for passing a single level:
         "moves": $moves-count
     },
     "content": [
-        {"row": $row, "column": $column, "dir": $direction},
+        {"id": $particle-id, "moves": [
+            "up"/"down"/"left"/"right",
+        ]}
         ...
     ]
 }
