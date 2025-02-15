@@ -22,8 +22,8 @@ const player = getAccountProgress();
 
 const albumId = Number(router.currentRoute.value.params.id);
 const albumObj = album.value[albumId];
-const total = albumObj.levels.length;
-const playerProgress = player.lookup[albumObj.name];
+const total = albumObj.content.length;
+const playerProgress = player.lookup[albumObj.meta.name];
 const perfects = playerProgress.perfected;
 const passes = playerProgress.passed;
 
@@ -45,9 +45,9 @@ const prevWindow = () => {
 }
 
 const getStatus = (level) => {
-    if (player.perfected.includes(albumObj.levels[level - 1].uuid)){
+    if (player.perfected.includes(albumObj.content[level - 1].levelId)){
         return 'perfect';
-    } else if (player.passed.includes(albumObj.levels[level - 1].uuid)){
+    } else if (player.passed.includes(albumObj.content[level - 1].levelId)){
         return 'finished';
     } else if (level <= playerProgress.passed + playerProgress.perfected + 1){
         return 'open';
@@ -58,18 +58,18 @@ const getStatus = (level) => {
 
 const enterLevel = (level) => {
     sessionStorage.setItem('level-view-config', JSON.stringify({
-        type: 'album',
+        context: 'album',
         albumName: albumObj.name,
         next: (() => {
-            if (level < albumObj.levels.length){
-                return `/album/${albumId}/${albumObj.levels[level].uuid}`;
+            if (level < albumObj.content.length){
+                return `/album/${albumId}/${albumObj.content[level].levelId}`;
             } else {
                 // Is the last level in the album
                 return `/album/${albumId}`;
             }
         })(),
     }));
-    router.push(`/album/${albumId}/${albumObj.levels[level-1].uuid}`);
+    router.push(`/album/${albumId}/${albumObj.content[level - 1].levelId}`);
 }
 
 </script>
@@ -79,7 +79,7 @@ const enterLevel = (level) => {
         @click="router.push('/album')"></ion-icon>
     <div class="wrapper" v-if="isAlbumLoaded">
         <div class="header-container">
-            <h1 class="album-title a-fade-in">{{ album[albumId].name }}</h1>
+            <h1 class="album-title a-fade-in">{{ album[albumId].meta.name }}</h1>
             <div class="header-container__right a-fade-in a-delay-1">
                 <status-bar title="perfects" color="#007bff" width="18rem" :total="total" :finished="perfects"
                     marginBottom="3pt" />
@@ -89,7 +89,7 @@ const enterLevel = (level) => {
         </div>
         <div class="main-container">
             <simple-level-card class="level-card a-fade-in" :class="{ [`a-delay-${num + 1}`]: true }"
-                v-for="(item, num) in album[albumId].levels.slice(sliceWindow.begin, sliceWindow.end)"
+                v-for="(item, num) in album[albumId].content.slice(sliceWindow.begin, sliceWindow.end)"
                 :key="num + 1 + sliceWindow.begin"
                 :level="num + 1 + sliceWindow.begin"
                 :status="getStatus(num + 1 + sliceWindow.begin)"

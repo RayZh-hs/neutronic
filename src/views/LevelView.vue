@@ -3,7 +3,7 @@
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { hexaToRgba } from "../functions/colorUtils";
-import { useElementBounding, useSessionStorage } from '@vueuse/core';
+import { assert, useElementBounding, useSessionStorage } from '@vueuse/core';
 import axios from 'axios';
 const router = useRouter();
 
@@ -24,6 +24,7 @@ const author = ref('');
 const stepsGoal = ref(0);
 const currentBest = ref(null);
 const levelId = router.currentRoute.value.params.levelId;
+const albumId = router.currentRoute.value.params.id;
 const gameState = ref({ containers: [], particles: [] });
 const mapSize = ref({ rows: 0, columns: 0 });
 
@@ -464,10 +465,25 @@ const restartGame = () => {
     router.go(0)
 }
 const gotoLevelSelect = () => {
-    router.push(`/album/${router.currentRoute.value.params.id}`);
+    router.push(`/album/${albumId}`);
 }
+import { album } from '@/functions/useAlbum';
 const gotoNextLevel = () => {
+    assert(levelViewConfig.value.context === 'album');
     router.replace(levelViewConfig.value.next)
+    // refresh the level view config
+    levelViewConfig.value.next = (() => {
+        const levelIndex = album
+            .value[albumId]
+            .content.findIndex(item => item.levelId === levelId);
+        const totalIndexes = album.value[albumId].content.length;
+        if (levelIndex === totalIndexes - 1) {
+            return `/album/${albumId}`;
+        }
+        else {
+            return `/album/${albumId}/${album.value[albumId].content[levelIndex + 1].levelId}`;
+        }
+    })()
     // refresh for the replacement to take effect
     setTimeout(() => {
         router.go(0);
@@ -525,7 +541,7 @@ onBeforeUnmount(() => {
 const updateViewConfig = () => {
     if (levelViewConfig.value.context === 'editor') {
         levelViewConfig.value.context = 'finished';
-        levelViewConfig.value.bestMovesCount = stepsCounter.value;
+        levelViewConfig.value.bestMovesCount = currentBest.value;
     }
 }
 
@@ -587,9 +603,7 @@ const handleGoBack = () => {
             }" :id="particle.id">
         </div>
         <!-- <p style="position: absolute; top: 1rem">
-            {{ panningOffset }}
-            {{ mapSize }}
-            {{ { isCustomAnimating, disableInteraction } }}
+            {{ levelViewConfig }}
         </p> -->
         <!-- Messages shown when the game ends -->
         <div class="end-info-container" v-show="hasWon">
@@ -599,7 +613,7 @@ const handleGoBack = () => {
             }"
             v-if="stepsGoal">{{ getGameRank() }}</h1>
             <h2 class="end-info-container__score a-fade-in a-delay-4" v-if="stepsGoal"
-                :style="{'margin-bottom': levelViewConfig.context === 'editor' ? '0.5rem' : 0}"
+                :style="{'margin-bottom': levelViewConfig.context === 'editor' ? '0.5rem' : '2rem'}"
             >Your score: <span>
                     {{ stepsCounter }}/{{ stepsGoal }}
                 </span></h2>
@@ -615,7 +629,7 @@ const handleGoBack = () => {
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :disabled="levelViewConfig.context !== 'album'">
                     <template #trigger>
                         <ion-button name="apps-outline" class="a-fade-in a-delay-14"
-                            @click="router.push('/album/$id'.replace('$id', router.currentRoute.value.params.id))"
+                            @click="router.push('/album/$id'.replace('$id', albumId))"
                             :disabled="levelViewConfig.context !== 'album'"></ion-button>
                     </template>
                     <span>Level Select</span>

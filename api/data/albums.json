@@ -1,92 +1,94 @@
 [
     {
-        "name": "Naive",
-        "levels": [
+        "type": "album",
+        "meta": {
+            "name": "Naive",
+            "author": "Neutronic"
+        },
+        "content": [
             {
-                "name": "Tutorial Level",
-                "uuid": "2451607c-4c1a-4cee-a509-79d2fd89af88"
+                "name": "The Beginning",
+                "author": "Neutronic",
+                "levelId": "2451607c-4c1a-4cee-a509-79d2fd89af88"
             },
             {
-                "name": "Active Level",
-                "uuid": "ac676649-331a-4e2c-b520-0f6d7e0a11d4"
+                "name": "Trio",
+                "author": "Neutronic",
+                "levelId": "2ca1b223-6c3e-46ca-adf3-795847b9e521"
             },
             {
-                "name": "Debug Level",
-                "uuid": "6863dc53-5ba1-48d0-ada8-1ef1ecf11adb"
+                "name": "Middleless",
+                "author": "Neutronic",
+                "levelId": "be287cb3-80ae-43c4-8e73-bb206338ceeb"
             },
             {
-                "name": "Level 3",
-                "uuid": "528a89f9-42"
+                "name": "Sanctuary",
+                "author": "Neutronic",
+                "levelId": "b6a23088-eb94-4b52-a7cc-343b6c9fa032"
             },
             {
-                "name": "Level 4",
-                "uuid": "528a89f9-43"
+                "name": "Blocky",
+                "author": "Neutronic",
+                "levelId": "efa7ffd8-3001-4141-9a04-f618aae2eb3e"
             },
             {
-                "name": "Level 5",
-                "uuid": "528a89f9-44"
+                "name": "First Portal",
+                "author": "Neutronic",
+                "levelId": "f260b503-680c-4706-9c41-ccb9679df8e5"
             },
             {
-                "name": "Level 6",
-                "uuid": "528a89f9-45"
+                "name": "Crossed",
+                "author": "Neutronic",
+                "levelId": "abd1b994-6647-4e88-b499-39c207ca5ba9"
             },
             {
-                "name": "Level 7",
-                "uuid": "528a89f9-46"
+                "name": "Third Portal",
+                "author": "Neutronic",
+                "levelId": "f8353bd1-c16f-4bc5-a166-8bb164a659d3"
             },
             {
-                "name": "Level 8",
-                "uuid": "528a89f9-47"
+                "name": "Fourth Portal",
+                "author": "Neutronic",
+                "levelId": "f8353bd1-c16f-4bc5-a166-8bb164a659d3"
             },
             {
-                "name": "Level 9",
-                "uuid": "528a89f9-48"
-            },
-            {
-                "name": "Level 10",
-                "uuid": "528a89f9-49"
-            },
-            {
-                "name": "Level 8",
-                "uuid": "528a89f9-47"
-            },
-            {
-                "name": "Level 9",
-                "uuid": "528a89f9-48"
-            },
-            {
-                "name": "Level 10",
-                "uuid": "528a89f9-49"
-            },
-            {
-                "name": "Level 8",
-                "uuid": "528a89f9-47"
-            },
-            {
-                "name": "Level 9",
-                "uuid": "528a89f9-48"
-            },
-            {
-                "name": "Level 10",
-                "uuid": "528a89f9-49"
+                "name": "Fifth Portal",
+                "author": "Neutronic",
+                "levelId": "f8353bd1-c16f-4bc5-a166-8bb164a659d3"
             }
         ]
     },
     {
-        "name": "Medium",
-        "levels": []
-    },
-    {
-        "name": "Hard",
-        "levels": []
-    },
-    {
-        "name": "Custom",
-        "levels": [
+        "type": "album",
+        "meta": {
+            "name": "Medium",
+            "author": "Neutronic"
+        },
+        "content": [
+            {
+                "name": "Almost Identical",
+                "author": "Neutronic",
+                "levelId": "f260b503-680c-4706-9c41-ccb9679df8e5"
+            },
+            {
+                "name": "Cogs",
+                "author": "Neutronic",
+                "levelId": "f8353bd1-c16f-4bc5-a166-8bb164a659d3"
+            }
         ]
     },
     {
-        "name": "Online",
-        "levels": []
+        "type": "album",
+        "meta": {
+            "name": "Hard",
+            "author": "Neutronic"
+        },
+        "content": [
+            {
+                "name": "Fishy",
+                "author": "Neutronic",
+                "levelId": "7d2f0fff-2cf5-4159-9fd4-8565d3a99537"
+            }
+        ]
     }
 ]
