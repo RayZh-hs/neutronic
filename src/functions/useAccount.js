@@ -1,6 +1,8 @@
-import { useStorage } from "@vueuse/core";
+import { assert, useStorage } from "@vueuse/core";
+import { albums, getPrebuiltLevelInfo } from "./levelUtils";
 
 import defaultPlayerProgress from "@/data/defaultPlayerProgress";
+import e from "express";
 const accountProgress = useStorage("neutronic-account-progress", defaultPlayerProgress);
 const accountAuth = useStorage("neutronic-account-auth", { type: 'local', username: null, password: null }, sessionStorage);
 
@@ -30,4 +32,27 @@ export const fetchAccountProgress = async () => {
 export const pushAccountProgress = async () => {
     console.warn('Not implemented: pushAccountProgress at useAccount.js');
     console.log('Push account progress to server');
+}
+
+const isAccessibleToPrebuiltLevel = (levelId) => {
+    const accountProgress = getAccountProgress();
+    const levelInfo = getPrebuiltLevelInfo(levelId);
+    if (levelInfo === null) {
+        return false;
+    }
+    if (levelInfo.albumIndex >= 1 && !hasFinishedAlbum(levelInfo.albumIndex - 1)) {
+        return false;
+    }
+    // TODO unfinished code
+}
+
+const hasFinishedAlbum = (albumId) => {
+    assert(0 <= albumId && albumId < albums.length, 'Invalid albumId');
+    const currentAlbumLookup = accountProgress.value.lookup[
+        albums[albumId].meta.name
+    ]
+    if (!currentAlbumLookup){return false;}
+    else {
+        return albums[albumId].content.length === currentAlbumLookup.passed + currentAlbumLookup.perfected;
+    }
 }
