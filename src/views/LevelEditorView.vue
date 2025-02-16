@@ -64,7 +64,7 @@ const onLevelNameChange = (event) => {
 // - tracking the level goal and custom best
 const stepsGoal = ref(null);
 const currentBest = ref(null);
-const activeRecording = ref(null);
+const activeRecording = useSessionStorage('active-recording-cache', []);
 
 const onStepsGoalChange = (event) => {
     let newStepsGoal = parseInt(event.target.innerText);
@@ -448,7 +448,7 @@ const buildLevelJson = () => {
                 }
             })(),
             "appendix": {
-                ...(activeRecording.value ? { "recording": activeRecording.value } : {})
+                ...(activeRecording.value.length > 0 ? { "recording": activeRecording.value } : {})
             }
         }
     }
@@ -782,6 +782,10 @@ onMounted(() => {
             message.error('Not implemented error');
             console.error('Server hosted custom level loading is not supported at the present time!')
         }
+    }
+    else {
+        // Clear the recording
+        activeRecording.value = [];
     }
     // Create sprite positioning hook
     setInterval(updateToolSpritePosition, 1000 / levelEditorRefreshFrequency);
