@@ -500,11 +500,11 @@ const gotoNextLevel = () => {
             .value[albumId]
             .content.findIndex(item => item.levelId === levelId);
         const totalIndexes = album.value[albumId].content.length;
-        if (levelIndex === totalIndexes - 1) {
+        if (levelIndex >= totalIndexes - 2) {
             return `/album/${albumId}`;
         }
         else {
-            return `/album/${albumId}/${album.value[albumId].content[levelIndex + 1].levelId}`;
+            return `/album/${albumId}/${album.value[albumId].content[levelIndex + 2].levelId}`;
         }
     })()
     // refresh for the replacement to take effect
