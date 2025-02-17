@@ -4,18 +4,24 @@ Neutronic is an open-source, web-based puzzle game where players cancel out part
 
 ## Installation
 
-Since the game is still in its development phase, a web-based prebuilt version is not available. However, you can clone the repository and run the game locally.
+Since the game is still in its development phase, a web-based prebuilt version is not available. However, you can clone the repository and run the game locally. We have presently migrated the game to yarn, so make sure you have it installed globally.
+
+```bash
+npm install -g yarn
+```
+
+After cloning the repository, navigate to its root folder. There will be a `dev` script in the root package.json that will run both the frontend and backend servers.
 
 ```bash
 git clone https://github.com/RayZh-hs/neutronic.git
 cd neutronic
-npm install
-npm run dev
+yarn install
+yarn run dev
 ```
 
-After running these commands, you can access the game in any web browser at `localhost:5174`. You can change the port in the `vite.config.js` file.
+After running these commands, you can access the game in any web browser at `localhost:5174`. You can change the port in: `frontend/vite.config.js`.
 
-A prebuilt version (binary and online) will be available once the game is complete.
+After the server has been set up, expect a beta version of the game to be available on the web.
 
 ## Rules
 
