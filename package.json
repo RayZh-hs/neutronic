@@ -4,5 +4,11 @@
     "workspaces": [
         "frontend",
         "backend"
-    ]
+    ],
+    "scripts": {
+        "dev": "concurrently \"yarn workspace frontend dev\" \"yarn workspace backend dev\""
+    },
+    "devDependencies": {
+        "concurrently": "^7.0.0"
+    }
 }

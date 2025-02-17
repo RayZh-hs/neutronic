@@ -30,7 +30,7 @@ jsconfig.json
 load.sh
 
 # Databases
-api/data/*.db
-api/data/*.db-*
-api/data/maps/extended/*
-api/data/backups/*
+backend/api/data/*.db
+backend/api/data/*.db-*
+backend/api/data/maps/extended/**
+backend/api/data/backups/**
