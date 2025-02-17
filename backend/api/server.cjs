@@ -7,7 +7,7 @@ const fs = require('fs');
 
 // Init the databases
 initDatabases();
-// loadPremadeLevels();    // Call this iff you are running the server the first time!
+loadPremadeLevels();
 
 // The main express app
 const app = express();
@@ -49,7 +49,7 @@ app.get('/api/level', (req, res) => {
                 console.error(err);
             }
             else {
-                console.log(data)
+                console.log(`Level ${levelId} fetched and sent`);
                 res.json(JSON.parse(data));
             }
         });

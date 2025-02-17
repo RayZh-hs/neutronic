@@ -38,8 +38,19 @@ const getLevel = (levelId) => {
     return stmt.get(levelId);
 }
 
-// Insert a level into the database
-const insertLevel = (levelId, levelName, author, levelType) => {
+// Check if a level exists in the database
+const levelExists = (levelId) => {
+    const stmt = levelDb.prepare('SELECT * FROM levelTable WHERE levelId = ?');
+    return stmt.get(levelId) != undefined;
+}
+
+// Insert a level into the database, if it doesn't already exist
+const insertLevel = (levelId, levelName, author, levelType, useSafeguard = true) => {
+    // First check if the level already exists
+    if (useSafeguard && levelExists(levelId)) {
+        console.warn(`Level with levelId = ${levelId} already exists`);
+        return;
+    }
     const stmt = levelDb.prepare('INSERT INTO levelTable VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)');
     stmt.run(levelId, levelName, author, levelType);
 }
