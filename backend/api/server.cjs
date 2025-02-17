@@ -7,7 +7,7 @@ const fs = require('fs');
 
 // Init the databases
 initDatabases();
-loadPremadeLevels();    // Call this iff you are running the server the first time!
+// loadPremadeLevels();    // Call this iff you are running the server the first time!
 
 // The main express app
 const app = express();

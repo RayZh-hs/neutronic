@@ -2,7 +2,6 @@ import { assert, useStorage } from "@vueuse/core";
 import { albums, getPrebuiltLevelInfo } from "./levelUtils";
 
 import defaultPlayerProgress from "@/data/defaultPlayerProgress";
-import e from "express";
 const accountProgress = useStorage("neutronic-account-progress", defaultPlayerProgress);
 const accountAuth = useStorage("neutronic-account-auth", { type: 'local', username: null, password: null }, sessionStorage);
 

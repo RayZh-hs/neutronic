@@ -1,0 +1,14 @@
+{
+    "name": "backend",
+    "private": true,
+    "version": "0.0.1",
+    "type": "module",
+    "scripts": {
+        "dev": "node api/server.cjs"
+    },
+    "dependencies": {
+        "better-sqlite3": "^11.8.1",
+        "cors": "^2.8.5",
+        "express": "^4.21.2"
+    }
+}
