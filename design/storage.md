@@ -123,3 +123,18 @@ This is simple. Basically the editor only needs to know whether to fetch the lev
     "localFetch": true/false,
 }
 ```
+
+## solver-config
+
+Here is how a level is passed into a solver:
+
+```text
+$rows $columns
+<table: rows x columns | no space>:
+    - . for nothing
+    - # for board
+    - [a-z] for portals
+$particles
+<array: particles>:
+    - $color(R/B) $row $column
+```
