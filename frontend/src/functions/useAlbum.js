@@ -5,3 +5,7 @@ export const {
     data: album,
     isFinished: isAlbumLoaded
 } = useAxiosWithStore('neutronic-album', SERVER_URL + "/albums", 'GET');
+
+export const getAlbumIndex = (albums, albumName) => {
+    return albums.findIndex(album => album.meta.name === albumName);
+}

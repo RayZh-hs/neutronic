@@ -24,7 +24,7 @@ const author = ref('');
 const stepsGoal = ref(0);
 const currentBest = ref(null);
 const levelId = router.currentRoute.value.params.levelId;
-const albumId = router.currentRoute.value.params.id;
+const albumIndex = Number(router.currentRoute.value.params.id);
 const gameState = ref({ containers: [], particles: [] });
 const mapSize = ref({ rows: 0, columns: 0 });
 
@@ -235,11 +235,13 @@ const makeBoardFrom = (r, c) => {
         containerNode.classList.add('container--becoming-board');
     }
 }
+
+import { isAccessibleToPrebuiltLevel, hasFinishedAlbum } from '@/functions/useAccount';
 const updateHasWon = () => {
     console.log("particles: ", gameState.value.particles.length);
     if (gameState.value.particles.length === 0) {
         hasWon.value = true;
-        if (levelViewConfig.value.context === 'album') {
+        if (levelViewConfig.value.context === 'album' && isAccessibleToPrebuiltLevel(levelId)) {
             accountInsertHasWon();
         }
         currentBest.value = currentBest ? stepsCounter.value : Math.min(currentBest, stepsCounter.value);
@@ -251,14 +253,26 @@ const triggerEndingAnimation = () => {
 }
 
 import { getAccountProgress, setAndPushAccountProgress } from '@/functions/useAccount';
+import { getAlbumIndex } from '@/functions/useAlbum';
 const accountInsertHasWon = () => {
     const account = getAccountProgress();
     const rank = getGameRank();
     // If the album is NOT in the account, a new entry should be inserted
-    if (!account.lookup[levelViewConfig.value.albumName]) {
-        account.lookup[levelViewConfig.value.albumName] = {
-            perfected: 0,
-            passed: 0
+    // if (!account.lookup[levelViewConfig.value.albumName]) {
+    //     account.lookup[levelViewConfig.value.albumName] = {
+    //         perfected: 0,
+    //         passed: 0
+    //     }
+    // }
+    // If the last level of the album is passed, the album is considered finished
+    // Then the next album is unlocked
+    if (hasFinishedAlbum(albumIndex)) {
+        debugger;
+        if (albumIndex < album.value.length - 1 && !account.lookup[album.value[albumIndex + 1].meta.name]) {
+            account.lookup[album.value[albumIndex + 1].meta.name] = {
+                perfected: 0,
+                passed: 0
+            }
         }
     }
     if (rank === 'Perfect' && !account.perfected.includes(levelId)) {
@@ -488,7 +502,7 @@ const restartGame = () => {
     router.go(0)
 }
 const gotoLevelSelect = () => {
-    router.push(`/album/${albumId}`);
+    router.push(`/album/${albumIndex}`);
 }
 import { album } from '@/functions/useAlbum';
 const gotoNextLevel = () => {
@@ -497,14 +511,14 @@ const gotoNextLevel = () => {
     // refresh the level view config
     levelViewConfig.value.next = (() => {
         const levelIndex = album
-            .value[albumId]
+            .value[albumIndex]
             .content.findIndex(item => item.levelId === levelId);
-        const totalIndexes = album.value[albumId].content.length;
+        const totalIndexes = album.value[albumIndex].content.length;
         if (levelIndex >= totalIndexes - 2) {
-            return `/album/${albumId}`;
+            return `/album/${albumIndex}`;
         }
         else {
-            return `/album/${albumId}/${album.value[albumId].content[levelIndex + 2].levelId}`;
+            return `/album/${albumIndex}/${album.value[albumIndex].content[levelIndex + 2].levelId}`;
         }
     })()
     // refresh for the replacement to take effect
@@ -569,7 +583,7 @@ const updateViewConfig = () => {
     }
 }
 
-const levelEditorConfig = useSessionStorage('levelEditorConfig', {
+const levelEditorConfig = useSessionStorage('level-editor-config', {
     newLevel: true,
     localFetch: false,
 })
@@ -653,7 +667,7 @@ const handleGoBack = () => {
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :disabled="levelViewConfig.context !== 'album'">
                     <template #trigger>
                         <ion-button name="apps-outline" class="a-fade-in a-delay-14"
-                            @click="router.push('/album/$id'.replace('$id', albumId))"
+                            @click="router.push('/album/$id'.replace('$id', albumIndex))"
                             :disabled="levelViewConfig.context !== 'album'"></ion-button>
                     </template>
                     <span>Level Select</span>

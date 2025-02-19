@@ -742,7 +742,7 @@ const deleteAll = () => {
     message.success("Deleted all items");
 }
 
-const levelEditorConfig = useSessionStorage('levelEditorConfig', {
+const levelEditorConfig = useSessionStorage('level-editor-config', {
     newLevel: true,
     localFetch: false,
 })

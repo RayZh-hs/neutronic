@@ -20,8 +20,8 @@ import { getAccountProgress } from '@/functions/useAccount';
 
 const player = getAccountProgress();
 
-const albumId = Number(router.currentRoute.value.params.id);
-const albumObj = album.value[albumId];
+const albumIndex = Number(router.currentRoute.value.params.id);
+const albumObj = album.value[albumIndex];
 const total = albumObj.content.length;
 const playerProgress = player.lookup[albumObj.meta.name];
 const perfects = playerProgress.perfected;
@@ -65,15 +65,15 @@ const enterLevel = (level) => {
         albumName: albumObj.meta.name,
         next: (() => {
             if (level < albumObj.content.length){
-                return `/album/${albumId}/${albumObj.content[level].levelId}`;
+                return `/album/${albumIndex}/${albumObj.content[level].levelId}`;
             } else {
                 // Is the last level in the album
-                return `/album/${albumId}`;
+                return `/album/${albumIndex}`;
             }
         })(),
     };
     setTimeout(() => {
-        router.push(`/album/${albumId}/${albumObj.content[level - 1].levelId}`);
+        router.push(`/album/${albumIndex}/${albumObj.content[level - 1].levelId}`);
     }, 100);
 }
 
@@ -84,7 +84,7 @@ const enterLevel = (level) => {
         @click="router.push('/album')"></ion-icon>
     <div class="wrapper" v-if="isAlbumLoaded">
         <div class="header-container">
-            <h1 class="album-title a-fade-in">{{ album[albumId].meta.name }}</h1>
+            <h1 class="album-title a-fade-in">{{ album[albumIndex].meta.name }}</h1>
             <div class="header-container__right a-fade-in a-delay-1">
                 <status-bar title="perfects" color="#007bff" width="18rem" :total="total" :finished="perfects"
                     marginBottom="3pt" />
@@ -94,7 +94,7 @@ const enterLevel = (level) => {
         </div>
         <div class="main-container">
             <simple-level-card class="level-card a-fade-in" :class="{ [`a-delay-${num + 1}`]: true }"
-                v-for="(item, num) in album[albumId].content.slice(sliceWindow.begin, sliceWindow.end)"
+                v-for="(item, num) in album[albumIndex].content.slice(sliceWindow.begin, sliceWindow.end)"
                 :key="num + 1 + sliceWindow.begin"
                 :level="num + 1 + sliceWindow.begin"
                 :status="getStatus(num + 1 + sliceWindow.begin)"

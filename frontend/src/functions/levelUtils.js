@@ -1,8 +1,10 @@
 // ! important: this file ASSUMES that the album request has been made, and does not check for it
 
-export const albums = sessionStorage.getItem('neutronic-album');
+export const albums = JSON.parse(sessionStorage.getItem('neutronic-album'));
 
 export const getPrebuiltLevelInfo = (levelId) => {
+    const albums = JSON.parse(sessionStorage.getItem('neutronic-album'));
+
     for (let albumIndex = 0; albumIndex < albums.length; albumIndex++) {
         const levelIndex = albums[albumIndex].content.findIndex(
             (level) => level.levelId === levelId

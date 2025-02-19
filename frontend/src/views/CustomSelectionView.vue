@@ -59,7 +59,7 @@ const enterLevelEditor = () => {
 }
 
 //: Hooks for updating the levelEditorConfig
-const levelEditorConfig = useSessionStorage('levelEditorConfig', {
+const levelEditorConfig = useSessionStorage('level-editor-config', {
     newLevel: true,
     localFetch: false,
 })

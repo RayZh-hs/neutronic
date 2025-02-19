@@ -33,7 +33,7 @@ export const pushAccountProgress = async () => {
     console.log('Push account progress to server');
 }
 
-const isAccessibleToPrebuiltLevel = (levelId) => {
+export const isAccessibleToPrebuiltLevel = (levelId) => {
     const accountProgress = getAccountProgress();
     const levelInfo = getPrebuiltLevelInfo(levelId);
     if (levelInfo === null) {
@@ -42,16 +42,22 @@ const isAccessibleToPrebuiltLevel = (levelId) => {
     if (levelInfo.albumIndex >= 1 && !hasFinishedAlbum(levelInfo.albumIndex - 1)) {
         return false;
     }
-    // TODO unfinished code
+    if (levelInfo.levelIndex === 0) {
+        // The first level of an unlocked album is always accessible
+        return true;
+    }
+    // Check whether the last level of this album has been passed or perfected
+    const lastLevelId = albums[levelInfo.albumIndex].content[levelInfo.levelIndex - 1].levelId;
+    return accountProgress.perfected.includes(lastLevelId) || accountProgress.passed.includes(lastLevelId);
 }
 
-const hasFinishedAlbum = (albumId) => {
-    assert(0 <= albumId && albumId < albums.length, 'Invalid albumId');
+export const hasFinishedAlbum = (albumIndex) => {
+    assert(0 <= albumIndex && albumIndex < albums.length, 'Invalid albumIndex');
     const currentAlbumLookup = accountProgress.value.lookup[
-        albums[albumId].meta.name
+        albums[albumIndex].meta.name
     ]
     if (!currentAlbumLookup){return false;}
     else {
-        return albums[albumId].content.length === currentAlbumLookup.passed + currentAlbumLookup.perfected;
+        return albums[albumIndex].content.length === currentAlbumLookup.passed + currentAlbumLookup.perfected;
     }
 }
