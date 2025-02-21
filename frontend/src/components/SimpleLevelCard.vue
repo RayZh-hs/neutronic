@@ -54,9 +54,12 @@ const props = defineProps({
         background-color: rgba(color.adjust($n-primary, $lightness: -32%), 0.2)
     }
 
-    &.locked ion-icon {
-        color: rgba(255, 255, 255, 0.568);
+    &.locked {
         cursor: not-allowed;
+
+        ion-icon {
+            color: rgba(255, 255, 255, 0.568);
+        }
     }
     &:not(.locked) {
         cursor: pointer;

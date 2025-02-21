@@ -16,7 +16,7 @@ import SimpleLevelCard from '../components/SimpleLevelCard.vue';
 // import album from "../data/album.json";
 // import player from "../data/player.json";
 import { album, isAlbumLoaded } from '@/functions/useAlbum';
-import { getAccountProgress } from '@/functions/useAccount';
+import { getAccountProgress, isAccessibleToPrebuiltLevel } from '@/functions/useAccount';
 
 const player = getAccountProgress();
 
@@ -59,7 +59,9 @@ const getStatus = (level) => {
 const levelViewConfig = useSessionStorage('level-view-config', {}, { mergeDefaults: true })
 
 const enterLevel = (level) => {
-    console
+    if (!isAccessibleToPrebuiltLevel(level)) {
+        return;
+    }
     levelViewConfig.value = {
         context: 'album',
         albumName: albumObj.meta.name,
