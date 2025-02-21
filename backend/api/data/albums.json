@@ -27,6 +27,11 @@
                 "levelId": "b6a23088-eb94-4b52-a7cc-343b6c9fa032"
             },
             {
+                "name": "Not Impossible",
+                "author": "Neutronic",
+                "levelId": "8fcf4bc7-6a4b-4f2f-a6ed-c238e967ef53"
+            },
+            {
                 "name": "Blocky",
                 "author": "Neutronic",
                 "levelId": "efa7ffd8-3001-4141-9a04-f618aae2eb3e"
@@ -45,6 +50,31 @@
                 "name": "Apart",
                 "author": "Neutronic",
                 "levelId": "6452679d-aa6d-4100-89ce-6a9e11dec49e"
+            },
+            {
+                "name": "Copy & Paste",
+                "author": "Neutronic",
+                "levelId": "0c40ecac-b5f5-48e0-ba19-f05d9aa8e923"
+            },
+            {
+                "name": "Pitfall",
+                "author": "Neutronic",
+                "levelId": "57393cf1-f2e1-49da-a04a-d87772237dfa"
+            },
+            {
+                "name": "Swap",
+                "author": "Neutronic",
+                "levelId": "a30a61c8-70bc-40a5-98cc-4d1250661eb8"
+            },
+            {
+                "name": "Loopback",
+                "author": "Neutronic",
+                "levelId": "21ac7841-1cba-49d7-b44e-f10ac7dc14ef"
+            },
+            {
+                "name": "Almost Portaless",
+                "author": "Neutronic",
+                "levelId": "4b60242f-e743-4677-b949-24045731067e"
             }
         ]
     },
