@@ -13,7 +13,7 @@ import { levelMapGridScaleRem, levelMapGridScalePx, SERVER_URL } from "@/data/co
 import { levelPortalCycleColor, levelMapPortalBackgroundAlpha, gameDefaultAnimationDuration, gameDropoutAnimationDuration } from "@/data/constants";
 import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
 import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils';
-import { randomIntFromInterval } from '@/functions/mathUtils';
+import { randomFloatFromInterval } from '@/functions/mathUtils';
 
 const levelViewConfig = useSessionStorage('level-view-config', {});
 
@@ -483,15 +483,33 @@ const getPositionForParticles = (item) => {
     };
 };
 
+const getRandomSequenceWithinRange = ({min, max}, length) => {
+    assert(length > 0);
+    const sequence = [];
+    for (let i = 0; i < length; i++) {
+        sequence.push(randomFloatFromInterval(min, max));
+    }
+    // Ensure that the sequence is scaled to precisely [min, max]
+    const curMin = Math.min(...sequence);
+    const curMax = Math.max(...sequence);
+    sequence.forEach((item, index) => {
+        sequence[index] = min + (item - curMin) / (curMax - curMin) * (max - min);
+    });
+    console.log(sequence);
+    return sequence;
+} 
+
 const changeObscurityForAll = (value, delayRange) => {
+    const length = gameState.value.particles.length + gameState.value.containers.length;
+    const randomDelaySequence = getRandomSequenceWithinRange(delayRange, length);
     // Give a random time offset before removing the blur
     [gameState.value.particles, gameState.value.containers].flat()
-        .forEach(obj => {
+        .forEach((obj, index) => {
             setTimeout(() => {
                 // const particleNode = document.getElementById(`p-${index}`);
                 // particleNode.classList.remove('obscure');
                 obj.obscure = value;
-            }, randomIntFromInterval(delayRange.min, delayRange.max));
+            }, randomDelaySequence[index]);
         });
 }
 const getGameRank = () => {
