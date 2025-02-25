@@ -255,6 +255,7 @@ const triggerEndingAnimation = () => {
 import { getAccountProgress, setAndPushAccountProgress } from '@/functions/useAccount';
 import { getAlbumIndex } from '@/functions/useAlbum';
 const accountInsertHasWon = () => {
+    let hasPerfected = false;
     const account = getAccountProgress();
     const rank = getGameRank();
     // If the album is NOT in the account, a new entry should be inserted
@@ -264,17 +265,6 @@ const accountInsertHasWon = () => {
     //         passed: 0
     //     }
     // }
-    // If the last level of the album is passed, the album is considered finished
-    // Then the next album is unlocked
-    if (hasFinishedAlbum(albumIndex)) {
-        debugger;
-        if (albumIndex < album.value.length - 1 && !account.lookup[album.value[albumIndex + 1].meta.name]) {
-            account.lookup[album.value[albumIndex + 1].meta.name] = {
-                perfected: 0,
-                passed: 0
-            }
-        }
-    }
     if (rank === 'Perfect' && !account.perfected.includes(levelId)) {
         account.perfected.push(levelId);
         account.lookup[levelViewConfig.value.albumName].perfected += 1;
@@ -287,8 +277,23 @@ const accountInsertHasWon = () => {
         account.passed.push(levelId);
         account.lookup[levelViewConfig.value.albumName].passed += 1;
     }
-    else { return }
-    setAndPushAccountProgress(account);
+    else {
+        hasPerfected = true;
+    } // In the last case, the level has already been perfected
+    // If the last level of the album is passed, the album is considered finished
+    // Then the next album is unlocked
+    if (hasFinishedAlbum(albumIndex)) {
+        debugger;
+        if (albumIndex < album.value.length - 1 && !account.lookup[album.value[albumIndex + 1].meta.name]) {
+            account.lookup[album.value[albumIndex + 1].meta.name] = {
+                perfected: 0,
+                passed: 0
+            }
+        }
+    }
+    if (!hasPerfected) {
+        setAndPushAccountProgress(account);
+    }
 }
 
 const recording = ref([]);

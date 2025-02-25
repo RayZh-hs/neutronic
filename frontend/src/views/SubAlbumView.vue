@@ -58,16 +58,18 @@ const getStatus = (level) => {
 
 const levelViewConfig = useSessionStorage('level-view-config', {}, { mergeDefaults: true })
 
-const enterLevel = (level) => {
-    if (!isAccessibleToPrebuiltLevel(level)) {
+const enterLevel = (levelIndex) => {
+    if (!isAlbumLoaded) { return; }
+    const levelId = albumObj.content[levelIndex - 1].levelId;
+    if (!isAccessibleToPrebuiltLevel(levelId)) {
         return;
     }
     levelViewConfig.value = {
         context: 'album',
         albumName: albumObj.meta.name,
         next: (() => {
-            if (level < albumObj.content.length){
-                return `/album/${albumIndex}/${albumObj.content[level].levelId}`;
+            if (levelIndex < albumObj.content.length){
+                return `/album/${albumIndex}/${albumObj.content[levelIndex].levelId}`;
             } else {
                 // Is the last level in the album
                 return `/album/${albumIndex}`;
@@ -75,7 +77,7 @@ const enterLevel = (level) => {
         })(),
     };
     setTimeout(() => {
-        router.push(`/album/${albumIndex}/${albumObj.content[level - 1].levelId}`);
+        router.push(`/album/${albumIndex}/${albumObj.content[levelIndex - 1].levelId}`);
     }, 100);
 }
 
