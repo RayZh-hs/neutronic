@@ -1,6 +1,7 @@
 <script setup>
 
-import { computed, onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, onMounted, ref } from 'vue';
+import { useLocalStorage } from '@vueuse/core';
 
 //: Swiper-specific setup
 
@@ -21,12 +22,19 @@ const pagination = ref({
 const modules = ref([Pagination, Navigation, Mousewheel]);
 
 const swiperRef = ref(null);
-const swiperPage = ref(0);
+// const swiperPage = ref(0);
+// Change the swiperPage to a local-storage object
+const swiperPage = useLocalStorage('swiper-page-memory', 0);
 
 const updatePage = (swiper) => {
     swiperPage.value = swiper.realIndex;
     console.log(swiperPage.value);
 };
+
+const initPage = (swiper) => {
+    swiper.slideTo(swiperPage.value, 0);
+    console.log("Swiper initialized at ", swiper.realIndex);
+}
 
 //: Custom component setup
 
@@ -62,6 +70,10 @@ const jumpToReferent = () => {
     }
 }
 
+onMounted(() => {
+    console.log("AlbumView mounted");
+});
+
 </script>
 
 <template>
@@ -72,7 +84,7 @@ const jumpToReferent = () => {
         <swiper ref="swiperRef" :pagination="pagination" :modules="modules" class="swiper" :navigation="{
             prevEl: '.backward-btn',
             nextEl: '.forward-btn'
-        }" :mousewheel="true" @swiper="updatePage" @slideChange="updatePage">
+        }" :mousewheel="true" @swiper="initPage" @slideChange="updatePage">
             <swiper-slide v-for="(item, num) in album" :key="num">
                 <album-card :name="item.meta.name" :locked="player.lookup[item.meta.name] == undefined" :total="item.content.length" :passes="player.lookup[item.meta.name]?.passed" :perfects="player.lookup[item.meta.name]?.perfected" class="a-fade-in" 
                     @click="jumpToReferent"
