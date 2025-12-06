@@ -1,6 +1,6 @@
 <script setup>
 //: Vue-specific imports
-import { onMounted, ref, computed, watch } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog, get, assert } from "@vueuse/core";
 import { useRouter } from "vue-router";
 import { useDialog } from "naive-ui";
@@ -16,6 +16,7 @@ import IonButton from "@/components/IonButton.vue"
 //: Custom Functions
 import { hexaToRgba } from "@/functions/colorUtils"
 import { easeOutCubic, easeOutSine, refAnimateToObject } from "../functions/animateUtils";
+import { useEditorEntities } from "@/functions/useEditorEntities";
 
 /**
  * This function is called to center the map on the screen.
@@ -76,7 +77,7 @@ const onStepsGoalChange = (event) => {
 }
 
 // - tracking the panning offset
-const { x: mouseX, y: mouseY, sourceType } = useMouse();
+const { x: mouseX, y: mouseY } = useMouse();
 
 import { usePanning } from "@/functions/usePanning";
 const { panningOffset, onPanStart, onPanEnd } = usePanning();
@@ -134,79 +135,30 @@ const { isOutside: mouseOutsideToolbar } = useMouseInElement(refToolbar);
 import { levelPortalCycleColor, levelPortalCycleColorCount, levelMapPortalBackgroundAlpha } from "../data/constants";
 import { useMessage } from "naive-ui";
 
-const usedPortalPairsCount = ref(0);
-// const nextPortalColor = ref(
-//     levelPortalCycleColor[usedPortalPairsCount.value]
-// );
+const {
+    boardTiles,
+    portalPairs,
+    positronParticles,
+    electronParticles,
+    usedPortalPairsCount,
+    activePortalMode,
+    canPlaceMorePortals,
+    hasBoardAt,
+    hasContainerAt,
+    hasPositronAt,
+    hasElectronAt,
+    addBoardAt,
+    addPortalAt,
+    removeBoardAt,
+    removeParticlesAt,
+    cleanupPortals,
+    removePlacementAt,
+    resetEntities,
+} = useEditorEntities();
+
 const nextPortalColor = computed(() => {
     return levelPortalCycleColor[usedPortalPairsCount.value % levelPortalCycleColorCount];
-})
-const activePortalMode = ref('first');  // ['first', 'second'] refers to the order of the portal being placed in the pair
-const canPlaceMorePortals = computed(() => {
-    return usedPortalPairsCount.value < levelPortalCycleColorCount;
-})
-
-// - all containers and particles
-const containerBoards = ref([]);
-const containerPortals = ref([]);
-const particlePositrons = ref([]);
-const particleElectrons = ref([]);
-
-const existBoardAt = (coord) => {
-    return containerBoards.value.some(item => item.x === coord.x && item.y === coord.y);
-}
-const existPortalAt = (coord) => {
-    return containerPortals.value.some(
-        pair => pair.some(item => item.x === coord.x && item.y === coord.y)
-    );
-}
-const existContainerAt = (coord) => {
-    return existBoardAt(coord)
-        || existPortalAt(coord);
-}
-const makeBoardAt = (coord) => {
-    containerBoards.value.push(coord);
-}
-const removeBoardAt = (coord) => {
-    containerBoards.value = containerBoards.value.filter(item => item.x !== coord.x || item.y !== coord.y);
-}
-const existPositronAt = (coord) => {
-    return particlePositrons.value.some(item => item.x === coord.x && item.y === coord.y);
-}
-const existElectronAt = (coord) => {
-    return particleElectrons.value.some(item => item.x === coord.x && item.y === coord.y);
-}
-const removeParticleAt = (coord) => {
-    particleElectrons.value = particleElectrons.value.filter(item => item.x !== coord.x || item.y !== coord.y);
-    particlePositrons.value = particlePositrons.value.filter(item => item.x !== coord.x || item.y !== coord.y);
-}
-const cleanupPortals = () => {
-    // This should be called to remove any incomplete portal pairs
-    containerPortals.value = containerPortals.value.filter(pair => pair.length === 2);
-    usedPortalPairsCount.value = containerPortals.value.length;
-    activePortalMode.value = 'first';
-}
-const makePortalAt = (coord) => {
-    if (activePortalMode.value === 'first') {
-        containerPortals.value.push([coord]);
-        activePortalMode.value = 'second';
-    }
-    else if (activePortalMode.value === 'second') {
-        containerPortals.value[usedPortalPairsCount.value].push(coord);
-        usedPortalPairsCount.value++;
-        activePortalMode.value = 'first';
-    }
-}
-const removeFrontAt = (coord) => {
-    if (existPositronAt(coord) || existElectronAt(coord)) {
-        removeParticleAt(coord);
-    } else if (existBoardAt(coord)) {
-        removeBoardAt(coord);
-    } else if (existPortalAt(coord)) {
-        containerPortals.value = containerPortals.value.map(pair => pair.filter(item => item.x !== coord.x || item.y !== coord.y));
-        cleanupPortals();
-    }
-}
+});
 
 // - right-click selecting and editing
 const rightSelectionStart = ref({ x: 0, y: 0 });
@@ -254,11 +206,11 @@ const removeParticlesInSelection = () => {
         width: rightSelectionScale.value.width,
         height: rightSelectionScale.value.height
     }
-    particleElectrons.value = particleElectrons.value.filter(item => {
+    electronParticles.value = electronParticles.value.filter(item => {
         return item.x < selectionAlias.x || item.x >= selectionAlias.x + selectionAlias.width
             || item.y < selectionAlias.y || item.y >= selectionAlias.y + selectionAlias.height;
     })
-    particlePositrons.value = particlePositrons.value.filter(item => {
+    positronParticles.value = positronParticles.value.filter(item => {
         return item.x < selectionAlias.x || item.x >= selectionAlias.x + selectionAlias.width
             || item.y < selectionAlias.y || item.y >= selectionAlias.y + selectionAlias.height;
     })
@@ -271,11 +223,11 @@ const removeContainersInSelection = () => {
         width: rightSelectionScale.value.width,
         height: rightSelectionScale.value.height
     }
-    containerBoards.value = containerBoards.value.filter(item => {
+    boardTiles.value = boardTiles.value.filter(item => {
         return item.x < selectionAlias.x || item.x >= selectionAlias.x + selectionAlias.width
             || item.y < selectionAlias.y || item.y >= selectionAlias.y + selectionAlias.height;
     })
-    containerPortals.value = containerPortals.value.map(pair => pair.filter(item => {
+    portalPairs.value = portalPairs.value.map(pair => pair.filter(item => {
         return item.x < selectionAlias.x || item.x >= selectionAlias.x + selectionAlias.width
             || item.y < selectionAlias.y || item.y >= selectionAlias.y + selectionAlias.height;
     }))
@@ -296,23 +248,23 @@ const applyToolToSelection = () => {
     }
     const toolsToAction = {
         'board': (x, y) => {
-            if (!existContainerAt({ x, y })) {
-                makeBoardAt({ x, y });
+            if (!hasContainerAt({ x, y })) {
+                addBoardAt({ x, y });
             }
         },
         'positron': (x, y) => {
-            if (!existContainerAt({ x, y })) {
-                makeBoardAt({ x, y });
+            if (!hasContainerAt({ x, y })) {
+                addBoardAt({ x, y });
             }
-            removeParticleAt({ x, y });
-            particlePositrons.value.push({ x, y });
+            removeParticlesAt({ x, y });
+            positronParticles.value.push({ x, y });
         },
         'electron': (x, y) => {
-            if (!existContainerAt({ x, y })) {
-                makeBoardAt({ x, y });
+            if (!hasContainerAt({ x, y })) {
+                addBoardAt({ x, y });
             }
-            removeParticleAt({ x, y });
-            particleElectrons.value.push({ x, y });
+            removeParticlesAt({ x, y });
+            electronParticles.value.push({ x, y });
         },
     }
     const toolAction = toolsToAction[activeTool.value];
@@ -332,10 +284,10 @@ const applyToolToSelection = () => {
 //: Import and Export
 
 const getBoundingBox = () => {
-    const minX = Math.min(...[...containerBoards.value, ...containerPortals.value.flat()].map(item => item.x));
-    const minY = Math.min(...[...containerBoards.value, ...containerPortals.value.flat()].map(item => item.y));
-    const maxX = Math.max(...[...containerBoards.value, ...containerPortals.value.flat()].map(item => item.x));
-    const maxY = Math.max(...[...containerBoards.value, ...containerPortals.value.flat()].map(item => item.y));
+    const minX = Math.min(...[...boardTiles.value, ...portalPairs.value.flat()].map(item => item.x));
+    const minY = Math.min(...[...boardTiles.value, ...portalPairs.value.flat()].map(item => item.y));
+    const maxX = Math.max(...[...boardTiles.value, ...portalPairs.value.flat()].map(item => item.x));
+    const maxY = Math.max(...[...boardTiles.value, ...portalPairs.value.flat()].map(item => item.y));
     return { minX, minY, maxX, maxY };
 }
 
@@ -358,15 +310,15 @@ const coordToRc = (boundingBox, coordList) => {
 
 const validateMap = () => {
     // Check if the map is valid
-    if (containerPortals.value.some(pair => pair.length !== 2)) {
+    if (portalPairs.value.some(pair => pair.length !== 2)) {
         message.error("Incomplete portal pairs found!");
         return false;
     }
-    if (particlePositrons.value.length != particleElectrons.value.length) {
+    if (positronParticles.value.length != electronParticles.value.length) {
         message.error("Unequal number of positrons and electrons!");
         return false;
     }
-    if (particlePositrons.value.length === 0) {
+    if (positronParticles.value.length === 0) {
         message.error("No particles found in the map!");
         return false;
     }
@@ -383,7 +335,7 @@ const buildLevelJson = () => {
     //     }
     // }
     // First check for incomplete portal pairs, which will lead to load issues
-    if (containerPortals.value.some(pair => pair.length !== 2)) {
+    if (portalPairs.value.some(pair => pair.length !== 2)) {
         message.error("Incomplete portal pairs found!");
         return {
             "status": "failure",
@@ -407,7 +359,7 @@ const buildLevelJson = () => {
                 return {
                     "containers": [
                         // First the boards
-                        ...coordToRc(boundingBox, containerBoards.value).map(coord => {
+                        ...coordToRc(boundingBox, boardTiles.value).map(coord => {
                             return {
                                 "type": "board",
                                 "row": coord.row,
@@ -415,7 +367,7 @@ const buildLevelJson = () => {
                             }
                         }),
                         // Then the portals
-                        ...containerPortals.value.map((pair, index) => {
+                        ...portalPairs.value.map((pair, index) => {
                             return pair.map(coord => {
                                 return {
                                     "type": "portal",
@@ -428,7 +380,7 @@ const buildLevelJson = () => {
                     ],
                     "particles": [
                         // First the electrons (blue)
-                        ...coordToRc(boundingBox, particleElectrons.value).map(coord => {
+                        ...coordToRc(boundingBox, electronParticles.value).map(coord => {
                             return {
                                 "color": "blue",
                                 "row": coord.row,
@@ -436,7 +388,7 @@ const buildLevelJson = () => {
                             }
                         }),
                         // Then the positrons (red)
-                        ...coordToRc(boundingBox, particlePositrons.value).map(coord => {
+                        ...coordToRc(boundingBox, positronParticles.value).map(coord => {
                             return {
                                 "color": "red",
                                 "row": coord.row,
@@ -463,7 +415,7 @@ const loadLevelJson = (levelJson, parse = true) => {
     // Load meta
     levelName.value = level.meta.name;
     // Load content
-    containerBoards.value = level.content.containers
+    boardTiles.value = level.content.containers
         .filter(item => item.type === 'board')
         .map(item => {
             return {
@@ -471,7 +423,7 @@ const loadLevelJson = (levelJson, parse = true) => {
                 y: item.row * levelMapGridScalePx
             }
         });
-    containerPortals.value = level.content.containers
+    portalPairs.value = level.content.containers
         .filter(item => item.type === 'portal')
         .reduce((acc, item) => {
             if (!acc[item.index]) {
@@ -483,7 +435,7 @@ const loadLevelJson = (levelJson, parse = true) => {
             });
             return acc;
         }, []);
-    particleElectrons.value = level.content.particles
+    electronParticles.value = level.content.particles
         .filter(item => item.color === 'blue')
         .map(item => {
             return {
@@ -491,7 +443,7 @@ const loadLevelJson = (levelJson, parse = true) => {
                 y: item.row * levelMapGridScalePx
             }
         });
-    particlePositrons.value = level.content.particles
+    positronParticles.value = level.content.particles
         .filter(item => item.color === 'red')
         .map(item => {
             return {
@@ -601,11 +553,11 @@ const onMouseLeftClickOnMap = () => {
     }
     if (activeTool.value === 'board') {
         // Check if there is already a container at the location
-        if (existContainerAt(atCoord)) { return; }
-        // Append a new board to the containerBoards
+        if (hasContainerAt(atCoord)) { return; }
+        // Append a new board to the boardTiles
         // The x, y here is relative to the origin.
-        // containerBoards.value.push(atCoord);
-        makeBoardAt(atCoord);
+        // boardTiles.value.push(atCoord);
+        addBoardAt(atCoord);
     }
     else if (activeTool.value === 'portal') {
         if (!canPlaceMorePortals.value) {
@@ -616,50 +568,50 @@ const onMouseLeftClickOnMap = () => {
             }, leftClickCooldownTime);
             return;
         }
-        if (existBoardAt(atCoord)) {
+        if (hasBoardAt(atCoord)) {
             // A portal can take the place of a board at placement
             removeBoardAt(atCoord);
-            removeParticleAt(atCoord);
+            removeParticlesAt(atCoord);
         }
-        else if (existContainerAt(atCoord)) {
+        else if (hasContainerAt(atCoord)) {
             // Then there exists a portal at the position
             // message.warning("You cannot place a portal on another portal!");
         }
         else {
             // All is clear
-            makePortalAt(atCoord);
+            addPortalAt(atCoord);
         }
     }
     else if (activeTool.value === 'positron') {
-        if (existPositronAt(atCoord)) {
+        if (hasPositronAt(atCoord)) {
             // Then there exists a positron at the position
             // message.warning("You cannot place a positron on another positron!");
             return;
         }
-        if (!existContainerAt(atCoord)) {
+        if (!hasContainerAt(atCoord)) {
             // Create a new board on which the positron can stand
-            makeBoardAt(atCoord);
+            addBoardAt(atCoord);
         }
-        removeParticleAt(atCoord);
-        // Append a new positron to the particlePositrons
-        particlePositrons.value.push(atCoord);
+        removeParticlesAt(atCoord);
+        // Append a new positron to the positronParticles
+        positronParticles.value.push(atCoord);
     }
     else if (activeTool.value === 'electron') {
-        if (existElectronAt(atCoord)) {
+        if (hasElectronAt(atCoord)) {
             // Then there exists an electron at the position
             // message.warning("You cannot place an electron on another electron!");
             return;
         }
-        if (!existContainerAt(atCoord)) {
+        if (!hasContainerAt(atCoord)) {
             // Create a new board on which the electron can stand
-            makeBoardAt(atCoord);
+            addBoardAt(atCoord);
         }
-        removeParticleAt(atCoord);
-        // Append a new electron to the particleElectrons
-        particleElectrons.value.push(atCoord);
+        removeParticlesAt(atCoord);
+        // Append a new electron to the electronParticles
+        electronParticles.value.push(atCoord);
     }
     else if (activeTool.value === 'remover') {
-        removeFrontAt(atCoord);
+        removePlacementAt(atCoord);
         // A cooldown is implemented to prevent multi-clicks
         leftClickCooldown = true;
         setTimeout(() => {
@@ -732,13 +684,7 @@ onClickOutside(selectionToolbar, onSelectCancel);
 
 const showConfirmDeletionModal = ref(false);
 const deleteAll = () => {
-    containerBoards.value = [];
-    containerPortals.value = [];
-    particlePositrons.value = [];
-    particleElectrons.value = [];
-    usedPortalPairsCount.value = 0;
-    activePortalMode.value = 'first';
-
+    resetEntities();
     message.success("Deleted all items");
 }
 
@@ -945,11 +891,11 @@ onMounted(() => {
         }"></div>
         <div class="sprite-container sprite-containers-container">
             <!-- All Container objects ie. Boards and Portals are listed here -->
-            <div class="sprite-container-object sprite-board" v-for="board in containerBoards" :style="{
+            <div class="sprite-container-object sprite-board" v-for="board in boardTiles" :style="{
                 'top': `${board.y + originPosition.y}px`,
                 'left': `${board.x + originPosition.x}px`
             }"></div>
-            <div v-for="(portalPair, index) in containerPortals">
+            <div v-for="(portalPair, index) in portalPairs">
                 <div class="sprite-container-object sprite-portal" v-for="portal in portalPair" :style="{
                     'top': `${portal.y + originPosition.y}px`,
                     'left': `${portal.x + originPosition.x}px`,
@@ -960,11 +906,11 @@ onMounted(() => {
         </div>
         <div class="sprite-container sprite-particles-container">
             <!-- All positrons and electrons are listed here -->
-            <div class="sprite-particle sprite-positron" v-for="positron in particlePositrons" :style="{
+            <div class="sprite-particle sprite-positron" v-for="positron in positronParticles" :style="{
                 'top': `${positron.y + originPosition.y}px`,
                 'left': `${positron.x + originPosition.x}px`
             }"></div>
-            <div class=" sprite-particle sprite-electron" v-for="electron in particleElectrons" :style="{
+            <div class=" sprite-particle sprite-electron" v-for="electron in electronParticles" :style="{
                 'top': `${electron.y + originPosition.y}px`,
                 'left': `${electron.x + originPosition.x}px`
             }"></div>

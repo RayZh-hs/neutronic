@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { hexaToRgba } from "../functions/colorUtils";
 import { assert, useElementBounding, useSessionStorage } from '@vueuse/core';
 import axios from 'axios';
+import { useGameStateQueries } from '@/functions/useGameStateQueries';
 const router = useRouter();
 
 //: Custom Data and Components
@@ -108,51 +109,27 @@ const onPanEndWrapper = () => {
 
 //: Game Logic
 // - auxiliary functions
-const existBoardAt = (r, c) => {
-    return gameState.value.containers.some(item => item.row === r && item.column === c && item.type === 'board');
-};
-const existPortalAt = (r, c) => {
-    return gameState.value.containers.some(item => item.row === r && item.column === c && item.type === 'portal');
-};
-const existContainerAt = (r, c) => {
-    return gameState.value.containers.some(item => item.row === r && item.column === c);
-};
-const existParticleAt = (r, c) => {
-    return gameState.value.particles.some(item => item.row === r && item.column === c);
-};
-const existParticleWithColorAt = (r, c, color) => {
-    return gameState.value.particles.some(item => item.row === r && item.column === c && item.color === color);
-};
-const getPortalIndexAt = (r, c) => {
-    return gameState.value.containers.find(item => item.row === r && item.column === c)?.index;
-};
-const getOtherPortal = (r, c) => {
-    const index = getPortalIndexAt(r, c);
-    if (index === undefined) return null;
-    else return gameState.value.containers.find(item => item.index === index && (item.row !== r || item.column !== c));
-}
-const getParticlesAt = (r, c) => {
-    return gameState.value.particles.filter(item => item.row === r && item.column === c);
-}
-const getParticleAt = (r, c) => {
-    return gameState.value.particles.find(item => item.row === r && item.column === c);
-}
-const getContainerAt = (r, c) => {
-    return gameState.value.containers.find(item => item.row === r && item.column === c);
-}
-const negateColor = (color) => {
-    return color === 'red' ? 'blue' : 'red';
-};
+const {
+    hasBoardAt,
+    hasPortalAt,
+    hasContainerAt,
+    hasParticleWithColorAt,
+    getOtherPortal,
+    getParticlesAt,
+    getParticleAt,
+    getContainerAt,
+    negateColor,
+} = useGameStateQueries(gameState);
 
 const isMoveValid = (currentColor, currentId, newPos) => {
-    if (!existContainerAt(newPos.row, newPos.column)) return false;
-    if (existParticleWithColorAt(newPos.row, newPos.column, currentColor)) return false;
-    if (existPortalAt(newPos.row, newPos.column)) {
+    if (!hasContainerAt(newPos.row, newPos.column)) return false;
+    if (hasParticleWithColorAt(newPos.row, newPos.column, currentColor)) return false;
+    if (hasPortalAt(newPos.row, newPos.column)) {
         const otherPortal = getOtherPortal(newPos.row, newPos.column);
         // console.log(otherPortal);
         // console.log("current id: ", currentId);
         // console.log("getParticleAt: ", getParticleAt(otherPortal.row, otherPortal.column));
-        if (existParticleWithColorAt(otherPortal.row, otherPortal.column, currentColor) && getParticleAt(otherPortal.row, otherPortal.column).id != currentId) return false;
+        if (hasParticleWithColorAt(otherPortal.row, otherPortal.column, currentColor) && getParticleAt(otherPortal.row, otherPortal.column).id != currentId) return false;
     }
     return true;
 }
@@ -168,7 +145,7 @@ const handleKeydown = (event) => {
 };
 const updateMapAfterCollision = (r, c) => {
 
-    if (existPortalAt(r, c)) {
+    if (hasPortalAt(r, c)) {
         // Turn the other portal into a board
         const otherPortal = getOtherPortal(r, c);
         otherPortal.type = 'board';
@@ -358,7 +335,7 @@ const moveParticle = (direction) => {
             const collidingParticles = getParticlesAt(currentRow, currentColumn);
             collidingParticles.forEach(particle => particle.colliding = true);
             collapseContainerAt(currentRow, currentColumn);
-            if (existPortalAt(currentRow, currentColumn)) {
+            if (hasPortalAt(currentRow, currentColumn)) {
                 const otherPortalCoord = getOtherPortal(currentRow, currentColumn);
                 makeBoardFrom(otherPortalCoord.row, otherPortalCoord.column);
             }
@@ -370,7 +347,7 @@ const moveParticle = (direction) => {
 
             }, gameDropoutAnimationDuration);
         }
-        else if (existPortalAt(currentRow, currentColumn)) {
+        else if (hasPortalAt(currentRow, currentColumn)) {
             disableInteraction.value = true;
             setTimeout(() => {
                 isCustomAnimating.value = true;
@@ -382,7 +359,7 @@ const moveParticle = (direction) => {
                 gameState.value.particles[currentIndex].row = otherPortalCoord.row;
                 gameState.value.particles[currentIndex].column = otherPortalCoord.column;
 
-                if (existParticleWithColorAt(otherPortalCoord.row, otherPortalCoord.column, negateColor(currentColor))) {
+                if (hasParticleWithColorAt(otherPortalCoord.row, otherPortalCoord.column, negateColor(currentColor))) {
                     // First clear the selection for correct visuals
                     selected.value = null;
                     // If the other portal has a particle of a different color, give the two particles a colliding effect
@@ -455,10 +432,10 @@ const additionalCenteringOffset = computed(() => {
 const getPositionForContainers = (item) => {
     item.classes = [];
     item.classes.push(item.type);
-    if (existBoardAt(item.row - 1, item.column)) item.classes.push('board--occupied-top');
-    if (existBoardAt(item.row + 1, item.column)) item.classes.push('board--occupied-bottom');
-    if (existBoardAt(item.row, item.column - 1)) item.classes.push('board--occupied-left');
-    if (existBoardAt(item.row, item.column + 1)) item.classes.push('board--occupied-right');
+    if (hasBoardAt(item.row - 1, item.column)) item.classes.push('board--occupied-top');
+    if (hasBoardAt(item.row + 1, item.column)) item.classes.push('board--occupied-bottom');
+    if (hasBoardAt(item.row, item.column - 1)) item.classes.push('board--occupied-left');
+    if (hasBoardAt(item.row, item.column + 1)) item.classes.push('board--occupied-right');
     const left = (item.column) * levelMapGridScalePx;
     const top = (item.row) * levelMapGridScalePx;
     return {
