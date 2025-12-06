@@ -788,8 +788,7 @@ onMounted(() => {
         <div class="u-gap-5"></div>
         <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
         <p class="slash-separator a-fade-in a-delay-2">/</p>
-        <span class="level-name a-fade-in a-delay-3" contenteditable="" @input="onLevelNameChange">{{ levelName
-            }}</span>
+        <span class="level-name a-fade-in a-delay-3" contenteditable="" @input="onLevelNameChange">{{ levelName }}</span>
 
         <!-- The right side of the top section -->
         <div class="u-mla"></div>

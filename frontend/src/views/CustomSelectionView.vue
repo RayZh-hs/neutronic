@@ -3,13 +3,15 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSessionStorage } from '@vueuse/core';
 import { v4 as uuidV4Generator } from 'uuid';
+import { useMessage } from 'naive-ui';
 import LevelCard from '@/components/LevelCard.vue';
 import IonButton from '@/components/IonButton.vue';
 import { customSelectionWindowSize } from '@/data/constants';
-import { useAccountStore } from '@/functions/useAccount';
+import { useAccountStore, renameAccount } from '@/functions/useAccount';
 
 const router = useRouter();
 const account = useAccountStore();
+const message = useMessage();
 
 const sliceWindow = ref({
     begin: 0,
@@ -56,10 +58,53 @@ const prevWindow = () => {
     sliceWindow.value.end -= customSelectionWindowSize;
 };
 
+const showNamePrompt = ref(false);
+const pendingAction = ref(null);
+const nameInput = ref('');
+
+const needsUsername = computed(() => {
+    const username = account.value.profile.username?.trim();
+    return !username || username === 'Player';
+});
+
+const openNamePrompt = (action) => {
+    pendingAction.value = action;
+    nameInput.value = '';
+    showNamePrompt.value = true;
+};
+
+const closeNamePrompt = () => {
+    showNamePrompt.value = false;
+    pendingAction.value = null;
+};
+
+const confirmNamePrompt = () => {
+    const trimmed = nameInput.value.trim();
+    if (!trimmed) {
+        message.warning('Please enter a name');
+        return false;
+    }
+    renameAccount(trimmed);
+    const action = pendingAction.value;
+    closeNamePrompt();
+    action?.();
+    return true;
+};
+
+const requireUsername = (action) => {
+    if (needsUsername.value) {
+        openNamePrompt(action);
+        return;
+    }
+    action();
+};
+
 const createCustomLevel = () => {
-    const uuid = uuidV4Generator();
-    levelEditorConfig.value = { loadFromLevelView: false };
-    router.push(`/custom/edit/${uuid}`);
+    requireUsername(() => {
+        const uuid = uuidV4Generator();
+        levelEditorConfig.value = { loadFromLevelView: false };
+        router.push(`/custom/edit/${uuid}`);
+    });
 };
 
 const editLevel = (uuid) => {
@@ -102,6 +147,12 @@ const playLevel = (uuid) => {
         :class="{ disabled: sliceWindow.begin <= 0 }"></ion-icon>
     <ion-icon name="chevron-forward-outline" class="control-btn control-btn__forward a-fade-in" @click="nextWindow"
         :class="{ disabled: sliceWindow.end >= total }"></ion-icon>
+    <n-modal v-model:show="showNamePrompt" preset="dialog" title="What should we call you?" positive-text="Continue"
+        negative-text="Cancel" @positive-click="confirmNamePrompt" @negative-click="closeNamePrompt">
+        <p>Pick a name so we can sign your custom levels.</p>
+        <n-input class="u-mt-2" v-model:value="nameInput" placeholder="Enter a display name" maxlength="32"
+            autofocus />
+    </n-modal>
 </template>
 
 <style lang="scss" scoped>

@@ -61,13 +61,18 @@ const handlePlay = () => emit('play', props.uuid);
 .main-container {
     width: max(100%, 30rem);
     min-height: 4.5rem;
-    outline: 1px solid rgba(245, 245, 245, 0.229);
     background: linear-gradient(45deg, #25252589, #1a1919c0);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
     padding: 0.75rem 1rem;
+    animation: all 0.3s ease-in-out;
+
+    &:hover {
+        outline: 1px solid rgba(245, 245, 245, 0.229);
+        background: linear-gradient(45deg, #25252589, #1a1919c0);
+    }
 }
 
 .level-info {
@@ -93,9 +98,10 @@ const handlePlay = () => emit('play', props.uuid);
 
 .button-group {
     display: flex;
-    gap: 0.5rem;
+    gap: 1rem;
 
     .btn {
+        width: 1.5rem;
         color: #f0f0f0;
     }
 }

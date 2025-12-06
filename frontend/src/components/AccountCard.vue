@@ -94,11 +94,11 @@ onChange(async (files) => {
             </div>
         </div>
         <div class="account-status-row">
-            <span class="status-pill" :class="{ 'status-pill--saved': account.value.profile.saved }">
-                {{ account.value.profile.saved ? 'SAVED' : 'UNSAVED' }}
+            <span class="status-pill" :class="{ 'status-pill--saved': account.profile.saved }">
+                {{ account.profile.saved ? 'SAVED' : 'UNSAVED' }}
             </span>
-            <small v-if="account.value.profile.lastExportedAt" class="status-meta">
-                Last export {{ new Date(account.value.profile.lastExportedAt).toLocaleString() }}
+            <small v-if="account.profile.lastExportedAt" class="status-meta">
+                Last export {{ new Date(account.profile.lastExportedAt).toLocaleString() }}
             </small>
         </div>
         <p class="extra-info">
@@ -109,9 +109,6 @@ onChange(async (files) => {
             <button class="card-button" type="button" @click="startImport">Import account (.json)</button>
         </div>
     </div>
-    <p class="account-footnote">
-        File exports are plain JSON so you can inspect or tweak them before sharing.
-    </p>
 </template>
 
 <style lang="scss" scoped>
@@ -168,7 +165,7 @@ onChange(async (files) => {
 }
 
 .status-pill {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     letter-spacing: 0.1em;
     padding: 0.2rem 0.6rem;
     border-radius: 999px;
