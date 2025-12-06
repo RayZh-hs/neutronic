@@ -1,12 +1,18 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
+const resolveDatabasePath = (fileName) => path.resolve(__dirname, 'data', fileName);
+
+const bootstrapDatabase = (fileName) => {
+    const db = new Database(resolveDatabasePath(fileName), { verbose: console.log });
+    db.pragma('journal_mode = WAL');
+    return db;
+};
+
 // For storing all level data
-const levelDb = new Database(path.resolve(__dirname, "data", "level.db"), { verbose: console.log });
-levelDb.pragma('journal_mode = WAL');
+const levelDb = bootstrapDatabase('level.db');
 // For storing all account data
-const accountDb = new Database(path.resolve(__dirname, "data", "account.db"), { verbose: console.log });
-accountDb.pragma('journal_mode = WAL');
+const accountDb = bootstrapDatabase('account.db');
 
 // Database initialization, called before server launch
 const initDatabases = () => {
@@ -33,15 +39,13 @@ const loadPremadeLevels = () => {
 }
 
 // Find a level by its ID and retrieve it
-const getLevel = (levelId) => {
-    const stmt = levelDb.prepare('SELECT * FROM levelTable WHERE levelId = ?');
-    return stmt.get(levelId);
-}
+const levelSelectStmt = levelDb.prepare('SELECT * FROM levelTable WHERE levelId = ?');
+
+const getLevel = (levelId) => levelSelectStmt.get(levelId);
 
 // Check if a level exists in the database
 const levelExists = (levelId) => {
-    const stmt = levelDb.prepare('SELECT * FROM levelTable WHERE levelId = ?');
-    return stmt.get(levelId) != undefined;
+    return levelSelectStmt.get(levelId) != undefined;
 }
 
 // Insert a level into the database, if it doesn't already exist

@@ -94,6 +94,21 @@
                 "name": "Cogs",
                 "author": "Neutronic",
                 "levelId": "f8353bd1-c16f-4bc5-a166-8bb164a659d3"
+            },
+            {
+                "name": "Back to No Portals",
+                "author": "Neutronic",
+                "levelId": "50700de3-bbf4-4f1c-a7ac-08322e0691bc"
+            },
+            {
+                "name": "Mini Wheel",
+                "author": "Neutronic",
+                "levelId": "0818ff6d-55cb-484c-84f9-eb80356e84e7"
+            },
+            {
+                "name": "Unorderly",
+                "author": "Neutronic",
+                "levelId": "c2b0d4e8-e774-4206-abbf-20848d99f1ef"
             }
         ]
     },

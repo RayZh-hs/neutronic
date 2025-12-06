@@ -1,7 +1,7 @@
 <script setup>
 
 import { useRouter } from 'vue-router';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useSessionStorage } from '@vueuse/core';
 
 const router = useRouter();
@@ -13,71 +13,78 @@ import SimpleLevelCard from '../components/SimpleLevelCard.vue';
 
 //: Custom json setup
 
-// import album from "../data/album.json";
-// import player from "../data/player.json";
 import { album, isAlbumLoaded } from '@/functions/useAlbum';
 import { getAccountProgress, isAccessibleToPrebuiltLevel } from '@/functions/useAccount';
 
 const player = getAccountProgress();
 
-const albumIndex = Number(router.currentRoute.value.params.id);
-const albumObj = album.value[albumIndex];
-const total = albumObj.content.length;
-const playerProgress = player.lookup[albumObj.meta.name];
-const perfects = playerProgress.perfected;
-const passes = playerProgress.passed;
+const albumIndex = computed(() => Number(router.currentRoute.value.params.id));
+const currentAlbum = computed(() => album.value[albumIndex.value]);
+const totalLevels = computed(() => currentAlbum.value.content.length);
+const playerProgress = computed(() => player.lookup[currentAlbum.value.meta.name]);
+const perfects = computed(() => playerProgress.value.perfected);
+const passes = computed(() => playerProgress.value.passed);
 
-const sliceWindow = ref({
-    begin: 0,
-    end: 12
-})
+const LEVELS_PER_PAGE = 12;
+const windowStart = ref(0);
+const windowRange = computed(() => ({
+    begin: windowStart.value,
+    end: Math.min(windowStart.value + LEVELS_PER_PAGE, totalLevels.value),
+}));
+const pagedLevels = computed(() =>
+    currentAlbum.value.content.slice(windowRange.value.begin, windowRange.value.end)
+);
 
-const nextWindow = () => {
-    if (sliceWindow.value.end >= total){return}
-    sliceWindow.value.begin += 12;
-    sliceWindow.value.end += 12;
-}
+const canShiftForward = computed(() => windowRange.value.end < totalLevels.value);
+const canShiftBackward = computed(() => windowRange.value.begin > 0);
 
-const prevWindow = () => {
-    if (sliceWindow.value.begin <= 0){return}
-    sliceWindow.value.begin -= 12;
-    sliceWindow.value.end -= 12;
-}
-
-const getStatus = (level) => {
-    if (player.perfected.includes(albumObj.content[level - 1].levelId)){
-        return 'perfect';
-    } else if (player.passed.includes(albumObj.content[level - 1].levelId)){
-        return 'finished';
-    } else if (level <= playerProgress.passed + playerProgress.perfected + 1){
-        return 'open';
-    } else {
-        return 'locked';
+const shiftWindow = (direction) => {
+    const nextStart = windowStart.value + direction * LEVELS_PER_PAGE;
+    if (nextStart < 0 || nextStart >= totalLevels.value) {
+        return;
     }
-}
+    windowStart.value = nextStart;
+};
+
+const nextWindow = () => shiftWindow(1);
+const prevWindow = () => shiftWindow(-1);
+
+const getLevelIdByNumber = (levelNumber) => currentAlbum.value.content[levelNumber - 1].levelId;
+
+const getStatus = (levelNumber) => {
+    const levelId = getLevelIdByNumber(levelNumber);
+    if (player.perfected.includes(levelId)) {
+        return 'perfect';
+    }
+    if (player.passed.includes(levelId)) {
+        return 'finished';
+    }
+    const allowedProgress = playerProgress.value.passed + playerProgress.value.perfected + 1;
+    return levelNumber <= allowedProgress ? 'open' : 'locked';
+};
+
+const getNextRoute = (levelNumber) => {
+    if (levelNumber < currentAlbum.value.content.length) {
+        return `/album/${albumIndex.value}/${currentAlbum.value.content[levelNumber].levelId}`;
+    }
+    return `/album/${albumIndex.value}`;
+};
 
 const levelViewConfig = useSessionStorage('level-view-config', {}, { mergeDefaults: true })
 
-const enterLevel = (levelIndex) => {
+const enterLevel = (levelNumber) => {
     if (!isAlbumLoaded) { return; }
-    const levelId = albumObj.content[levelIndex - 1].levelId;
+    const levelId = getLevelIdByNumber(levelNumber);
     if (!isAccessibleToPrebuiltLevel(levelId)) {
         return;
     }
     levelViewConfig.value = {
         context: 'album',
-        albumName: albumObj.meta.name,
-        next: (() => {
-            if (levelIndex < albumObj.content.length){
-                return `/album/${albumIndex}/${albumObj.content[levelIndex].levelId}`;
-            } else {
-                // Is the last level in the album
-                return `/album/${albumIndex}`;
-            }
-        })(),
+        albumName: currentAlbum.value.meta.name,
+        next: getNextRoute(levelNumber),
     };
     setTimeout(() => {
-        router.push(`/album/${albumIndex}/${albumObj.content[levelIndex - 1].levelId}`);
+        router.push(`/album/${albumIndex.value}/${levelId}`);
     }, 100);
 }
 
@@ -88,30 +95,30 @@ const enterLevel = (levelIndex) => {
         @click="router.push('/album')"></ion-icon>
     <div class="wrapper" v-if="isAlbumLoaded">
         <div class="header-container">
-            <h1 class="album-title a-fade-in">{{ album[albumIndex].meta.name }}</h1>
+            <h1 class="album-title a-fade-in">{{ currentAlbum.meta.name }}</h1>
             <div class="header-container__right a-fade-in a-delay-1">
-                <status-bar title="perfects" color="#007bff" width="18rem" :total="total" :finished="perfects"
+                <status-bar title="perfects" color="#007bff" width="18rem" :total="totalLevels" :finished="perfects"
                     marginBottom="3pt" />
-                <status-bar title="passes" color="#f03c24" width="18rem" :total="total" :finished="passes"
+                <status-bar title="passes" color="#f03c24" width="18rem" :total="totalLevels" :finished="passes"
                     marginBottom="0" />
             </div>
         </div>
         <div class="main-container">
             <simple-level-card class="level-card a-fade-in" :class="{ [`a-delay-${num + 1}`]: true }"
-                v-for="(item, num) in album[albumIndex].content.slice(sliceWindow.begin, sliceWindow.end)"
-                :key="num + 1 + sliceWindow.begin"
-                :level="num + 1 + sliceWindow.begin"
-                :status="getStatus(num + 1 + sliceWindow.begin)"
-                @click="enterLevel(num + 1 + sliceWindow.begin)"
+                v-for="(item, num) in pagedLevels"
+                :key="num + 1 + windowRange.begin"
+                :level="num + 1 + windowRange.begin"
+                :status="getStatus(num + 1 + windowRange.begin)"
+                @click="enterLevel(num + 1 + windowRange.begin)"
                 ></simple-level-card>
         </div>
         <ion-icon name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in"
             @click="prevWindow"
-            :class="{disabled: sliceWindow.begin <= 0}"
+            :class="{disabled: !canShiftBackward}"
         ></ion-icon>
         <ion-icon name="chevron-forward-outline" class="control-btn control-btn__forward a-fade-in"
             @click="nextWindow"
-            :class="{disabled: sliceWindow.end >= total}"
+            :class="{disabled: !canShiftForward}"
         ></ion-icon>
     </div>
     <div class="not-found" v-else>

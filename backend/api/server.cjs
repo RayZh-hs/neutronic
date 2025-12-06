@@ -1,9 +1,33 @@
-const { SERVER_LISTEN_PORT, reservedUsernames, levelTypeEnum } = require('./constants.cjs');
+const { SERVER_LISTEN_PORT, levelTypeEnum } = require('./constants.cjs');
 const { initDatabases, loadPremadeLevels, getLevel } = require('./database.cjs');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const fsp = require('fs/promises');
+
+const resolveDataPath = (...segments) => path.resolve(__dirname, 'data', ...segments);
+
+const readJsonSync = (...segments) => JSON.parse(
+    fs.readFileSync(resolveDataPath(...segments), 'utf8')
+);
+
+const getMapFolderByType = (levelType) =>
+    levelType === levelTypeEnum.PREMADE ? 'base' : 'extended';
+
+const respondWithJsonFile = async (res, filePath, onSuccessLog) => {
+    try {
+        const fileContent = await fsp.readFile(filePath, 'utf8');
+        res.json(JSON.parse(fileContent));
+        if (onSuccessLog) {
+            onSuccessLog();
+        }
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 // Init the databases
 initDatabases();
@@ -19,39 +43,30 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 //+ Album request (GET)
-const albums = JSON.parse(fs.readFileSync(
-    path.resolve(__dirname, "data", "albums.json")
-    , "utf8")
-);
+const albums = readJsonSync('albums.json');
 app.get('/api/albums', (req, res) => {
     console.log("Albums requested");
     res.json(albums);
 });
 
 //+ Level request (GET)
-app.get('/api/level', (req, res) => {
+app.get('/api/level', async (req, res) => {
     console.log("Level requested");
     const levelId = req.query.levelId;
     const level = getLevel(levelId);
     if (level == undefined) {
         console.warn('Level is undefined')
         res.status(404).json({ error: "Level not found" });
-    }
-    else if (level.levelType <= levelTypeEnum.PUBLIC) {
+        return;
+    } else if (level.levelType <= levelTypeEnum.PUBLIC) {
         // The public levels are available to everyone
-        const filePath = path.resolve(
-            __dirname, "data", "maps",
-            level.levelType == levelTypeEnum.PREMADE ? "base" : "extended",
-            `${levelId}.json`);
-        fs.readFile(filePath, "utf8", (err, data) => {
-            if (err) {
-                res.status(500).json({ error: "Internal server error" });
-                console.error(err);
-            }
-            else {
-                console.log(`Level ${levelId} fetched and sent`);
-                res.json(JSON.parse(data));
-            }
+        const filePath = resolveDataPath(
+            'maps',
+            getMapFolderByType(level.levelType),
+            `${levelId}.json`
+        );
+        await respondWithJsonFile(res, filePath, () => {
+            console.log(`Level ${levelId} fetched and sent`);
         });
     }
 })

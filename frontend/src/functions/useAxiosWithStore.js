@@ -1,6 +1,6 @@
 import { useStorage } from "@vueuse/core"
 import { useAxios } from "@vueuse/integrations/useAxios"
-import { ref, computed, watch, watchEffect } from "vue"
+import { ref, computed, watchEffect } from "vue"
 
 export const useAxiosWithStore = (
     keyName, url, method = 'GET', storageType = sessionStorage
@@ -9,23 +9,26 @@ export const useAxiosWithStore = (
     const data = ref(null)
     const isFinished = computed(() => data.value !== null)
 
+    const hydrateFromCache = () => {
+        if (!rawData.value) {
+            return false
+        }
+        data.value = JSON.parse(rawData.value)
+        return true
+    }
+
     console.log({ data })
 
-    if (!rawData.value) {
+    if (!hydrateFromCache()) {
         const { data: fetchedData, isFinished: fetchedIsFinished } = useAxios(
             url, { method }
         )
         watchEffect(() => {
-            if (fetchedIsFinished.value) {
+            if (fetchedIsFinished.value && fetchedData.value) {
                 rawData.value = JSON.stringify(fetchedData.value)
-                // console.log("Data fetched", fetchedData.value)
-                data.value = JSON.parse(rawData.value)
+                hydrateFromCache()
             }
         })
-    }
-    else {
-        // console.log("Data already exists", rawData.value)
-        data.value = JSON.parse(rawData.value)
     }
 
     return { data, isFinished }
