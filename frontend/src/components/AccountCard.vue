@@ -10,6 +10,7 @@ import {
     importAccountFromString,
     hasAnyStoredProgress,
     hasUnsavedChanges,
+    resetAccount,
 } from '@/functions/useAccount';
 import { downloadString } from '@/functions/downloadUtils';
 
@@ -81,6 +82,19 @@ onChange(async (files) => {
         message.error('Failed to import account file');
     }
 });
+
+const handleResetAccount = () => {
+    dialog.warning({
+        title: 'Reset Account',
+        content: 'Are you sure you want to reset all account data? This action cannot be undone and will permanently delete all your progress, custom levels, and settings.',
+        positiveText: 'Reset',
+        negativeText: 'Cancel',
+        onPositiveClick: () => {
+            resetAccount();
+            message.success('Account has been reset');
+        },
+    });
+};
 </script>
 
 <template>
@@ -107,6 +121,7 @@ onChange(async (files) => {
         <div class="user-actions-container">
             <button class="card-button" type="button" @click="handleExport">Export account (.json)</button>
             <button class="card-button" type="button" @click="startImport">Import account (.json)</button>
+            <button class="card-button card-button--danger" type="button" @click="handleResetAccount">Clear Account Data</button>
         </div>
     </div>
 </template>
@@ -207,6 +222,16 @@ onChange(async (files) => {
     &:hover {
         border-color: $n-primary;
         color: $n-primary;
+    }
+
+    &--danger {
+        background: rgba(255, 59, 48, 0.12);
+        border-color: rgba(255, 59, 48, 0.18);
+
+        &:hover {
+            border-color: #ff3b30;
+            color: #ff3b30;
+        }
     }
 }
 
