@@ -1,69 +1,79 @@
 <script setup>
-
-//: Vue and Router
-
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSessionStorage } from '@vueuse/core';
-const router = useRouter();
-
-//: Custom components
-
+import { v4 as uuidV4Generator } from 'uuid';
 import LevelCard from '@/components/LevelCard.vue';
 import IonButton from '@/components/IonButton.vue';
-
-//: Import json and setup corresponding references
-
-import album from "@/data/album.json";
 import { customSelectionWindowSize } from '@/data/constants';
+import { useAccountStore } from '@/functions/useAccount';
 
-const customLevels = album.find(a => a.name === 'Custom').levels;
-const total = customLevels.length;
+const router = useRouter();
+const account = useAccountStore();
 
 const sliceWindow = ref({
     begin: 0,
-    end: customSelectionWindowSize
-})
+    end: customSelectionWindowSize,
+});
+
+const sortedCustomLevels = computed(() => {
+    return [...account.value.customLevels].sort(
+        (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+    );
+});
+
+const total = computed(() => sortedCustomLevels.value.length);
+
+const pagedLevels = computed(() => {
+    return sortedCustomLevels.value.slice(sliceWindow.value.begin, sliceWindow.value.end);
+});
+
+const levelEditorConfig = useSessionStorage('level-editor-config', {
+    loadFromLevelView: false,
+});
+const levelViewConfig = useSessionStorage('level-view-config', {});
+
+const adjustWindowBounds = () => {
+    if (sliceWindow.value.begin >= total.value) {
+        sliceWindow.value.begin = Math.max(0, total.value - customSelectionWindowSize);
+        sliceWindow.value.end = sliceWindow.value.begin + customSelectionWindowSize;
+    } else {
+        sliceWindow.value.end = sliceWindow.value.begin + customSelectionWindowSize;
+    }
+};
+
+watch(total, adjustWindowBounds);
 
 const nextWindow = () => {
-    if (sliceWindow.value.end >= total) { return }
+    if (sliceWindow.value.end >= total.value) { return; }
     sliceWindow.value.begin += customSelectionWindowSize;
     sliceWindow.value.end += customSelectionWindowSize;
-}
+};
 
 const prevWindow = () => {
-    if (sliceWindow.value.begin <= 0) { return }
+    if (sliceWindow.value.begin <= 0) { return; }
     sliceWindow.value.begin -= customSelectionWindowSize;
     sliceWindow.value.end -= customSelectionWindowSize;
-}
+};
 
-//: UUID generator and level-editor linker
-
-import { v4 as uuidV4Generator } from 'uuid';
-
-
-// This function generates a new UUID.
-// Currently it uses the V4 version of the UUID generator, from the UUID package.
-// @param {void}
-// @returns {string} - The UUID generated.
-const getUUID = () => {
-    return uuidV4Generator();
-}
-
-const enterLevelEditor = () => {
-    const uuid = getUUID();
-    levelEditorConfig.value = {
-        newLevel: true,
-        localFetch: false,
-    }
+const createCustomLevel = () => {
+    const uuid = uuidV4Generator();
+    levelEditorConfig.value = { loadFromLevelView: false };
     router.push(`/custom/edit/${uuid}`);
-}
+};
 
-//: Hooks for updating the levelEditorConfig
-const levelEditorConfig = useSessionStorage('level-editor-config', {
-    newLevel: true,
-    localFetch: false,
-})
+const editLevel = (uuid) => {
+    levelEditorConfig.value = { loadFromLevelView: false };
+    router.push(`/custom/edit/${uuid}`);
+};
 
+const playLevel = (uuid) => {
+    levelViewConfig.value = {
+        context: 'custom',
+        customLevelId: uuid,
+    };
+    router.push(`/custom/play/${uuid}`);
+};
 </script>
 
 <template>
@@ -74,14 +84,16 @@ const levelEditorConfig = useSessionStorage('level-editor-config', {
             <h1 class="a-fade-in">Custom Levels</h1>
             <div class="gap-5" />
             <IonButton name="add-circle-outline" class="a-fade-in" size="2.2rem"
-                @click="enterLevelEditor"
+                @click="createCustomLevel"
             ></IonButton>
         </n-flex>
         <div class="level-container">
-            <level-card v-for="(level, index) in customLevels.slice(sliceWindow.begin, sliceWindow.end)"
-                :name="level.name" :uuid="level.uuid" :key="index + sliceWindow.begin"
+            <level-card v-for="(level, index) in pagedLevels" :name="level.level.meta.name" :uuid="level.id"
+                :best-moves="level.bestMoves" :updated-at="level.updatedAt" :key="level.id"
                 class="a-fade-in"
                 :class="{ [`a-delay-${index + 1}`]: true }"
+                @edit="editLevel"
+                @play="playLevel"
             ></level-card>
             <p v-if="total === 0" class="a-fade-in a-delay-5">You don't have any yet. Click on the <span class="u-green">add</span> button to start building.</p>
         </div>

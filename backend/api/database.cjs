@@ -11,8 +11,6 @@ const bootstrapDatabase = (fileName) => {
 
 // For storing all level data
 const levelDb = bootstrapDatabase('level.db');
-// For storing all account data
-const accountDb = bootstrapDatabase('account.db');
 
 // Database initialization, called before server launch
 const initDatabases = () => {

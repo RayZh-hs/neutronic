@@ -1,37 +1,190 @@
 import { assert, useStorage } from "@vueuse/core";
 import { albums, getPrebuiltLevelInfo } from "./levelUtils";
+import defaultPlayerProgress from "@/data/defaultPlayerProgress.json";
 
-import defaultPlayerProgress from "@/data/defaultPlayerProgress";
-const accountProgress = useStorage("neutronic-account-progress", defaultPlayerProgress);
-const accountAuth = useStorage("neutronic-account-auth", { type: 'local', username: null, password: null }, sessionStorage);
+const cloneDefaultProgress = () => JSON.parse(JSON.stringify(defaultPlayerProgress));
 
-export const getAccountAuth = () => {
-    return accountAuth.value;
-}
+const createDefaultAccount = () => ({
+    version: 1,
+    profile: {
+        username: "Player",
+        saved: true,
+        lastExportedAt: null,
+    },
+    progress: {
+        ...cloneDefaultProgress(),
+        custom: {},
+    },
+    customLevels: [],
+});
 
-export const getAccountProgress = () => {
-    return accountProgress.value;
-}
+const normalizeProgress = (progress = {}) => {
+    const base = cloneDefaultProgress();
+    return {
+        perfected: Array.isArray(progress.perfected) ? [...progress.perfected] : [],
+        passed: Array.isArray(progress.passed) ? [...progress.passed] : [],
+        lookup: {
+            ...base.lookup,
+            ...(progress.lookup || {}),
+        },
+        custom: progress.custom && typeof progress.custom === "object" ? progress.custom : {},
+    };
+};
+
+const normalizeCustomLevels = (levels = []) => {
+    if (!Array.isArray(levels)) {
+        return [];
+    }
+    return levels
+        .filter((entry) => entry && typeof entry === "object" && entry.id && entry.level)
+        .map((entry) => {
+            const id = String(entry.id);
+            const level = entry.level;
+            if (level.meta) {
+                level.meta.levelId = id;
+            }
+            return {
+                id,
+                level,
+                createdAt: entry.createdAt || new Date().toISOString(),
+                updatedAt: entry.updatedAt || entry.createdAt || new Date().toISOString(),
+                bestMoves: typeof entry.bestMoves === "number" ? entry.bestMoves : null,
+            };
+        });
+};
+
+const accountState = useStorage(
+    "neutronic-account",
+    createDefaultAccount(),
+    localStorage,
+    { mergeDefaults: true }
+);
+
+const markDirty = () => {
+    if (accountState.value.profile.saved) {
+        accountState.value.profile.saved = false;
+    }
+};
+
+export const useAccountStore = () => accountState;
+
+export const getAccountProfile = () => accountState.value.profile;
+
+export const renameAccount = (rawName) => {
+    const name = rawName?.trim() ? rawName.trim().slice(0, 32) : "Player";
+    if (accountState.value.profile.username === name) {
+        return;
+    }
+    accountState.value.profile.username = name;
+    markDirty();
+};
+
+export const getAccountProgress = () => accountState.value.progress;
 
 export const setAndPushAccountProgress = (newProgress) => {
-    const accountAuth = getAccountAuth();
-    // if (accountAuth.value['type'] === 'regular') {
-    //     // The progress should be uploaded to the server
-    //     pushAccountProgress();
-    // }
-    accountProgress.value = newProgress;
-}
+    accountState.value.progress = normalizeProgress({
+        ...newProgress,
+        custom: newProgress.custom ?? accountState.value.progress.custom,
+    });
+    markDirty();
+};
 
-export const fetchAccountProgress = async () => {
-    console.warn('Not implemented: fetchAccountProgress at useAccount.js');
-    console.log('Fetch account progress from server');
-    return defaultPlayerProgress;
-}
+export const getCustomLevels = () => accountState.value.customLevels;
 
-export const pushAccountProgress = async () => {
-    console.warn('Not implemented: pushAccountProgress at useAccount.js');
-    console.log('Push account progress to server');
-}
+export const getCustomLevelById = (levelId) => {
+    return accountState.value.customLevels.find((entry) => entry.id === levelId) || null;
+};
+
+export const upsertCustomLevel = (levelPayload) => {
+    const normalizedLevel = {
+        id: levelPayload.id,
+        level: levelPayload.level,
+        createdAt: levelPayload.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        bestMoves: typeof levelPayload.bestMoves === "number" ? levelPayload.bestMoves : null,
+    };
+    if (normalizedLevel.level?.meta) {
+        normalizedLevel.level.meta.levelId = normalizedLevel.id;
+    }
+    const existingIndex = accountState.value.customLevels.findIndex(
+        (entry) => entry.id === normalizedLevel.id
+    );
+    if (existingIndex === -1) {
+        accountState.value.customLevels.push(normalizedLevel);
+    } else {
+        accountState.value.customLevels[existingIndex] = {
+            ...accountState.value.customLevels[existingIndex],
+            ...normalizedLevel,
+            createdAt: accountState.value.customLevels[existingIndex].createdAt,
+        };
+    }
+    markDirty();
+};
+
+export const removeCustomLevel = (levelId) => {
+    accountState.value.customLevels = accountState.value.customLevels.filter(
+        (entry) => entry.id !== levelId
+    );
+    markDirty();
+};
+
+export const recordCustomLevelResult = (levelId, payload) => {
+    const targetLevel = getCustomLevelById(levelId);
+    if (!targetLevel) {
+        return;
+    }
+    if (typeof payload.bestMoves === "number") {
+        if (
+            targetLevel.bestMoves === null ||
+            payload.bestMoves < targetLevel.bestMoves
+        ) {
+            targetLevel.bestMoves = payload.bestMoves;
+            targetLevel.updatedAt = new Date().toISOString();
+        }
+    }
+    accountState.value.progress.custom[levelId] = {
+        ...(accountState.value.progress.custom[levelId] || {}),
+        ...(payload || {}),
+    };
+    markDirty();
+};
+
+export const getAccountExportPayload = () => JSON.stringify(accountState.value, null, 2);
+
+export const markAccountSaved = () => {
+    accountState.value.profile.saved = true;
+    accountState.value.profile.lastExportedAt = new Date().toISOString();
+};
+
+export const importAccountFromString = (raw) => {
+    const parsed = JSON.parse(raw);
+    accountState.value = {
+        version: 1,
+        profile: {
+            username: parsed.profile?.username?.trim() || "Player",
+            saved: true,
+            lastExportedAt: parsed.profile?.lastExportedAt || null,
+        },
+        progress: normalizeProgress(parsed.progress),
+        customLevels: normalizeCustomLevels(parsed.customLevels),
+    };
+};
+
+export const hasAnyStoredProgress = () => {
+    const progress = accountState.value.progress;
+    return (
+        progress.perfected.length > 0 ||
+        progress.passed.length > 0 ||
+        Object.keys(progress.custom || {}).length > 0 ||
+        accountState.value.customLevels.length > 0
+    );
+};
+
+export const hasUnsavedChanges = () => !accountState.value.profile.saved;
+
+export const resetAccount = () => {
+    accountState.value = createDefaultAccount();
+};
 
 export const isAccessibleToPrebuiltLevel = (levelId) => {
     const accountProgress = getAccountProgress();
@@ -46,18 +199,21 @@ export const isAccessibleToPrebuiltLevel = (levelId) => {
         // The first level of an unlocked album is always accessible
         return true;
     }
-    // Check whether the last level of this album has been passed or perfected
-    const lastLevelId = albums[levelInfo.albumIndex].content[levelInfo.levelIndex - 1].levelId;
-    return accountProgress.perfected.includes(lastLevelId) || accountProgress.passed.includes(lastLevelId);
-}
+    const lastLevelId =
+        albums[levelInfo.albumIndex].content[levelInfo.levelIndex - 1].levelId;
+    return (
+        accountProgress.perfected.includes(lastLevelId) ||
+        accountProgress.passed.includes(lastLevelId)
+    );
+};
 
 export const hasFinishedAlbum = (albumIndex) => {
-    assert(0 <= albumIndex && albumIndex < albums.length, 'Invalid albumIndex');
-    const currentAlbumLookup = accountProgress.value.lookup[
-        albums[albumIndex].meta.name
-    ]
-    if (!currentAlbumLookup){return false;}
-    else {
-        return albums[albumIndex].content.length === currentAlbumLookup.passed + currentAlbumLookup.perfected;
-    }
-}
+    assert(0 <= albumIndex && albumIndex < albums.length, "Invalid albumIndex");
+    const accountProgress = getAccountProgress();
+    const currentAlbumLookup = accountProgress.lookup[albums[albumIndex].meta.name];
+    if (!currentAlbumLookup) { return false; }
+    return (
+        albums[albumIndex].content.length ===
+        currentAlbumLookup.passed + currentAlbumLookup.perfected
+    );
+};

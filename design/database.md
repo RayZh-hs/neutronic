@@ -6,9 +6,8 @@ This is an explanatory document, listing the internal structures of databases us
 
 At the time being, the databases in the project contain:
 - `level.db` /api/data/level.db: Contains information for all levels in the game.
-- `account.db` /api/data/account.db: Contains information for all registered accounts.
 
-All databases use SQLite as their engine.
+All databases use SQLite as their engine. Player accounts are not stored on the server anymore; they live entirely in the client as a JSON blob inside `localStorage`.
 
 ## Database Structures
 
@@ -30,6 +29,6 @@ This is a single-table database with the table named `levelTable`.
     - 3: **(Private)** Private custom levels by users.
 
 The type of a map will first be queried following any GET request received by the server.
-Regular and local accounts only have access to public levels. The Neutronic team has access to the first three types. The last type can only be accessed by the user who created the level.
+Local accounts only have access to public levels. The Neutronic team has access to the first three types. The last type can only be accessed by the user who created the level.
 
 All levels with $levelType\geq 1$ are stored in api/maps/extended, and are not shipped with the repo in Github. The pre-made maps, with $levelType=1$, are stored in api/maps/base.

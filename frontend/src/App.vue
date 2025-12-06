@@ -1,11 +1,10 @@
 <script setup>
-import { c, darkTheme } from 'naive-ui';
+import { darkTheme } from 'naive-ui';
 import AbstractBackground from './components/AbstractBackground.vue';
 import AccountCard from './components/AccountCard.vue';
 import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
-import { ref, computed, onBeforeMount } from 'vue';
-import { useStorage } from '@vueuse/core';
+import { computed } from 'vue';
 
 const openGitHub = () => {
   window.open("https://github.com/RayZh-hs/neutronic", "_blank");
@@ -17,16 +16,6 @@ const showUserButton = computed(() => {
     '/',
     '/login',
   ].includes(route.path);
-});
-
-//: Account info
-
-import defaultPlayerProgress from './data/defaultPlayerProgress.json';
-const accountProgress = useStorage('neutronic-account-progress', defaultPlayerProgress);
-const accountAuth = useStorage('neutronic-account-auth', { 'type': 'local', 'username': null, 'hashedPassword': null }, sessionStorage);
-// This will be built in time
-const accountMemory = useStorage('neutronic-account-memory', {
-  'lastLoginAccountId': null, 'lastAlbum': 0
 });
 
 </script>

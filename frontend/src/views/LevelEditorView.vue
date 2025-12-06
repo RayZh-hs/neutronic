@@ -1,6 +1,6 @@
 <script setup>
 //: Vue-specific imports
-import { onMounted, ref, computed } from "vue";
+import { onMounted, ref, computed, watch } from "vue";
 import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog, get, assert } from "@vueuse/core";
 import { useRouter } from "vue-router";
 import { useDialog } from "naive-ui";
@@ -17,6 +17,7 @@ import IonButton from "@/components/IonButton.vue"
 import { hexaToRgba } from "@/functions/colorUtils"
 import { easeOutCubic, easeOutSine, refAnimateToObject } from "../functions/animateUtils";
 import { useEditorEntities } from "@/functions/useEditorEntities";
+import { useAccountStore, getCustomLevelById, upsertCustomLevel } from "@/functions/useAccount";
 
 /**
  * This function is called to center the map on the screen.
@@ -45,10 +46,10 @@ const callCenterMap = () => {
 //: Custom Data
 import { levelEditorRefreshFrequency, leftClickCooldownTime, levelEditorCenterDuration } from "../data/constants";
 
-// - account info: TODO
-const account = ref({
-    username: "Neutronic"
-})
+const accountStore = useAccountStore();
+const account = computed(() => accountStore.value.profile);
+
+const currentLevelId = computed(() => router.currentRoute.value.params.uuid);
 
 // - tracking the level name
 const levelName = ref("New Level");
@@ -348,7 +349,7 @@ const buildLevelJson = () => {
         // The level object is built here, in $return.level
         "level": {
             "meta": {
-                "levelId": router.currentRoute.value.params.uuid,
+                "levelId": currentLevelId.value,
                 "name": levelName.value,
                 "author": account.value.username,
                 // This is later added for centering purpose in the game viewport
@@ -526,12 +527,13 @@ const playLevel = () => {
     }
     // The level is built and sent to the game
     const levelWrapper = buildLevelJson();
+    if (levelWrapper.status === "failure") { return; }
     levelViewConfig.value = {
         context: 'editor',
         levelData: levelWrapper.level,
         levelName: levelName.value
     }
-    onSave();
+    persistLevel(levelWrapper);
     router.push(router.currentRoute.value.fullPath.replace('/edit/', '/play/'));
 }
 
@@ -634,8 +636,19 @@ const onPlaceEnd = () => {
     }
 }
 
+const persistLevel = (levelWrapper) => {
+    upsertCustomLevel({
+        id: currentLevelId.value,
+        level: levelWrapper.level,
+        bestMoves: currentBest.value,
+    });
+    message.success("Saved locally");
+};
+
 const onSave = () => {
-    message.success("Saved to account");
+    const levelWrapper = buildLevelJson();
+    if (levelWrapper.status === "failure") { return; }
+    persistLevel(levelWrapper);
 }
 
 // - keyboard hotkeys
@@ -689,51 +702,78 @@ const deleteAll = () => {
 }
 
 const levelEditorConfig = useSessionStorage('level-editor-config', {
-    newLevel: true,
-    localFetch: false,
+    loadFromLevelView: false,
 })
+
+const resetEditorState = () => {
+    resetEntities();
+    levelName.value = "New Level";
+    stepsGoal.value = null;
+    currentBest.value = null;
+    activeRecording.value = [];
+    callCenterMap();
+};
+
+const loadFromLevelViewSession = () => {
+    if (!levelEditorConfig.value.loadFromLevelView) {
+        return false;
+    }
+    if (levelViewConfig.value.context !== 'finished') {
+        levelEditorConfig.value.loadFromLevelView = false;
+        return false;
+    }
+    loadLevelJson(levelViewConfig.value.levelData, false);
+    const bestMovesCountFeedback = levelViewConfig.value.bestMovesCount;
+    if (bestMovesCountFeedback && (!currentBest.value || currentBest.value > bestMovesCountFeedback)) {
+        currentBest.value = bestMovesCountFeedback;
+        if (!stepsGoal.value) {
+            stepsGoal.value = bestMovesCountFeedback;
+        }
+    }
+    if (levelViewConfig.value.recording?.length > 0) {
+        dialog.warning({
+            title: 'Recording',
+            content: 'Do you want to replace the recording with the new version?',
+            positiveText: 'Yes',
+            negativeText: 'No',
+            draggable: false,
+            onPositiveClick: () => {
+                activeRecording.value = levelViewConfig.value.recording;
+            }
+        });
+    }
+    levelEditorConfig.value.loadFromLevelView = false;
+    return true;
+};
+
+const hydrateFromCustomLevel = () => {
+    const savedLevel = getCustomLevelById(currentLevelId.value);
+    if (!savedLevel) {
+        resetEditorState();
+        return;
+    }
+    loadLevelJson(savedLevel.level, false);
+    levelName.value = savedLevel.level.meta.name;
+    stepsGoal.value = savedLevel.level.content.goal;
+    currentBest.value = savedLevel.bestMoves;
+    activeRecording.value = savedLevel.level.appendix?.recording || [];
+    callCenterMap();
+};
+
+const initializeEditor = () => {
+    if (loadFromLevelViewSession()) {
+        return;
+    }
+    hydrateFromCustomLevel();
+};
+
+watch(currentLevelId, () => {
+    initializeEditor();
+});
 
 //: Lifecycle hooks
 onMounted(() => {
-    // Load the level if the route is not new
-    debugger;
-    if (!levelEditorConfig.value.newLevel) {
-        if (levelEditorConfig.value.localFetch) {
-            // Load the level from the local storage
-            // It should be a callback from the LevelView
-            assert(levelViewConfig.value.context === 'finished');
-            loadLevelJson(levelViewConfig.value.levelData, false);
-            const bestMovesCountFeedback = levelViewConfig.value.bestMovesCount;
-            if (bestMovesCountFeedback && (!currentBest.value || currentBest.value < bestMovesCountFeedback)) {
-                currentBest.value = bestMovesCountFeedback;
-                if (!stepsGoal.value) {
-                    stepsGoal.value = bestMovesCountFeedback;
-                }
-            }
-            if (levelViewConfig.value.recording.length > 0) {
-                dialog.warning({
-                    title: 'Recording',
-                    content: 'Do you want to replace the recording with the new version?',
-                    positiveText: 'Yes',
-                    negativeText: 'No',
-                    draggable: false,
-                    onPositiveClick: () => {
-                        activeRecording.value = levelViewConfig.value.recording;
-                    }
-                })
-            }
-        }
-        else {
-            // Load the level from the server
-            message.error('Not implemented error');
-            console.error('Server hosted custom level loading is not supported at the present time!')
-        }
-    }
-    else {
-        // Clear the recording
-        activeRecording.value = [];
-    }
-    // Create sprite positioning hook
+    initializeEditor();
     setInterval(updateToolSpritePosition, 1000 / levelEditorRefreshFrequency);
 });
 
@@ -744,7 +784,7 @@ onMounted(() => {
         <!-- The left side of the top section -->
         <div class="u-gap-16"></div>
         <ion-button name="arrow-back-circle-outline" size="1.6rem" @click="router.push('/custom')" class="a-fade-in" />
-        <ion-button name="save-outline" size="1.6rem" class="a-fade-in a-delay-1" />
+        <ion-button name="save-outline" size="1.6rem" class="a-fade-in a-delay-1" @click="onSave" />
         <div class="u-gap-5"></div>
         <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
         <p class="slash-separator a-fade-in a-delay-2">/</p>
@@ -754,8 +794,7 @@ onMounted(() => {
         <!-- The right side of the top section -->
         <div class="u-mla"></div>
         <!-- Developer tools -->
-        <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center"
-            v-if="account.username === 'Neutronic'">
+        <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center">
             <span>Developer Tools:</span>
             <ion-button name="cloud-upload-outline" size="1.6rem" @click="openUploadLevelDialog"></ion-button>
             <ion-button name="download-outline" size="1.6rem" @click="downloadLevel"></ion-button>

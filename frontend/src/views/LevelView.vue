@@ -24,8 +24,11 @@ const name = ref('');
 const author = ref('');
 const stepsGoal = ref(0);
 const currentBest = ref(null);
-const levelId = router.currentRoute.value.params.levelId;
-const albumIndex = Number(router.currentRoute.value.params.id);
+const currentRoute = router.currentRoute.value;
+const routePath = currentRoute.path || currentRoute.fullPath || '';
+const isCustomLevelRoute = routePath.startsWith('/custom/play');
+const levelId = isCustomLevelRoute ? currentRoute.params.uuid : currentRoute.params.levelId;
+const albumIndex = isCustomLevelRoute ? null : Number(currentRoute.params.id);
 const gameState = ref({ containers: [], particles: [] });
 const mapSize = ref({ rows: 0, columns: 0 });
 
@@ -60,34 +63,56 @@ const loadLevelFromString = (levelString) => {
     isLevelLoaded.value = true;
 }
 
+const ensureContext = () => {
+    if (isCustomLevelRoute) {
+        if (levelViewConfig.value.context !== 'editor') {
+            levelViewConfig.value.context = 'custom';
+        }
+    }
+    else if (!isCustomLevelRoute && levelViewConfig.value.context !== 'editor') {
+        levelViewConfig.value.context = 'album';
+    }
+    return levelViewConfig.value.context;
+};
+
 const loadLevelConfig = async () => {
     console.log({ levelViewConfig })
-    if ((levelViewConfig.value.context) !== 'editor') {
-        // let levelConfig = await import(`../data/maps/${levelId}.json`);
-        console.log(SERVER_URL + '/level?levelId=' + String(levelId));
-        await axios
-            .get(SERVER_URL + '/level?levelId=' + String(levelId))
-            .then((res) => {
-                console.log(res);
-                responseCode.value = res.status;
-                if (res.status == 200) {
-                    // Response for ok, proceed on to loading the level
-                    const levelConfig = res.data;
-                    loadLevelFromString(levelConfig);
-                }
-                return res;
-            })
-            .catch((err) => {
-                responseCode.value = err.status;
-                console.log(err);
-                return err;
-            });
-    }
-    else {
-        // Read from the config itself
+    const context = ensureContext();
+    if (context === 'editor') {
         loadLevelFromString(levelViewConfig.value.levelData);
         responseCode.value = 200;
+        return;
     }
+    if (context === 'custom') {
+        const customLevel = getCustomLevelById(levelId);
+        if (!customLevel) {
+            responseCode.value = 404;
+            console.warn('Custom level not found for id', levelId);
+            return;
+        }
+        levelViewConfig.value.customLevelId = levelId;
+        loadLevelFromString(customLevel.level);
+        currentBest.value = customLevel.bestMoves;
+        responseCode.value = 200;
+        return;
+    }
+    console.log(SERVER_URL + '/level?levelId=' + String(levelId));
+    await axios
+        .get(SERVER_URL + '/level?levelId=' + String(levelId))
+        .then((res) => {
+            console.log(res);
+            responseCode.value = res.status;
+            if (res.status == 200) {
+                const levelConfig = res.data;
+                loadLevelFromString(levelConfig);
+            }
+            return res;
+        })
+        .catch((err) => {
+            responseCode.value = err.status;
+            console.log(err);
+            return err;
+        });
 };
 
 //: Panning and Centering
@@ -218,10 +243,16 @@ const updateHasWon = () => {
     console.log("particles: ", gameState.value.particles.length);
     if (gameState.value.particles.length === 0) {
         hasWon.value = true;
-        if (levelViewConfig.value.context === 'album' && isAccessibleToPrebuiltLevel(levelId)) {
+        const context = ensureContext();
+        if (context === 'album' && isAccessibleToPrebuiltLevel(levelId)) {
             accountInsertHasWon();
         }
-        currentBest.value = currentBest ? stepsCounter.value : Math.min(currentBest, stepsCounter.value);
+        else if (context === 'custom' || context === 'editor') {
+            accountInsertHasWon();
+        }
+        currentBest.value = currentBest.value == null
+            ? stepsCounter.value
+            : Math.min(currentBest.value, stepsCounter.value);
         triggerEndingAnimation();
     }
 }
@@ -229,19 +260,23 @@ const triggerEndingAnimation = () => {
     changeObscurityForAll(true, gameEntranceFocusAnimationRange);
 }
 
-import { getAccountProgress, setAndPushAccountProgress } from '@/functions/useAccount';
+import { getAccountProgress, setAndPushAccountProgress, getCustomLevelById, recordCustomLevelResult } from '@/functions/useAccount';
 import { getAlbumIndex } from '@/functions/useAlbum';
 const accountInsertHasWon = () => {
+    const context = ensureContext();
+    if (context === 'custom' || context === 'editor') {
+        recordCustomLevelResult(levelId, {
+            bestMoves: stepsCounter.value,
+            rank: getGameRank(),
+        });
+        return;
+    }
+    if (context !== 'album' || albumIndex === null || Number.isNaN(albumIndex)) {
+        return;
+    }
     let hasPerfected = false;
     const account = getAccountProgress();
     const rank = getGameRank();
-    // If the album is NOT in the account, a new entry should be inserted
-    // if (!account.lookup[levelViewConfig.value.albumName]) {
-    //     account.lookup[levelViewConfig.value.albumName] = {
-    //         perfected: 0,
-    //         passed: 0
-    //     }
-    // }
     if (rank === 'Perfect' && !account.perfected.includes(levelId)) {
         account.perfected.push(levelId);
         account.lookup[levelViewConfig.value.albumName].perfected += 1;
@@ -256,11 +291,8 @@ const accountInsertHasWon = () => {
     }
     else {
         hasPerfected = true;
-    } // In the last case, the level has already been perfected
-    // If the last level of the album is passed, the album is considered finished
-    // Then the next album is unlocked
+    }
     if (hasFinishedAlbum(albumIndex)) {
-        debugger;
         if (albumIndex < album.value.length - 1 && !account.lookup[album.value[albumIndex + 1].meta.name]) {
             account.lookup[album.value[albumIndex + 1].meta.name] = {
                 perfected: 0,
@@ -502,6 +534,10 @@ const restartGame = () => {
     router.go(0)
 }
 const gotoLevelSelect = () => {
+    if (albumIndex === null || Number.isNaN(albumIndex)) {
+        router.push('/custom');
+        return;
+    }
     router.push(`/album/${albumIndex}`);
 }
 import { album } from '@/functions/useAlbum';
@@ -584,20 +620,21 @@ const updateViewConfig = () => {
 }
 
 const levelEditorConfig = useSessionStorage('level-editor-config', {
-    newLevel: true,
-    localFetch: false,
+    loadFromLevelView: false,
 })
 const handleGoBack = () => {
     if (levelViewConfig.value.context === 'editor') {
         updateViewConfig();
         levelEditorConfig.value = {
-            newLevel: false,
-            localFetch: true
+            loadFromLevelView: true
         }
         router.push(router.currentRoute.value.fullPath.replace('/play/', '/edit/'));
     }
     else if (levelViewConfig.value.context === 'album') {
         gotoLevelSelect();
+    }
+    else if (levelViewConfig.value.context === 'custom') {
+        router.push('/custom');
     }
     else {
         router.go(-1);
@@ -664,21 +701,22 @@ const handleGoBack = () => {
                     </template>
                     <span>Restart</span>
                 </n-tooltip>
-                <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :disabled="levelViewConfig.context !== 'album'">
-                    <template #trigger>
-                        <ion-button name="apps-outline" class="a-fade-in a-delay-14"
-                            @click="router.push('/album/$id'.replace('$id', albumIndex))"
-                            :disabled="levelViewConfig.context !== 'album'"></ion-button>
-                    </template>
-                    <span>Level Select</span>
-                </n-tooltip>
-                <n-tooltip placement="bottom" raw style="color: var(--n-primary)" v-if="levelViewConfig.context === 'album'">
-                    <template #trigger>
-                        <ion-button name="chevron-forward-outline" class="a-fade-in a-delay-16"
-                            @click="gotoNextLevel"></ion-button>
-                    </template>
-                    <span>Next Level</span>
-                </n-tooltip>
+                <template v-if="levelViewConfig.context === 'album'">
+                    <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
+                        <template #trigger>
+                            <ion-button name="apps-outline" class="a-fade-in a-delay-14"
+                                @click="router.push(`/album/${albumIndex}`)"></ion-button>
+                        </template>
+                        <span>Level Select</span>
+                    </n-tooltip>
+                    <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
+                        <template #trigger>
+                            <ion-button name="chevron-forward-outline" class="a-fade-in a-delay-16"
+                                @click="gotoNextLevel"></ion-button>
+                        </template>
+                        <span>Next Level</span>
+                    </n-tooltip>
+                </template>
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)" v-else>
                     <template #trigger>
                         <ion-button name="chevron-back-outline" class="a-fade-in a-delay-16"
