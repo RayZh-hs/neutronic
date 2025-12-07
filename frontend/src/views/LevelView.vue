@@ -10,7 +10,7 @@ const router = useRouter();
 
 //: Custom Data and Components
 import IonButton from '@/components/IonButton.vue';
-import { levelMapGridScaleRem, levelMapGridScalePx, SERVER_URL } from "@/data/constants"
+import { levelMapGridScalePx, SERVER_URL } from "@/data/constants"
 import { levelPortalCycleColor, levelMapPortalBackgroundAlpha, gameDefaultAnimationDuration, gameDropoutAnimationDuration } from "@/data/constants";
 import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
 import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils';
@@ -186,7 +186,7 @@ const updateMapAfterCollision = (r, c) => {
 const animateInvalidMove = (particleId, direction) => {
     let onFinishCallback = () => { };
     const refOffset = ref({ x: 0, y: 0 });
-    const shakeOffset = levelMapGridScalePx;
+    const shakeOffset = levelMapGridScalePx.value;
     const selectedParticleDOM = document.getElementById(particleId);
     console.log({ particleId })
     console.log({ selectedParticleDOM });
@@ -454,10 +454,10 @@ const containersWithAttr = computed(() => {
 
 const { width, height } = useElementBounding(refViewPort);
 const additionalCenteringOffset = computed(() => {
-    // console.log(width.value, height.value, levelMapGridScalePx * (mapSize.value.rows));
+    // console.log(width.value, height.value, levelMapGridScalePx.value * (mapSize.value.rows));
     return {
-        x: (width.value - levelMapGridScalePx * (mapSize.value.columns)) / 2,
-        y: (height.value - levelMapGridScalePx * (mapSize.value.rows)) / 2
+        x: (width.value - levelMapGridScalePx.value * (mapSize.value.columns)) / 2,
+        y: (height.value - levelMapGridScalePx.value * (mapSize.value.rows)) / 2
     };
 })
 
@@ -468,8 +468,8 @@ const getPositionForContainers = (item) => {
     if (hasBoardAt(item.row + 1, item.column)) item.classes.push('board--occupied-bottom');
     if (hasBoardAt(item.row, item.column - 1)) item.classes.push('board--occupied-left');
     if (hasBoardAt(item.row, item.column + 1)) item.classes.push('board--occupied-right');
-    const left = (item.column) * levelMapGridScalePx;
-    const top = (item.row) * levelMapGridScalePx;
+    const left = (item.column) * levelMapGridScalePx.value;
+    const top = (item.row) * levelMapGridScalePx.value;
     return {
         style:
         {
@@ -487,8 +487,8 @@ const getPositionForContainers = (item) => {
     };
 };
 const getPositionForParticles = (item) => {
-    const left = (item.column) * levelMapGridScalePx;
-    const top = (item.row) * levelMapGridScalePx;
+    const left = (item.column) * levelMapGridScalePx.value;
+    const top = (item.row) * levelMapGridScalePx.value;
     return {
         position: 'absolute',
         left: `${left + panningOffset.value.x + additionalCenteringOffset.value.x}px`,

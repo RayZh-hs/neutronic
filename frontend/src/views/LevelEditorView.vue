@@ -27,8 +27,8 @@ const callCenterMap = () => {
     let dest = { x: 0, y: 0 };
     const boundingBox = getBoundingBox();
     const centerPos = {
-        x: (boundingBox.minX + boundingBox.maxX) / 2 + levelMapGridScalePx / 2,
-        y: (boundingBox.minY + boundingBox.maxY) / 2 + levelMapGridScalePx / 2
+        x: (boundingBox.minX + boundingBox.maxX) / 2 + levelMapGridScalePx.value / 2,
+        y: (boundingBox.minY + boundingBox.maxY) / 2 + levelMapGridScalePx.value / 2
     }
     console.log(centerPos);
     console.log(getMapBoundingBox());
@@ -124,8 +124,8 @@ const updateToolSpritePosition = () => {
     }
     // console.log(originPosition);
     toolSpritePosition.value = {
-        x: Math.floor((mouseX.value - originPosition.value.x) / levelMapGridScalePx) * levelMapGridScalePx + originPosition.value.x,
-        y: Math.floor((mouseY.value - originPosition.value.y) / levelMapGridScalePx) * levelMapGridScalePx + originPosition.value.y
+        x: Math.floor((mouseX.value - originPosition.value.x) / levelMapGridScalePx.value) * levelMapGridScalePx.value + originPosition.value.x,
+        y: Math.floor((mouseY.value - originPosition.value.y) / levelMapGridScalePx.value) * levelMapGridScalePx.value + originPosition.value.y
     }
 }
 
@@ -179,8 +179,8 @@ const onSelectStart = () => {
 
     rightSelectionTracker = setInterval(() => {
         rightSelectionScale.value = {
-            width: toolSpritePosition.value.x - originPosition.value.x - rightSelectionStart.value.x + levelMapGridScalePx,
-            height: toolSpritePosition.value.y - originPosition.value.y - rightSelectionStart.value.y + levelMapGridScalePx
+            width: toolSpritePosition.value.x - originPosition.value.x - rightSelectionStart.value.x + levelMapGridScalePx.value,
+            height: toolSpritePosition.value.y - originPosition.value.y - rightSelectionStart.value.y + levelMapGridScalePx.value
         }
     }, 1000 / levelEditorRefreshFrequency);
 }
@@ -275,8 +275,8 @@ const applyToolToSelection = () => {
         return;
     }
     // Perform the action on each of the planes
-    for (let x = selectionAlias.x; x < selectionAlias.x + selectionAlias.width; x += levelMapGridScalePx) {
-        for (let y = selectionAlias.y; y < selectionAlias.y + selectionAlias.height; y += levelMapGridScalePx) {
+    for (let x = selectionAlias.x; x < selectionAlias.x + selectionAlias.width; x += levelMapGridScalePx.value) {
+        for (let y = selectionAlias.y; y < selectionAlias.y + selectionAlias.height; y += levelMapGridScalePx.value) {
             toolAction(x, y);
         }
     }
@@ -295,16 +295,16 @@ const getBoundingBox = () => {
 const getMapSize = () => {
     const boundingBox = getBoundingBox();
     return {
-        rows:    1 + Math.round((boundingBox.maxY - boundingBox.minY) / levelMapGridScalePx),
-        columns: 1 + Math.round((boundingBox.maxX - boundingBox.minX) / levelMapGridScalePx)
+        rows:    1 + Math.round((boundingBox.maxY - boundingBox.minY) / levelMapGridScalePx.value),
+        columns: 1 + Math.round((boundingBox.maxX - boundingBox.minX) / levelMapGridScalePx.value)
     }
 }
 
 const coordToRc = (boundingBox, coordList) => {
     return coordList.map(coord => {
         return {
-            row: Math.floor((coord.y - boundingBox.minY) / levelMapGridScalePx),
-            column: Math.floor((coord.x - boundingBox.minX) / levelMapGridScalePx)
+            row: Math.floor((coord.y - boundingBox.minY) / levelMapGridScalePx.value),
+            column: Math.floor((coord.x - boundingBox.minX) / levelMapGridScalePx.value)
         }
     })
 }
@@ -372,8 +372,8 @@ const buildLevelJson = () => {
                             return pair.map(coord => {
                                 return {
                                     "type": "portal",
-                                    "row": Math.floor((coord.y - boundingBox.minY) / levelMapGridScalePx),
-                                    "column": Math.floor((coord.x - boundingBox.minX) / levelMapGridScalePx),
+                                    "row": Math.floor((coord.y - boundingBox.minY) / levelMapGridScalePx.value),
+                                    "column": Math.floor((coord.x - boundingBox.minX) / levelMapGridScalePx.value),
                                     "index": index
                                 }
                             })
@@ -420,8 +420,8 @@ const loadLevelJson = (levelJson, parse = true) => {
         .filter(item => item.type === 'board')
         .map(item => {
             return {
-                x: item.column * levelMapGridScalePx,
-                y: item.row * levelMapGridScalePx
+                x: item.column * levelMapGridScalePx.value,
+                y: item.row * levelMapGridScalePx.value
             }
         });
     portalPairs.value = level.content.containers
@@ -431,8 +431,8 @@ const loadLevelJson = (levelJson, parse = true) => {
                 acc[item.index] = [];
             }
             acc[item.index].push({
-                x: item.column * levelMapGridScalePx,
-                y: item.row * levelMapGridScalePx
+                x: item.column * levelMapGridScalePx.value,
+                y: item.row * levelMapGridScalePx.value
             });
             return acc;
         }, []);
@@ -440,16 +440,16 @@ const loadLevelJson = (levelJson, parse = true) => {
         .filter(item => item.color === 'blue')
         .map(item => {
             return {
-                x: item.column * levelMapGridScalePx,
-                y: item.row * levelMapGridScalePx
+                x: item.column * levelMapGridScalePx.value,
+                y: item.row * levelMapGridScalePx.value
             }
         });
     positronParticles.value = level.content.particles
         .filter(item => item.color === 'red')
         .map(item => {
             return {
-                x: item.column * levelMapGridScalePx,
-                y: item.row * levelMapGridScalePx
+                x: item.column * levelMapGridScalePx.value,
+                y: item.row * levelMapGridScalePx.value
             }
         });
     stepsGoal.value = level.content.goal;

@@ -1,5 +1,5 @@
 import { assert, useStorage } from "@vueuse/core";
-import { albums, getPrebuiltLevelInfo } from "./levelUtils";
+import { getAlbums, getPrebuiltLevelInfo } from "./levelUtils";
 import defaultPlayerProgress from "@/data/defaultPlayerProgress.json";
 
 const cloneDefaultProgress = () => JSON.parse(JSON.stringify(defaultPlayerProgress));
@@ -199,6 +199,8 @@ export const isAccessibleToPrebuiltLevel = (levelId) => {
         // The first level of an unlocked album is always accessible
         return true;
     }
+    const albums = getAlbums();
+    if (!albums) return false;
     const lastLevelId =
         albums[levelInfo.albumIndex].content[levelInfo.levelIndex - 1].levelId;
     return (
@@ -208,6 +210,8 @@ export const isAccessibleToPrebuiltLevel = (levelId) => {
 };
 
 export const hasFinishedAlbum = (albumIndex) => {
+    const albums = getAlbums();
+    if (!albums) return false;
     assert(0 <= albumIndex && albumIndex < albums.length, "Invalid albumIndex");
     const accountProgress = getAccountProgress();
     const currentAlbumLookup = accountProgress.lookup[albums[albumIndex].meta.name];

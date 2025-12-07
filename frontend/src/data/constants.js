@@ -1,3 +1,5 @@
+import { readonly, ref } from 'vue';
+
 /**
  * This file contains all the constants used in the application that have logical implementations.
  * That is, everything exported here is used in other .vue(script) or .js files, as opposed to the constants.scss files which defines scss variables.
@@ -19,7 +21,23 @@ export const customSelectionWindowSize = 5;
 //: Level Setup
 export const levelMapGridScale = "4rem";    // Is linked to $map-editor-header-height
 export const levelMapGridScaleRem = Number(levelMapGridScale.split('rem')[0]);
-export const levelMapGridScalePx = levelMapGridScaleRem * parseFloat(getComputedStyle(document.documentElement).fontSize);  // Is linked to $map-editor-header-height
+const readRootFontSizePx = () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return 16;
+    }
+    const fontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return Number.isNaN(fontSize) ? 16 : fontSize;
+};
+const calculateLevelMapGridScalePx = () => levelMapGridScaleRem * readRootFontSizePx();
+const levelMapGridScalePxRef = ref(calculateLevelMapGridScalePx());
+const refreshLevelMapGridScalePx = () => {
+    levelMapGridScalePxRef.value = calculateLevelMapGridScalePx();
+};
+if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', refreshLevelMapGridScalePx);
+    window.addEventListener('resize', refreshLevelMapGridScalePx);
+}
+export const levelMapGridScalePx = readonly(levelMapGridScalePxRef);  // Is linked to $map-editor-header-height
 export const levelPortalCycleColor = [
     "#f3722c",
     "#90be6d",
