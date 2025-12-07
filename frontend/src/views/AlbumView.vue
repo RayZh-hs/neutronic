@@ -92,12 +92,12 @@ onMounted(() => {
             </swiper-slide>
             <swiper-slide>
                 <subtitled-album-card name="Custom" subtitle="Build your own puzzles." icon="create-outline"
-                    @click="jumpToReferent"
+                    @click="jumpToReferent" class="a-fade-in"
                 ></subtitled-album-card>
             </swiper-slide>
             <swiper-slide>
                 <subtitled-album-card name="Online" subtitle="And join the world at thought." icon="logo-web-component"
-                    @click="jumpToReferent"
+                    @click="jumpToReferent" class="a-fade-in"
                 ></subtitled-album-card>
             </swiper-slide>
         </swiper>
