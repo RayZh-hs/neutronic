@@ -15,8 +15,18 @@ import { levelPortalCycleColor, levelMapPortalBackgroundAlpha, gameDefaultAnimat
 import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
 import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils';
 import { randomFloatFromInterval } from '@/functions/mathUtils';
+import { useRecordingsStore, addRecordingForLevel } from '@/functions/useRecordings';
 
 const levelViewConfig = useSessionStorage('level-view-config', {});
+const recordingsStore = useRecordingsStore();
+const baseLevelDefinition = ref(null);
+const recordingSession = ref({
+    active: false,
+    startedAt: null,
+});
+const isPlaybackActive = ref(false);
+const playbackQueue = ref([]);
+const playbackTimeoutHandle = ref(null);
 
 //: Map Setup
 const responseCode = ref(0);
@@ -45,7 +55,24 @@ const isStartingAnimation = ref(false);
 const disableInteraction = ref(false);
 const hasWon = ref(false);
 
-const canInteract = computed(() => isLevelLoaded.value && !isPanning.value && !disableInteraction.value);
+const levelRecordings = computed(() => {
+    const entries = recordingsStore.value[levelId];
+    return Array.isArray(entries) ? entries : [];
+});
+const hasLocalPlayback = computed(() => levelRecordings.value.length > 0);
+const isRecordingActive = computed(() => recordingSession.value.active);
+const recordingButtonDisabled = computed(() => !isLevelLoaded.value || isPlaybackActive.value);
+const formatRecordingLabel = (entry) => {
+    const date = entry.recordedAt ? new Date(entry.recordedAt) : null;
+    const formattedDate = date ? date.toLocaleString() : 'Unknown date';
+    return `${formattedDate} • ${entry.steps} steps`;
+};
+const playbackDropdownOptions = computed(() => levelRecordings.value.map((entry) => ({
+    label: formatRecordingLabel(entry),
+    key: entry.id
+})));
+
+const canInteract = computed(() => isLevelLoaded.value && !isPanning.value && !disableInteraction.value && !isPlaybackActive.value);
 const doSmoothAnimate = computed(() => isLevelLoaded.value && !isPanning.value && !isCustomAnimating.value);
 
 const loadLevelFromString = (levelString) => {
@@ -57,8 +84,14 @@ const loadLevelFromString = (levelString) => {
     }
     console.log("map size:", mapSize);
     console.log("level config:", levelString);
-    gameState.value.containers = JSON.parse(JSON.stringify(levelString.content.containers));
-    gameState.value.particles = JSON.parse(JSON.stringify(levelString.content.particles));
+    const containers = JSON.parse(JSON.stringify(levelString.content.containers));
+    const particles = JSON.parse(JSON.stringify(levelString.content.particles));
+    baseLevelDefinition.value = {
+        containers,
+        particles
+    };
+    gameState.value.containers = JSON.parse(JSON.stringify(baseLevelDefinition.value.containers));
+    gameState.value.particles = JSON.parse(JSON.stringify(baseLevelDefinition.value.particles));
     stepsGoal.value = levelString.content.goal;
     isLevelLoaded.value = true;
 }
@@ -115,6 +148,60 @@ const loadLevelConfig = async () => {
         });
 };
 
+const initializeRuntimeState = (shouldObscure = true) => {
+    gameState.value.particles.forEach((particle, index) => {
+        particle.id = `particle-${index}`;
+        particle.obscure = shouldObscure;
+        particle.colliding = false;
+    });
+    gameState.value.containers.forEach((container, index) => {
+        container.id = `container-${index}`;
+        container.obscure = shouldObscure;
+        container.classes = [];
+    });
+};
+
+const restoreBaseLevelState = ({ obscure = false, resetRecording = true } = {}) => {
+    if (!baseLevelDefinition.value) {
+        return false;
+    }
+    gameState.value.containers = JSON.parse(JSON.stringify(baseLevelDefinition.value.containers));
+    gameState.value.particles = JSON.parse(JSON.stringify(baseLevelDefinition.value.particles));
+    initializeRuntimeState(obscure);
+    selected.value = null;
+    disableInteraction.value = false;
+    isCustomAnimating.value = false;
+    hasWon.value = false;
+    stepsCounter.value = 0;
+    if (resetRecording) {
+        recording.value = [];
+    }
+    return true;
+};
+
+const flattenRecordingEntries = (recordingData = []) => {
+    const steps = [];
+    recordingData.forEach((segment) => {
+        if (!segment || typeof segment.id === 'undefined' || !Array.isArray(segment.direction)) {
+            return;
+        }
+        segment.direction.forEach((dir) => {
+            steps.push({
+                id: segment.id,
+                direction: dir
+            });
+        });
+    });
+    return steps;
+};
+
+const countRecordingSteps = (recordingData = []) => recordingData.reduce((total, segment) => {
+    if (!segment || !Array.isArray(segment.direction)) {
+        return total;
+    }
+    return total + segment.direction.length;
+}, 0);
+
 //: Panning and Centering
 
 // - tracking the panning offset
@@ -160,6 +247,10 @@ const isMoveValid = (currentColor, currentId, newPos) => {
 }
 
 const handleKeydown = (event) => {
+    if (isPlaybackActive.value) {
+        event.preventDefault();
+        return;
+    }
     const keyMapping = {
         'ArrowUp': 'up',
         'ArrowDown': 'down',
@@ -254,6 +345,7 @@ const updateHasWon = () => {
             ? stepsCounter.value
             : Math.min(currentBest.value, stepsCounter.value);
         triggerEndingAnimation();
+        handleRecordingCompletion();
     }
 }
 const triggerEndingAnimation = () => {
@@ -307,6 +399,9 @@ const accountInsertHasWon = () => {
 
 const recording = ref([]);
 const recordMove = (particleId, direction) => {
+    if (!recordingSession.value.active) {
+        return;
+    }
     const particleIdRaw = Number(particleId.split('-')[1]);
     if (recording.value.length === 0 || recording.value.at(-1).id !== particleIdRaw) {
         recording.value.push({
@@ -319,9 +414,119 @@ const recordMove = (particleId, direction) => {
     }
 }
 
-const moveParticle = (direction) => {
-    // if (!selected.value||isAnimating.value) {
-    if (!selected.value || !canInteract.value) {
+const clearRecordingSession = () => {
+    recordingSession.value.active = false;
+    recordingSession.value.startedAt = null;
+};
+
+const handleRecordingCompletion = () => {
+    if (!recordingSession.value.active || recording.value.length === 0) {
+        clearRecordingSession();
+        return;
+    }
+    const steps = countRecordingSteps(recording.value);
+    addRecordingForLevel(levelId, {
+        levelId,
+        levelName: name.value,
+        author: author.value,
+        steps,
+        recording: JSON.parse(JSON.stringify(recording.value))
+    });
+    clearRecordingSession();
+};
+
+const startRecordingSession = () => {
+    if (!restoreBaseLevelState({ obscure: false, resetRecording: true })) {
+        return;
+    }
+    recordingSession.value.active = true;
+    recordingSession.value.startedAt = new Date().toISOString();
+};
+
+const handleRecordButtonClick = () => {
+    if (recordingButtonDisabled.value) {
+        return;
+    }
+    stopPlayback();
+    if (recordingSession.value.active) {
+        clearRecordingSession();
+        recording.value = [];
+        return;
+    }
+    startRecordingSession();
+};
+
+const stopPlayback = () => {
+    isPlaybackActive.value = false;
+    playbackQueue.value = [];
+    selected.value = null;
+    if (playbackTimeoutHandle.value) {
+        clearTimeout(playbackTimeoutHandle.value);
+        playbackTimeoutHandle.value = null;
+    }
+};
+
+const queueNextPlaybackStep = () => {
+    if (!isPlaybackActive.value) {
+        return;
+    }
+    if (disableInteraction.value || isCustomAnimating.value) {
+        playbackTimeoutHandle.value = setTimeout(queueNextPlaybackStep, 100);
+        return;
+    }
+    playbackTimeoutHandle.value = setTimeout(stepPlaybackQueue, gameDefaultAnimationDuration + 50);
+};
+
+const stepPlaybackQueue = () => {
+    if (!isPlaybackActive.value) {
+        return;
+    }
+    if (playbackQueue.value.length === 0) {
+        stopPlayback();
+        return;
+    }
+    const nextStep = playbackQueue.value.shift();
+    const particle = gameState.value.particles.find((p) => Number(p.id.split('-')[1]) === nextStep.id);
+    if (!particle) {
+        stopPlayback();
+        return;
+    }
+    selected.value = particle;
+    moveParticle(nextStep.direction, { allowWhilePlayback: true });
+    queueNextPlaybackStep();
+};
+
+const startPlayback = (entry) => {
+    if (!entry) {
+        return;
+    }
+    stopPlayback();
+    recordingSession.value.active = false;
+    if (!restoreBaseLevelState({ obscure: false, resetRecording: true })) {
+        return;
+    }
+    const flattened = flattenRecordingEntries(entry.recording);
+    if (flattened.length === 0) {
+        return;
+    }
+    isPlaybackActive.value = true;
+    playbackQueue.value = flattened;
+    stepPlaybackQueue();
+};
+
+const handlePlaybackSelect = (key) => {
+    const entry = levelRecordings.value.find((rec) => rec.id === key);
+    if (entry) {
+        startPlayback(entry);
+    }
+};
+
+const moveParticle = (direction, options = {}) => {
+    const { allowWhilePlayback = false } = options;
+    if (!selected.value) {
+        return;
+    }
+    if (!allowWhilePlayback && !canInteract.value) {
         return;
     }
     const currentIndex = gameState.value.particles.findIndex(p => p === selected.value);    // Not to be confused with ID
@@ -593,14 +798,7 @@ onMounted(async () => {
         stepsCounter.value = 0;
 
         console.log(gameState.value);
-        gameState.value.particles.forEach((particle, index) => {
-            particle.id = `particle-${index}`;
-            particle.obscure = true;
-        });
-        gameState.value.containers.forEach((container, index) => {
-            container.id = `container-${index}`;
-            container.obscure = true;
-        });
+        initializeRuntimeState(true);
         console.log(gameState.value);
         window.addEventListener('keydown', handleKeydown);
     }
@@ -609,6 +807,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleKeydown);
     selected.value = null;
+    stopPlayback();
 });
 
 const updateViewConfig = () => {
@@ -655,6 +854,36 @@ const handleGoBack = () => {
                 <div class="u-rel u-gap-14"></div>
                 <ion-button name="refresh-outline" size="1.6rem" class="reset-btn"
                     @click="router.go(router.currentRoute.value)"></ion-button>
+                <div class="u-rel u-gap-8"></div>
+                <div class="recording-controls">
+                    <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :show-arrow="false">
+                        <template #trigger>
+                            <ion-button
+                                name="radio-button-on-outline"
+                                size="1.6rem"
+                                class="record-btn"
+                                :disabled="recordingButtonDisabled"
+                                :color="isRecordingActive ? '#ff6b3a' : undefined"
+                                @click="handleRecordButtonClick"
+                            ></ion-button>
+                        </template>
+                        <span>{{ isRecordingActive ? 'Stop Recording' : 'Record' }}</span>
+                    </n-tooltip>
+                    <n-dropdown v-if="hasLocalPlayback" trigger="click" :options="playbackDropdownOptions"
+                        @select="handlePlaybackSelect">
+                        <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :show-arrow="false">
+                            <template #trigger>
+                                <ion-button
+                                    name="play-circle-outline"
+                                    size="1.6rem"
+                                    class="play-btn"
+                                    :color="isPlaybackActive ? '#4cc9f0' : undefined"
+                                ></ion-button>
+                            </template>
+                            <span>Play Recording</span>
+                        </n-tooltip>
+                    </n-dropdown>
+                </div>
             </div>
         </div>
         <h1 class="viewport__level-name a-fade-in" v-show="isStartingAnimation">{{ name }}</h1>
@@ -778,6 +1007,20 @@ const handleGoBack = () => {
 
         .reset-btn {
             margin: auto 0;
+        }
+
+        .recording-controls {
+            display: flex;
+            margin: auto 0;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+
+            .record-btn,
+            .play-btn {
+                visibility: visible;
+                margin: 0;
+            }
         }
     }
 }
