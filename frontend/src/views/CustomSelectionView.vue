@@ -3,15 +3,16 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSessionStorage } from '@vueuse/core';
 import { v4 as uuidV4Generator } from 'uuid';
-import { useMessage } from 'naive-ui';
+import { useMessage, useDialog } from 'naive-ui';
 import LevelCard from '@/components/LevelCard.vue';
 import IonButton from '@/components/IonButton.vue';
 import { customSelectionWindowSize } from '@/data/constants';
-import { useAccountStore, renameAccount } from '@/functions/useAccount';
+import { useAccountStore, renameAccount, removeCustomLevel } from '@/functions/useAccount';
 
 const router = useRouter();
 const account = useAccountStore();
 const message = useMessage();
+const dialog = useDialog();
 
 const sliceWindow = ref({
     begin: 0,
@@ -119,6 +120,19 @@ const playLevel = (uuid) => {
     };
     router.push(`/custom/play/${uuid}`);
 };
+
+const deleteLevel = (uuid) => {
+    dialog.warning({
+        title: 'Delete Level',
+        content: 'Are you sure you want to delete this level? This action cannot be undone.',
+        positiveText: 'Delete',
+        negativeText: 'Cancel',
+        onPositiveClick: () => {
+            removeCustomLevel(uuid);
+            message.success('Level deleted');
+        }
+    });
+};
 </script>
 
 <template>
@@ -135,10 +149,12 @@ const playLevel = (uuid) => {
         <div class="level-container">
             <level-card v-for="(level, index) in pagedLevels" :name="level.level.meta.name" :uuid="level.id"
                 :best-moves="level.bestMoves" :updated-at="level.updatedAt" :key="level.id"
+                :published="level.level.meta.published"
                 class="a-fade-in"
                 :class="{ [`a-delay-${index + 1}`]: true }"
                 @edit="editLevel"
                 @play="playLevel"
+                @delete="deleteLevel"
             ></level-card>
             <p v-if="total === 0" class="a-fade-in a-delay-5">You don't have any yet. Click on the <span class="u-green">add</span> button to start building.</p>
         </div>
