@@ -53,29 +53,157 @@ const currentLevelId = computed(() => router.currentRoute.value.params.uuid);
 
 // - tracking the level name
 const levelName = ref("New Level");
+const levelNameElement = ref(null);
+const levelNameEditing = ref(false);
+const levelNameBeforeEdit = ref(levelName.value);
 
-const onLevelNameChange = (event) => {
-    let newLevelName = event.target.innerText;
-    if (newLevelName.trim() == "") {
-        newLevelName = "New Level";
-        event.target.innerText = newLevelName;
+const setLevelNameElementText = (value) => {
+    if (!levelNameElement.value) { return; }
+    if (levelNameElement.value.innerText !== value) {
+        levelNameElement.value.innerText = value;
     }
-    levelName.value = newLevelName;
 }
+
+watch(levelName, (value) => {
+    if (!levelNameEditing.value) {
+        setLevelNameElementText(value);
+    }
+}, { immediate: true });
+
+watch(levelNameElement, (el) => {
+    if (el && !levelNameEditing.value) {
+        setLevelNameElementText(levelName.value);
+    }
+});
+
+const startLevelNameEdit = () => {
+    if (levelNameEditing.value) { return; }
+    levelNameBeforeEdit.value = levelName.value;
+    levelNameEditing.value = true;
+};
+
+const finishLevelNameEdit = ({ cancel = false } = {}) => {
+    if (!levelNameEditing.value) { return; }
+    const el = levelNameElement.value;
+    if (!el) {
+        levelNameEditing.value = false;
+        return;
+    }
+    if (cancel) {
+        setLevelNameElementText(levelNameBeforeEdit.value);
+        levelNameEditing.value = false;
+        return;
+    }
+    const trimmed = el.innerText.trim();
+    if (!trimmed) {
+        message.warning("Level name cannot be empty. Resetting to default.");
+        levelName.value = "New Level";
+        setLevelNameElementText(levelName.value);
+    } else {
+        levelName.value = trimmed;
+        setLevelNameElementText(levelName.value);
+    }
+    levelNameEditing.value = false;
+};
+
+const handleLevelNameKeydown = (event) => {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        finishLevelNameEdit();
+        event.currentTarget?.blur();
+    } else if (event.key === 'Escape') {
+        event.preventDefault();
+        finishLevelNameEdit({ cancel: true });
+        event.currentTarget?.blur();
+    }
+};
 
 // - tracking the level goal and custom best
 const stepsGoal = ref(null);
+const stepsGoalElement = ref(null);
+const stepsGoalEditing = ref(false);
+const stepsGoalBeforeEdit = ref(stepsGoal.value);
 const currentBest = ref(null);
 const activeRecording = useSessionStorage('active-recording-cache', []);
 
-const onStepsGoalChange = (event) => {
-    let newStepsGoal = parseInt(event.target.innerText);
-    if (isNaN(newStepsGoal)) {
-        newStepsGoal = null;
-        event.target.innerText = "NA";
+const formatStepsGoalDisplay = (value) => {
+    if (value === null || value === undefined) {
+        return "NA";
     }
-    stepsGoal.value = newStepsGoal;
-}
+    return `${value}`;
+};
+
+const setStepsGoalElementText = (value) => {
+    if (!stepsGoalElement.value) { return; }
+    const display = formatStepsGoalDisplay(value);
+    if (stepsGoalElement.value.innerText !== display) {
+        stepsGoalElement.value.innerText = display;
+    }
+};
+
+watch(stepsGoal, (value) => {
+    if (!stepsGoalEditing.value) {
+        setStepsGoalElementText(value);
+    }
+}, { immediate: true });
+
+watch(stepsGoalElement, (el) => {
+    if (el && !stepsGoalEditing.value) {
+        setStepsGoalElementText(stepsGoal.value);
+    }
+});
+
+const startStepsGoalEdit = () => {
+    if (stepsGoalEditing.value) { return; }
+    stepsGoalBeforeEdit.value = stepsGoal.value;
+    stepsGoalEditing.value = true;
+};
+
+const finishStepsGoalEdit = ({ cancel = false } = {}) => {
+    if (!stepsGoalEditing.value) { return; }
+    const el = stepsGoalElement.value;
+    if (!el) {
+        stepsGoalEditing.value = false;
+        return;
+    }
+    if (cancel) {
+        setStepsGoalElementText(stepsGoalBeforeEdit.value);
+        stepsGoalEditing.value = false;
+        return;
+    }
+    const rawValue = el.innerText.trim();
+    if (rawValue === '') {
+        message.warning("Steps goal cannot be empty. Resetting to default.");
+        stepsGoal.value = null;
+        setStepsGoalElementText(stepsGoal.value);
+    } else if (rawValue.toLowerCase() === 'na') {
+        stepsGoal.value = null;
+        setStepsGoalElementText(stepsGoal.value);
+    } else {
+        const parsed = parseInt(rawValue, 10);
+        if (isNaN(parsed)) {
+            message.warning("Steps goal must be a number. Resetting to default.");
+            stepsGoal.value = null;
+            setStepsGoalElementText(stepsGoal.value);
+        } else {
+            stepsGoal.value = parsed;
+            setStepsGoalElementText(stepsGoal.value);
+        }
+    }
+    stepsGoalEditing.value = false;
+};
+
+const handleStepsGoalKeydown = (event) => {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        finishStepsGoalEdit();
+        event.currentTarget?.blur();
+    } else if (event.key === 'Escape') {
+        event.preventDefault();
+        finishStepsGoalEdit({ cancel: true });
+        event.currentTarget?.blur();
+    }
+};
 
 // - tracking the panning offset
 const { x: mouseX, y: mouseY } = useMouse();
@@ -788,7 +916,14 @@ onMounted(() => {
         <div class="u-gap-5"></div>
         <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
         <p class="slash-separator a-fade-in a-delay-2">/</p>
-        <span class="level-name a-fade-in a-delay-3" contenteditable="" @input="onLevelNameChange">{{ levelName }}</span>
+        <span
+            class="level-name a-fade-in a-delay-3"
+            contenteditable=""
+            ref="levelNameElement"
+            @focus="startLevelNameEdit"
+            @blur="finishLevelNameEdit()"
+            @keydown="handleLevelNameKeydown"
+        ></span>
 
         <!-- The right side of the top section -->
         <div class="u-mla"></div>
@@ -801,7 +936,14 @@ onMounted(() => {
         </n-flex>
         <div class="u-gap-1"></div>
         <span class="steps-goal-label a-fade-in a-delay-5">Steps Goal</span>
-        <span class="steps-goal a-fade-in a-delay-5 score" contenteditable="" @input="onStepsGoalChange">{{ stepsGoal || 'NA' }}</span>
+        <span
+            class="steps-goal a-fade-in a-delay-5 score"
+            contenteditable=""
+            ref="stepsGoalElement"
+            @focus="startStepsGoalEdit"
+            @blur="finishStepsGoalEdit()"
+            @keydown="handleStepsGoalKeydown"
+        ></span>
         <div class="u-gap-1"></div>
         <span class="a-fade-in a-delay-5">Current best</span>
         <span class="score a-fade-in a-delay-6"
