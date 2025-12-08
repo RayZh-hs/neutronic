@@ -18,6 +18,7 @@ import { hexaToRgba } from "@/functions/colorUtils"
 import { easeOutCubic, easeOutSine, refAnimateToObject } from "../functions/animateUtils";
 import { useEditorEntities } from "@/functions/useEditorEntities";
 import { useAccountStore, getCustomLevelById, upsertCustomLevel } from "@/functions/useAccount";
+import { useHotkeyBindings } from "@/functions/useHotkeys";
 
 /**
  * This function is called to center the map on the screen.
@@ -781,44 +782,65 @@ const onSave = () => {
 
 // - keyboard hotkeys
 
-onKeyStroke(['b', 'B'], (e) => {
-    activeTool.value = 'board';
-})
-onKeyStroke(['p', 'P'], (e) => {
-    activeTool.value = 'portal';
-})
-onKeyStroke(['+'], (e) => {
-    activeTool.value = 'positron';
-})
-onKeyStroke(['-'], (e) => {
-    activeTool.value = 'electron';
-})
-onKeyStroke(['r', 'R'], (e) => {
-    activeTool.value = 'remover';
-})
-whenever(keys.Ctrl_S, () => {
-    // ctrl+shift+s to save
-    onSave();
-})
-whenever(computed(() => { return keys.Delete.value && !keys.Shift.value }), () => {
-    if (globalModeContext.value === 'select') {
-        removeParticlesInSelection()
-    }
-})
-whenever(computed(() => { return keys.Delete.value && keys.Shift.value }), () => {
-    if (globalModeContext.value === 'select') {
-        removeContainersInSelection()
-    }
-})
-onKeyStroke(['f', 'F'], (e) => {
-    applyToolToSelection();
-})
-onKeyStroke('Escape', (e) => {
-    onSelectCancel();
-})
-whenever(keys.Ctrl_C, () => {
-    copyLevelToClipboard();
-})
+useHotkeyBindings('editor', {
+    'editor.board-tool': ({ event }) => {
+        event.preventDefault();
+        activeTool.value = 'board';
+    },
+    'editor.portal-tool': ({ event }) => {
+        event.preventDefault();
+        activeTool.value = 'portal';
+    },
+    'editor.positron-tool': ({ event }) => {
+        event.preventDefault();
+        activeTool.value = 'positron';
+    },
+    'editor.electron-tool': ({ event }) => {
+        event.preventDefault();
+        activeTool.value = 'electron';
+    },
+    'editor.remover-tool': ({ event }) => {
+        event.preventDefault();
+        activeTool.value = 'remover';
+    },
+    'editor.clear-all': ({ event }) => {
+        event.preventDefault();
+        deleteAll();
+    },
+    'editor.focus': ({ event }) => {
+        event.preventDefault();
+        callCenterMap();
+    },
+    'editor.save': ({ event }) => {
+        event.preventDefault();
+        onSave();
+    },
+    'editor.delete-selection': ({ event }) => {
+        if (globalModeContext.value === 'select') {
+            event.preventDefault();
+            removeParticlesInSelection();
+        }
+    },
+    'editor.delete-containers': ({ event }) => {
+        if (globalModeContext.value === 'select') {
+            event.preventDefault();
+            removeContainersInSelection();
+        }
+    },
+    'editor.apply-tool': ({ event }) => {
+        event.preventDefault();
+        applyToolToSelection();
+    },
+    'editor.cancel-selection': ({ event }) => {
+        event.preventDefault();
+        onSelectCancel();
+    },
+    'editor.copy': ({ event }) => {
+        event.preventDefault();
+        copyLevelToClipboard();
+    },
+}, { allowInInput: false });
+
 onClickOutside(selectionToolbar, onSelectCancel);
 
 //: Custom modals and popups
@@ -970,7 +992,10 @@ onMounted(() => {
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
                 <div class="tool-container tool-container--board"
-                    :class="{ 'tool-container--active': activeTool === 'board' }" @click="activeTool = 'board'">
+                    :class="{ 'tool-container--active': activeTool === 'board' }" @click="activeTool = 'board'"
+                    data-hotkey-target="editor.board-tool"
+                    data-hotkey-label="Board"
+                >
                     <ion-icon name="square-outline"></ion-icon>
                     <span class="tool-container__tooltip">Board</span>
                 </div>
@@ -981,7 +1006,10 @@ onMounted(() => {
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
                 <div class="tool-container tool-container--portal"
-                    :class="{ 'tool-container--active': activeTool === 'portal' }" @click="activeTool = 'portal'">
+                    :class="{ 'tool-container--active': activeTool === 'portal' }" @click="activeTool = 'portal'"
+                    data-hotkey-target="editor.portal-tool"
+                    data-hotkey-label="Portal"
+                >
                     <ion-icon name="albums-outline"></ion-icon>
                     <span class="tool-container__tooltip">Portal</span>
                 </div>
@@ -992,7 +1020,10 @@ onMounted(() => {
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
                 <div class="tool-container tool-container--positron"
-                    :class="{ 'tool-container--active': activeTool === 'positron' }" @click="activeTool = 'positron'">
+                    :class="{ 'tool-container--active': activeTool === 'positron' }" @click="activeTool = 'positron'"
+                    data-hotkey-target="editor.positron-tool"
+                    data-hotkey-label="Positron"
+                >
                     <ion-icon name="radio-button-off-outline"></ion-icon>
                     <span class="tool-container__tooltip">Positron</span>
                 </div>
@@ -1003,7 +1034,10 @@ onMounted(() => {
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
                 <div class="tool-container tool-container--electron"
-                    :class="{ 'tool-container--active': activeTool === 'electron' }" @click="activeTool = 'electron'">
+                    :class="{ 'tool-container--active': activeTool === 'electron' }" @click="activeTool = 'electron'"
+                    data-hotkey-target="editor.electron-tool"
+                    data-hotkey-label="Electron"
+                >
                     <ion-icon name="radio-button-off-outline"></ion-icon>
                     <span class="tool-container__tooltip">Electron</span>
                 </div>
@@ -1014,7 +1048,10 @@ onMounted(() => {
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
                 <div class="tool-container tool-container--remover"
-                    :class="{ 'tool-container--active': activeTool === 'remover' }" @click="activeTool = 'remover'">
+                    :class="{ 'tool-container--active': activeTool === 'remover' }" @click="activeTool = 'remover'"
+                    data-hotkey-target="editor.remover-tool"
+                    data-hotkey-label="Remover"
+                >
                     <ion-icon name="remove-circle-outline"></ion-icon>
                     <span class="tool-container__tooltip">Remover</span>
                 </div>
@@ -1025,7 +1062,10 @@ onMounted(() => {
         <n-divider class="divider"></n-divider>
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
-                <div class="tool-container tool-container--clear-all" @click="showConfirmDeletionModal = true">
+                <div class="tool-container tool-container--clear-all" @click="showConfirmDeletionModal = true"
+                    data-hotkey-target="editor.clear-all"
+                    data-hotkey-label="Clear All"
+                >
                     <ion-icon name="trash-outline"></ion-icon>
                     <span class="tool-container__tooltip">Clear All</span>
                 </div>
@@ -1034,7 +1074,10 @@ onMounted(() => {
         </n-tooltip>
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
-                <div class="tool-container tool-container--focus" @click="callCenterMap">
+                <div class="tool-container tool-container--focus" @click="callCenterMap"
+                    data-hotkey-target="editor.focus"
+                    data-hotkey-label="Focus"
+                >
                     <ion-icon name="locate-outline"></ion-icon>
                     <span class="tool-container__tooltip">Focus</span>
                 </div>

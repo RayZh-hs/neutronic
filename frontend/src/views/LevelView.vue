@@ -984,12 +984,39 @@ useHotkeyBindings('level', {
         event.preventDefault();
         playLatestRecordingEntry();
     },
+    'level.back': ({ event }) => {
+        event.preventDefault();
+        handleGoBack();
+    },
+    'level.on-finish.restart': ({ event }) => {
+        if (hasWon.value) {
+            event.preventDefault();
+            restartGame();
+        }
+    },
+    'level.on-finish.level-select': ({ event }) => {
+        if (hasWon.value && levelViewConfig.value.context === 'album') {
+            event.preventDefault();
+            router.push(`/album/${albumIndex}`);
+        }
+    },
+    'level.on-finish.next': ({ event }) => {
+        if (hasWon.value && levelViewConfig.value.context === 'album') {
+            event.preventDefault();
+            gotoNextLevel();
+        }
+    },
 });
 
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="handleGoBack"></ion-icon>
+    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="handleGoBack"
+        data-hotkey-target="level.back"
+        data-hotkey-label="Back"
+        data-hotkey-element-position="right"
+        data-hotkey-label-position="right"
+    ></ion-icon>
     <div class="viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
         @mouseleave="onPanEndWrapper" ref="refViewPort">
         <div class="steps-complex a-fade-in" v-show="!isStartingAnimation && !hasWon">
@@ -1006,6 +1033,7 @@ useHotkeyBindings('level', {
                     data-hotkey-label="Reset level"
                     data-hotkey-group="level-controls"
                     data-hotkey-group-side="right"
+                    data-hotkey-label-position="inline"
                     @click="router.go(router.currentRoute.value)"
                 ></ion-button>
                 <div class="u-rel u-gap-8"></div>
@@ -1020,6 +1048,7 @@ useHotkeyBindings('level', {
                                 data-hotkey-label="Record"
                                 data-hotkey-group="level-controls"
                                 data-hotkey-group-side="right"
+                                data-hotkey-label-position="inline"
                                 :disabled="recordingButtonDisabled"
                                 :color="isRecordingActive ? '#ff6b3a' : undefined"
                                 @click="handleRecordButtonClick"
@@ -1039,6 +1068,7 @@ useHotkeyBindings('level', {
                                     data-hotkey-label="Play recording"
                                     data-hotkey-group="level-controls"
                                     data-hotkey-group-side="right"
+                                    data-hotkey-label-position="inline"
                                     :color="isPlaybackActive ? '#4cc9f0' : undefined"
                                 ></ion-button>
                             </template>
@@ -1066,7 +1096,9 @@ useHotkeyBindings('level', {
                 'obscure': particle.obscure,
                 'a-fade-in-raw': isStartingAnimation,
                 'a-delay-12': isStartingAnimation
-            }" :id="particle.id" data-hotkey-target="level.focus-particle" data-hotkey-dynamic>
+            }" :id="particle.id" data-hotkey-target="level.focus-particle" data-hotkey-dynamic
+            data-hotkey-element-position="center"
+        >
         </div>
         <!-- <p style="position: absolute; top: 2rem">
             {{ recording }}
@@ -1088,7 +1120,12 @@ useHotkeyBindings('level', {
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                     <template #trigger>
                         <ion-button name="refresh-outline" class="a-fade-in a-delay-12"
-                            @click="router.go(0)"></ion-button>
+                            @click="router.go(0)"
+                            data-hotkey-target="level.on-finish.restart"
+                            data-hotkey-label="Restart"
+                            data-hotkey-group="level-finish"
+                            data-hotkey-label-position="inline"
+                        ></ion-button>
                     </template>
                     <span>Restart</span>
                 </n-tooltip>
@@ -1096,14 +1133,24 @@ useHotkeyBindings('level', {
                     <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                         <template #trigger>
                             <ion-button name="apps-outline" class="a-fade-in a-delay-14"
-                                @click="router.push(`/album/${albumIndex}`)"></ion-button>
+                                @click="router.push(`/album/${albumIndex}`)"
+                                data-hotkey-target="level.on-finish.level-select"
+                                data-hotkey-label="Level Select"
+                                data-hotkey-group="level-finish"
+                                data-hotkey-label-position="inline"
+                            ></ion-button>
                         </template>
                         <span>Level Select</span>
                     </n-tooltip>
                     <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                         <template #trigger>
                             <ion-button name="chevron-forward-outline" class="a-fade-in a-delay-16"
-                                @click="gotoNextLevel"></ion-button>
+                                @click="gotoNextLevel"
+                                data-hotkey-target="level.on-finish.next"
+                                data-hotkey-label="Next Level"
+                                data-hotkey-group="level-finish"
+                                data-hotkey-label-position="inline"
+                            ></ion-button>
                         </template>
                         <span>Next Level</span>
                     </n-tooltip>
@@ -1111,7 +1158,12 @@ useHotkeyBindings('level', {
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)" v-else>
                     <template #trigger>
                         <ion-button name="chevron-back-outline" class="a-fade-in a-delay-20"
-                            @click="handleGoBack"></ion-button>
+                            @click="handleGoBack"
+                            data-hotkey-target="level.back"
+                            data-hotkey-label="Back"
+                            data-hotkey-group="level-finish"
+                            data-hotkey-label-position="inline"
+                        ></ion-button>
                     </template>
                     <span>Back</span>
                 </n-tooltip>

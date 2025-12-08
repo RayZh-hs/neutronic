@@ -15,6 +15,7 @@ import SimpleLevelCard from '../components/SimpleLevelCard.vue';
 
 import { album, isAlbumLoaded } from '@/functions/useAlbum';
 import { getAccountProgress, isAccessibleToPrebuiltLevel } from '@/functions/useAccount';
+import { useHotkeyBindings } from '@/functions/useHotkeys';
 
 const player = getAccountProgress();
 
@@ -88,11 +89,39 @@ const enterLevel = (levelNumber) => {
     }, 100);
 }
 
+useHotkeyBindings('sub-album', {
+    'sub-album.previous': ({ event }) => {
+        event.preventDefault();
+        prevWindow();
+    },
+    'sub-album.next': ({ event }) => {
+        event.preventDefault();
+        nextWindow();
+    },
+    'sub-album.enter': ({ event }) => {
+        // This one is tricky as it depends on selection or context.
+        // For now, we might not have a "selected level" concept in this view to enter.
+        // If the user wants to enter the *first* available level on the page, we could do that,
+        // but it might be unexpected.
+        // Leaving empty or implementing a selection logic would be better.
+        // Given the current UI, maybe we just don't bind it to a specific action unless we add selection.
+    },
+    'sub-album.back': ({ event }) => {
+        event.preventDefault();
+        router.push('/album');
+    },
+});
+
 </script>
 
 <template>
     <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in"
-        @click="router.push('/album')"></ion-icon>
+        @click="router.push('/album')"
+        data-hotkey-target="sub-album.back"
+        data-hotkey-label="Back"
+        data-hotkey-element-position="right"
+        data-hotkey-label-position="right"
+    ></ion-icon>
     <div class="wrapper" v-if="isAlbumLoaded">
         <div class="header-container">
             <h1 class="album-title a-fade-in">{{ currentAlbum.meta.name }}</h1>
@@ -115,10 +144,18 @@ const enterLevel = (levelNumber) => {
         <ion-icon name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in"
             @click="prevWindow"
             :class="{disabled: !canShiftBackward}"
+            data-hotkey-target="sub-album.previous"
+            data-hotkey-label="Previous"
+            data-hotkey-element-position="below"
+            data-hotkey-label-position="right"
         ></ion-icon>
         <ion-icon name="chevron-forward-outline" class="control-btn control-btn__forward a-fade-in"
             @click="nextWindow"
             :class="{disabled: !canShiftForward}"
+            data-hotkey-target="sub-album.next"
+            data-hotkey-label="Next"
+            data-hotkey-element-position="below"
+            data-hotkey-label-position="right"
         ></ion-icon>
     </div>
     <div class="not-found" v-else>

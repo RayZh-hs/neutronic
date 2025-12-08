@@ -50,6 +50,7 @@ import { router } from '@/router';
 // import { useAxiosWithStore } from '@/functions/useAxiosWithStore';
 import { getAccountProgress } from '@/functions/useAccount';
 import { album, isAlbumLoaded } from '@/functions/useAlbum';
+import { useHotkeyBindings } from '@/functions/useHotkeys';
 // let album = ref(null);
 // const { data: album, isFinished: isAlbumLoaded } = useAxiosWithStore('neutronic-album', SERVER_URL + "/albums", 'GET');
 const player = getAccountProgress();
@@ -70,6 +71,29 @@ const jumpToReferent = () => {
     }
 }
 
+useHotkeyBindings('album', {
+    'album.previous': ({ event }) => {
+        event.preventDefault();
+        if (swiperRef.value && swiperRef.value.$el && swiperRef.value.$el.swiper) {
+            swiperRef.value.$el.swiper.slidePrev();
+        }
+    },
+    'album.next': ({ event }) => {
+        event.preventDefault();
+        if (swiperRef.value && swiperRef.value.$el && swiperRef.value.$el.swiper) {
+            swiperRef.value.$el.swiper.slideNext();
+        }
+    },
+    'album.enter': ({ event }) => {
+        event.preventDefault();
+        jumpToReferent();
+    },
+    'album.back': ({ event }) => {
+        event.preventDefault();
+        router.push('/');
+    },
+});
+
 onMounted(() => {
     console.log("AlbumView mounted");
 });
@@ -77,10 +101,27 @@ onMounted(() => {
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="router.push('/')"></ion-icon>
+    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="router.push('/')"
+        data-hotkey-target="album.back"
+        data-hotkey-label="Back"
+        data-hotkey-element-position="right"
+        data-hotkey-label-position="right"
+    ></ion-icon>
+    <div
+        class="enter-capture"
+        data-hotkey-target="album.enter"
+        data-hotkey-label="Enter"
+        data-hotkey-element-position="below"
+        data-hotkey-label-position="right"
+    />
     <!-- <p v-if="isAlbumLoaded">{{ album }}</p> -->
     <div class="side-container" v-if="isAlbumLoaded">
-        <ion-icon name="chevron-back-outline" class="backward-btn"></ion-icon>
+        <ion-icon name="chevron-back-outline" class="backward-btn"
+            data-hotkey-target="album.previous"
+            data-hotkey-label="Previous"
+            data-hotkey-element-position="below"
+            data-hotkey-label-position="right"
+        ></ion-icon>
         <swiper ref="swiperRef" :pagination="pagination" :modules="modules" class="swiper" :navigation="{
             prevEl: '.backward-btn',
             nextEl: '.forward-btn'
@@ -88,24 +129,48 @@ onMounted(() => {
             <swiper-slide v-for="(item, num) in album" :key="num">
                 <album-card :name="item.meta.name" :locked="player.lookup[item.meta.name] == undefined" :total="item.content.length" :passes="player.lookup[item.meta.name]?.passed" :perfects="player.lookup[item.meta.name]?.perfected" class="a-fade-in" 
                     @click="jumpToReferent"
+                    data-hotkey-target="album.enter"
+                    data-hotkey-label="Enter"
+                    data-hotkey-show="false"
                 />
             </swiper-slide>
             <swiper-slide>
                 <subtitled-album-card name="Custom" subtitle="Your own puzzles and recordings." icon="create-outline"
                     @click="jumpToReferent" class="a-fade-in"
+                    data-hotkey-target="album.enter"
+                    data-hotkey-label="Enter"
+                    data-hotkey-show="false"
                 ></subtitled-album-card>
             </swiper-slide>
             <swiper-slide>
                 <subtitled-album-card name="Online" subtitle="And join the world at thought." icon="logo-web-component"
                     @click="jumpToReferent" class="a-fade-in"
+                    data-hotkey-target="album.enter"
+                    data-hotkey-label="Enter"
+                    data-hotkey-show="false"
                 ></subtitled-album-card>
             </swiper-slide>
         </swiper>
-        <ion-icon name="chevron-forward-outline" class="forward-btn"></ion-icon>
+        <ion-icon name="chevron-forward-outline" class="forward-btn"
+            data-hotkey-target="album.next"
+            data-hotkey-label="Next"
+            data-hotkey-element-position="below"
+            data-hotkey-label-position="right"
+        ></ion-icon>
     </div>
 </template>
 
 <style lang="scss" scoped>
+
+.enter-capture {
+    position: fixed;
+    top: 20vh;
+    left: 50vw;
+    width: 10px;
+    height: 10px;
+    background-color: transparent;
+}
+
 .side-container {
 
     display: flex;

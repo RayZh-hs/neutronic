@@ -49,6 +49,9 @@ When pressing space, all the bindings to the particles will show on top of the p
 - `level.toggle-record`: Toggle recording mode, defaults to `q`.
 - `level.play-recording`: Play recording, defaults to `shift+q`.
 - `level.back`: Go back, defaults to `escape|backspace`.
+- `level.on-finish.restart`: Restart level, defaults to `j`.
+- `level.on-finish.level-select`: Level select, defaults to `k`.
+- `level.on-finish.next`: Next level, defaults to `l`.
 
 Typing the binding key of a particle will shift focus to it.
 
@@ -63,6 +66,12 @@ Vue component: `LevelEditorView.vue`
 - `editor.remover-tool`: Select remover tool, defaults to `r|x|5`.
 - `editor.clear-all`: Clear all elements from level, defaults to `ctrl+q`.
 - `editor.focus`: Focus level, defaults to `ctrl+space`
+- `editor.save`: Save level, defaults to `ctrl+s`.
+- `editor.delete-selection`: Remove selection, defaults to `delete`.
+- `editor.delete-containers`: Remove containers in selection, defaults to `shift+delete`.
+- `editor.apply-tool`: Apply tool to selection, defaults to `f`.
+- `editor.cancel-selection`: Cancel selection, defaults to `escape`.
+- `editor.copy`: Copy level to clipboard, defaults to `ctrl+c`.
 
 ## Playback View
 

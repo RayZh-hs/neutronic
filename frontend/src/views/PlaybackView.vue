@@ -668,6 +668,7 @@ useHotkeyBindings('playback', {
                 data-hotkey-label="Go to start"
                 data-hotkey-group="playback-controls"
                 data-hotkey-group-side="right"
+                data-hotkey-label-position="inline"
                 @click="goToStart"
             ></ion-button>
             <ion-button
@@ -677,6 +678,7 @@ useHotkeyBindings('playback', {
                 data-hotkey-label="Step backward"
                 data-hotkey-group="playback-controls"
                 data-hotkey-group-side="right"
+                data-hotkey-label-position="inline"
                 @click="stepBackward"
                 :disabled="currentStepIndex <= 0"
             ></ion-button>
@@ -687,6 +689,7 @@ useHotkeyBindings('playback', {
                 data-hotkey-label="Play or pause"
                 data-hotkey-group="playback-controls"
                 data-hotkey-group-side="right"
+                data-hotkey-label-position="inline"
                 @click="togglePlayback"
             ></ion-button>
             <ion-button
@@ -696,6 +699,7 @@ useHotkeyBindings('playback', {
                 data-hotkey-label="Step forward"
                 data-hotkey-group="playback-controls"
                 data-hotkey-group-side="right"
+                data-hotkey-label-position="inline"
                 @click="stepForward"
                 :disabled="currentStepIndex >= playbackQueue.length"
             ></ion-button>
@@ -706,6 +710,7 @@ useHotkeyBindings('playback', {
                 data-hotkey-label="Go to end"
                 data-hotkey-group="playback-controls"
                 data-hotkey-group-side="right"
+                data-hotkey-label-position="inline"
                 @click="goToEnd"
             ></ion-button>
         </div>

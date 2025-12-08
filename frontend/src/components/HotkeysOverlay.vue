@@ -33,6 +33,53 @@ const GROUP_COLUMN_OFFSET = 110;
 const GROUP_VERTICAL_SPACING = 40;
 const GROUP_TAG_HALF_HEIGHT = 14;
 const GROUP_VERTICAL_OFFSET = -20;
+const STANDALONE_VERTICAL_GAP = 12;
+const STANDALONE_HORIZONTAL_GAP = 16;
+const ESTIMATED_TAG_HEIGHT = 34;
+const ESTIMATED_TAG_WIDTH = 80;
+
+const clampValue = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const elementPlacementStrategies = {
+    below: ({ item, viewportWidth }) => ({
+        left: clampValue(item.anchorX, 16, Math.max(16, viewportWidth - 16)),
+        top: item.rect.bottom + STANDALONE_VERTICAL_GAP,
+        align: 'center',
+    }),
+    above: ({ item, viewportWidth }) => ({
+        left: clampValue(item.anchorX, 16, Math.max(16, viewportWidth - 16)),
+        top: Math.max(item.rect.top - STANDALONE_VERTICAL_GAP - ESTIMATED_TAG_HEIGHT, MIN_DISPLAY_TOP),
+        align: 'center',
+    }),
+    right: ({ item, viewportWidth }) => ({
+        left: clampValue(item.rect.right + STANDALONE_HORIZONTAL_GAP, 16, Math.max(16, viewportWidth - 16)),
+        top: item.anchorY - ESTIMATED_TAG_HEIGHT / 2,
+        align: 'left',
+    }),
+    left: ({ item, viewportWidth }) => ({
+        left: clampValue(item.rect.left - STANDALONE_HORIZONTAL_GAP - ESTIMATED_TAG_WIDTH, 16, Math.max(16, viewportWidth - 16)),
+        top: item.anchorY - ESTIMATED_TAG_HEIGHT / 2,
+        align: 'left',
+    }),
+    center: ({ item }) => ({
+        left: item.anchorX,
+        top: item.anchorY,
+        align: 'middle',
+    }),
+};
+
+const applyStandalonePlacements = (items, viewportWidth) => {
+    items.forEach((item) => {
+        if (item.groupId) {
+            return;
+        }
+        const placementStrategy = elementPlacementStrategies[item.elementPlacement] || elementPlacementStrategies.below;
+        const placement = placementStrategy({ item, viewportWidth });
+        item.displayLeft = placement.left;
+        item.displayTop = placement.top;
+        item.align = placement.align || 'center';
+    });
+};
 
 const layoutHotkeyGroups = (items, viewportWidth) => {
     const groups = new Map();
@@ -114,6 +161,8 @@ const buildOverlayTargets = () => {
         const isDynamic = Object.prototype.hasOwnProperty.call(node.dataset, 'hotkeyDynamic');
         const groupId = node.dataset.hotkeyGroup || null;
         const groupSide = node.dataset.hotkeyGroupSide || null;
+        const elementPlacement = (node.dataset.hotkeyElementPosition || 'below').toLowerCase();
+        const labelPlacement = (node.dataset.hotkeyLabelPosition || 'below').toLowerCase();
         const keyOverride = node.dataset.hotkeyHint || '';
         const baseLabel = node.dataset.hotkeyLabel || '';
         let keyLabel = keyOverride;
@@ -131,6 +180,11 @@ const buildOverlayTargets = () => {
         const anchorY = rect.top + rect.height / 2;
         const top = Math.max(rect.top - 28, 8);
         const left = Math.min(Math.max(anchorX, 12), Math.max(viewportWidth - 12, 12));
+        const shouldShowRaw = node.dataset.hotkeyShow;
+        const shouldShow = typeof shouldShowRaw === 'undefined' ? true : shouldShowRaw !== 'false';
+        if (!shouldShow) {
+            return;
+        }
         const entry = {
             id: `${actionId}-${keyLabel}-${items.length}`,
             actionId,
@@ -142,12 +196,15 @@ const buildOverlayTargets = () => {
             displayLeft: left,
             anchorX,
             anchorY,
+            rect,
             isDynamic,
             element: node,
             connector: null,
             align: 'center',
             groupId,
             groupSide,
+            elementPlacement,
+            labelPlacement,
         };
         items.push(entry);
         if (isDynamic) {
@@ -158,6 +215,7 @@ const buildOverlayTargets = () => {
         }
     });
     layoutHotkeyGroups(items, viewportWidth);
+    applyStandalonePlacements(items, viewportWidth);
     overlayItems.value = items;
     dynamicTargets.value = dynamics;
 };
@@ -326,7 +384,7 @@ onBeforeUnmount(() => {
                 top: `${item.displayTop}px`
             }"
         >
-            <div class="hotkey-overlay__tag-content">
+            <div class="hotkey-overlay__tag-content" :class="[`hotkey-overlay__tag-content--${item.labelPlacement || 'below'}`]">
                 <div class="hotkey-overlay__tag-key">
                     {{ item.key }}
                 </div>
@@ -344,7 +402,7 @@ onBeforeUnmount(() => {
     inset: 0;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.18s ease;
+    transition: opacity 0.1s ease;
     z-index: 2000;
     font-family: "Space Mono", "JetBrains Mono", "Fira Code", monospace;
 }
@@ -373,6 +431,11 @@ onBeforeUnmount(() => {
     align-items: center;
 }
 
+.hotkey-overlay__tag--middle {
+    transform: translate(-50%, -50%);
+    align-items: center;
+}
+
 .hotkey-overlay__tag--right,
 .hotkey-overlay__tag--left {
     transform: translate(0, 0);
@@ -392,6 +455,17 @@ onBeforeUnmount(() => {
     gap: 0.5rem;
 }
 
+.hotkey-overlay__tag-content--inline {
+    flex-direction: row;
+    align-items: center;
+}
+
+.hotkey-overlay__tag-content--below {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
 .hotkey-overlay__tag-key {
     padding: 0.35rem 0.55rem;
     border-radius: 0.4rem;
@@ -409,6 +483,7 @@ onBeforeUnmount(() => {
     font-size: 0.75rem;
     text-transform: capitalize;
     white-space: nowrap;
+    text-align: center;
 }
 
 .hotkey-overlay__connector {

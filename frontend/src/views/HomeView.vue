@@ -1,10 +1,26 @@
 <script setup>
 import { router } from '../router';
 import { ref } from 'vue';
+import { useHotkeyBindings } from '@/functions/useHotkeys';
 
 const curAtButton = ref('none');
 
 const showInfo = ref(false);
+
+useHotkeyBindings('landing', {
+    'landing.info': ({ event }) => {
+        event.preventDefault();
+        showInfo.value = true;
+    },
+    'landing.play': ({ event }) => {
+        event.preventDefault();
+        router.push('/album');
+    },
+    'landing.settings': ({ event }) => {
+        event.preventDefault();
+        // No action yet
+    },
+});
 
 </script>
 
@@ -14,16 +30,25 @@ const showInfo = ref(false);
         <div class="r-container">
             <div class="r-divider-bg clickable a-fade-in a-delay-2"
                 @click="showInfo = true"
-                @mouseover="curAtButton = 'info'" @mouseleave="curAtButton = 'none'">
+                @mouseover="curAtButton = 'info'" @mouseleave="curAtButton = 'none'"
+                data-hotkey-target="landing.info"
+                data-hotkey-label="Info"
+            >
                 <ion-icon name="information-outline" class="form-button" size="large"></ion-icon>
             </div>
             <div class="r-divider-bg clickable a-fade-in a-delay-3"
                 @click="router.push('/album')"
-                @mouseover="curAtButton = 'play'" @mouseleave="curAtButton = 'none'">
+                @mouseover="curAtButton = 'play'" @mouseleave="curAtButton = 'none'"
+                data-hotkey-target="landing.play"
+                data-hotkey-label="Play"
+            >
                 <ion-icon name="play-outline" class="form-button" size="large"></ion-icon>
             </div>
             <div class="r-divider-bg clickable a-fade-in a-delay-4" @mouseover="curAtButton = 'settings'"
-                @mouseleave="curAtButton = 'none'">
+                @mouseleave="curAtButton = 'none'"
+                data-hotkey-target="landing.settings"
+                data-hotkey-label="Settings"
+            >
                 <ion-icon name="settings-outline" class="form-button" size="large"></ion-icon>
             </div>
         </div>
