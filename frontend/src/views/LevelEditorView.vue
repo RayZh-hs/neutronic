@@ -995,6 +995,8 @@ onMounted(() => {
                     :class="{ 'tool-container--active': activeTool === 'board' }" @click="activeTool = 'board'"
                     data-hotkey-target="editor.board-tool"
                     data-hotkey-label="Board"
+                    data-hotkey-element-position="center"
+                    data-hotkey-label-position="right"
                 >
                     <ion-icon name="square-outline"></ion-icon>
                     <span class="tool-container__tooltip">Board</span>
@@ -1009,6 +1011,8 @@ onMounted(() => {
                     :class="{ 'tool-container--active': activeTool === 'portal' }" @click="activeTool = 'portal'"
                     data-hotkey-target="editor.portal-tool"
                     data-hotkey-label="Portal"
+                    data-hotkey-element-position="center"
+                    data-hotkey-label-position="right"
                 >
                     <ion-icon name="albums-outline"></ion-icon>
                     <span class="tool-container__tooltip">Portal</span>
@@ -1023,6 +1027,8 @@ onMounted(() => {
                     :class="{ 'tool-container--active': activeTool === 'positron' }" @click="activeTool = 'positron'"
                     data-hotkey-target="editor.positron-tool"
                     data-hotkey-label="Positron"
+                    data-hotkey-element-position="center"
+                    data-hotkey-label-position="right"
                 >
                     <ion-icon name="radio-button-off-outline"></ion-icon>
                     <span class="tool-container__tooltip">Positron</span>
@@ -1037,6 +1043,8 @@ onMounted(() => {
                     :class="{ 'tool-container--active': activeTool === 'electron' }" @click="activeTool = 'electron'"
                     data-hotkey-target="editor.electron-tool"
                     data-hotkey-label="Electron"
+                    data-hotkey-element-position="center"
+                    data-hotkey-label-position="right"
                 >
                     <ion-icon name="radio-button-off-outline"></ion-icon>
                     <span class="tool-container__tooltip">Electron</span>
@@ -1051,6 +1059,8 @@ onMounted(() => {
                     :class="{ 'tool-container--active': activeTool === 'remover' }" @click="activeTool = 'remover'"
                     data-hotkey-target="editor.remover-tool"
                     data-hotkey-label="Remover"
+                    data-hotkey-element-position="center"
+                    data-hotkey-label-position="right"
                 >
                     <ion-icon name="remove-circle-outline"></ion-icon>
                     <span class="tool-container__tooltip">Remover</span>
@@ -1065,6 +1075,8 @@ onMounted(() => {
                 <div class="tool-container tool-container--clear-all" @click="showConfirmDeletionModal = true"
                     data-hotkey-target="editor.clear-all"
                     data-hotkey-label="Clear All"
+                    data-hotkey-element-position="center"
+                    data-hotkey-label-position="right"
                 >
                     <ion-icon name="trash-outline"></ion-icon>
                     <span class="tool-container__tooltip">Clear All</span>
@@ -1077,6 +1089,8 @@ onMounted(() => {
                 <div class="tool-container tool-container--focus" @click="callCenterMap"
                     data-hotkey-target="editor.focus"
                     data-hotkey-label="Focus"
+                    data-hotkey-element-position="center"
+                    data-hotkey-label-position="right"
                 >
                     <ion-icon name="locate-outline"></ion-icon>
                     <span class="tool-container__tooltip">Focus</span>
