@@ -636,6 +636,16 @@ const handleSelectParticle = (particle) => {
     if (particle === selected.value) selected.value = null;
     else if (canInteract.value && !disableInteraction.value && !particle.colliding && !particle.transporting) { selected.value = particle; }
 };
+const isEditableTarget = (target) => {
+    if (!target) {
+        return false;
+    }
+    if (target.isContentEditable) {
+        return true;
+    }
+    const tagName = target.tagName ? target.tagName.toLowerCase() : '';
+    return ['input', 'textarea', 'select'].includes(tagName);
+};
 const focusParticleByOffset = (offset) => {
     const particles = gameState.value.particles;
     if (!particles || particles.length === 0) {
@@ -658,6 +668,82 @@ const toggleParticleFocus = () => {
     }
     if (gameState.value.particles.length > 0) {
         selected.value = gameState.value.particles[0];
+    }
+};
+const focusParticleAtIndex = (index) => {
+    const particle = gameState.value.particles[index];
+    if (!particle) {
+        return false;
+    }
+    if (!canInteract.value || disableInteraction.value) {
+        return false;
+    }
+    if (particle.colliding || particle.transporting) {
+        return false;
+    }
+    selected.value = particle;
+    return true;
+};
+const particleHotkeyKeys = computed(() => gameState.value.particles.map((_, index) => String(index + 1)));
+let particleDigitBuffer = '';
+let particleDigitResetHandle = null;
+const clearParticleDigitBuffer = () => {
+    particleDigitBuffer = '';
+    if (particleDigitResetHandle) {
+        clearTimeout(particleDigitResetHandle);
+        particleDigitResetHandle = null;
+    }
+};
+const scheduleParticleDigitReset = () => {
+    if (particleDigitResetHandle) {
+        clearTimeout(particleDigitResetHandle);
+    }
+    particleDigitResetHandle = setTimeout(() => {
+        particleDigitBuffer = '';
+        particleDigitResetHandle = null;
+    }, 650);
+};
+const handleParticleDigitInput = (digit) => {
+    const keys = particleHotkeyKeys.value;
+    if (keys.length === 0) {
+        return false;
+    }
+    const nextBuffer = particleDigitBuffer + digit;
+    const exactIndex = keys.findIndex((key) => key === nextBuffer);
+    if (exactIndex !== -1) {
+        const focused = focusParticleAtIndex(exactIndex);
+        clearParticleDigitBuffer();
+        return focused;
+    }
+    const hasPartial = keys.some((key) => key.startsWith(nextBuffer));
+    if (hasPartial) {
+        particleDigitBuffer = nextBuffer;
+        scheduleParticleDigitReset();
+        return true;
+    }
+    const restartIndex = keys.findIndex((key) => key.startsWith(digit));
+    if (restartIndex !== -1) {
+        particleDigitBuffer = digit;
+        scheduleParticleDigitReset();
+        return true;
+    }
+    clearParticleDigitBuffer();
+    return false;
+};
+const handleParticleDigitKeydown = (event) => {
+    if (event.defaultPrevented) {
+        return;
+    }
+    if (isEditableTarget(event.target)) {
+        return;
+    }
+    if (!event.key || event.key.length !== 1 || !/[0-9]/.test(event.key) || event.key === '0') {
+        return;
+    }
+    const consumed = handleParticleDigitInput(event.key);
+    if (consumed) {
+        event.preventDefault();
+        event.stopPropagation();
     }
 };
 const playLatestRecordingEntry = () => {
@@ -826,11 +912,17 @@ onMounted(async () => {
         initializeRuntimeState(true);
         console.log(gameState.value);
     }
+    window.addEventListener('keydown', handleParticleDigitKeydown);
 });
 
 onBeforeUnmount(() => {
     selected.value = null;
     stopPlayback();
+    window.removeEventListener('keydown', handleParticleDigitKeydown);
+    if (particleDigitResetHandle) {
+        clearTimeout(particleDigitResetHandle);
+        particleDigitResetHandle = null;
+    }
 });
 
 const updateViewConfig = () => {
