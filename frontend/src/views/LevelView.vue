@@ -73,8 +73,8 @@ const playbackDropdownOptions = computed(() => levelRecordings.value.map((entry)
     key: entry.id
 })));
 
-const canInteract = computed(() => isLevelLoaded.value && !isPanning.value && !disableInteraction.value && !isPlaybackActive.value);
-const doSmoothAnimate = computed(() => isLevelLoaded.value && !isPanning.value && !isCustomAnimating.value);
+const canInteract = computed(() => isLevelLoaded.value && !isPanning.value && !isPlaybackActive.value);
+const doSmoothAnimate = computed(() => isLevelLoaded.value && !isPanning.value);
 
 const loadLevelFromString = (levelString) => {
     fullLevelData.value = levelString;
@@ -155,6 +155,8 @@ const initializeRuntimeState = (shouldObscure = true) => {
         particle.id = `particle-${index}`;
         particle.obscure = shouldObscure;
         particle.colliding = false;
+        particle.transporting = false;
+        particle.skipTransition = false;
     });
     gameState.value.containers.forEach((container, index) => {
         container.id = `container-${index}`;
@@ -462,7 +464,6 @@ const handleRecordButtonClick = () => {
 const stopPlayback = () => {
     isPlaybackActive.value = false;
     playbackQueue.value = [];
-    selected.value = null;
     if (playbackTimeoutHandle.value) {
         clearTimeout(playbackTimeoutHandle.value);
         playbackTimeoutHandle.value = null;
@@ -534,10 +535,11 @@ const moveParticle = (direction, options = {}) => {
     }
     const currentIndex = gameState.value.particles.findIndex(p => p === selected.value);    // Not to be confused with ID
     console.log(currentIndex)
-    let currentColor = gameState.value.particles[currentIndex].color;
-    let currentRow = gameState.value.particles[currentIndex].row;
-    let currentColumn = gameState.value.particles[currentIndex].column;
-    let currentId = gameState.value.particles[currentIndex].id;
+    const currentParticle = gameState.value.particles[currentIndex];
+    let currentColor = currentParticle.color;
+    let currentRow = currentParticle.row;
+    let currentColumn = currentParticle.column;
+    let currentId = currentParticle.id;
     let currentNode = document.getElementById(currentId);
     if (currentIndex !== -1) {  // -1 means that an error occurred
         switch (direction) {
@@ -564,12 +566,11 @@ const moveParticle = (direction, options = {}) => {
         // Record the move
         recordMove(currentId, direction);
         // This drives the animation of the move
-        gameState.value.particles[currentIndex].row = currentRow;
-        gameState.value.particles[currentIndex].column = currentColumn;
+        currentParticle.row = currentRow;
+        currentParticle.column = currentColumn;
         // Check for collision and/or portal
         if (getParticlesAt(currentRow, currentColumn).length >= 2) {
             // Since the move is valid, this must be a particle of a different color here
-            disableInteraction.value = true;
             selected.value = null;
 
             const collidingParticles = getParticlesAt(currentRow, currentColumn);
@@ -583,12 +584,10 @@ const moveParticle = (direction, options = {}) => {
             setTimeout(() => {
 
                 updateMapAfterCollision(currentRow, currentColumn);
-                disableInteraction.value = false;
 
             }, gameDropoutAnimationDuration);
         }
         else if (hasPortalAt(currentRow, currentColumn)) {
-            disableInteraction.value = true;
             setTimeout(() => {
                 isCustomAnimating.value = true;
                 // Two cases: either the other portal is empty, or the other one has a particle of a different color
@@ -596,8 +595,10 @@ const moveParticle = (direction, options = {}) => {
                 // Create a shadow element here, and move the particle to the other portal
                 createShadowParticleFrom(currentNode);
                 // Move the current particle to the other portal
-                gameState.value.particles[currentIndex].row = otherPortalCoord.row;
-                gameState.value.particles[currentIndex].column = otherPortalCoord.column;
+                currentParticle.skipTransition = true;
+                currentParticle.row = otherPortalCoord.row;
+                currentParticle.column = otherPortalCoord.column;
+                setTimeout(() => { currentParticle.skipTransition = false; }, 50);
 
                 if (hasParticleWithColorAt(otherPortalCoord.row, otherPortalCoord.column, negateColor(currentColor))) {
                     // First clear the selection for correct visuals
@@ -615,20 +616,18 @@ const moveParticle = (direction, options = {}) => {
                         isCustomAnimating.value = false;
                         // Update the map after the collision
                         updateMapAfterCollision(otherPortalCoord.row, otherPortalCoord.column);
-                        // Enable interaction after the animation is done
-                        disableInteraction.value = false;
                     }, gameDropoutAnimationDuration);
                 }
                 else {
                     // If the other portal is empty, give the current particle a popping animation
                     currentNode.classList.add('particle--transported');
+                    currentParticle.transporting = true;
 
                     setTimeout(() => {
                         // After the move, the smooth animation can be turned on
                         isCustomAnimating.value = false;
                         currentNode.classList.remove('particle--transported');
-                        // Enable interaction after the animation is done
-                        disableInteraction.value = false;
+                        currentParticle.transporting = false;
                     }, gameTransportAnimationDuration);
                 }
             }, gameDefaultAnimationDuration);   // This is the time for the particle to reach the portal
@@ -647,7 +646,7 @@ const moveParticle = (direction, options = {}) => {
 };
 const handleSelectParticle = (particle) => {
     if (particle === selected.value) selected.value = null;
-    else if (canInteract.value) { selected.value = particle; }
+    else if (canInteract.value && !disableInteraction.value && !particle.colliding && !particle.transporting) { selected.value = particle; }
 };
 const containersWithAttr = computed(() => {
     return gameState.value.containers.map(item => {
@@ -701,7 +700,7 @@ const getPositionForParticles = (item) => {
         position: 'absolute',
         left: `${left + panningOffset.value.x + additionalCenteringOffset.value.x}px`,
         top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`,
-        transition: doSmoothAnimate.value ? `all ${gameDefaultAnimationDuration}ms ease-out` : 'none'
+        transition: (doSmoothAnimate.value && !item.skipTransition) ? `all ${gameDefaultAnimationDuration}ms ease-out` : 'none'
     };
 };
 

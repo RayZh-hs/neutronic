@@ -251,7 +251,6 @@ const makeBoardFrom = (r, c) => {
 
 const stopPlayback = () => {
     isPlaybackActive.value = false;
-    selected.value = null;
     if (playbackTimeoutHandle.value) {
         clearTimeout(playbackTimeoutHandle.value);
         playbackTimeoutHandle.value = null;
