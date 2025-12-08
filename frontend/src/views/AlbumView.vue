@@ -67,6 +67,10 @@ const jumpToReferent = () => {
     } else if (id === albumLength.value + 1) {
         router.push('/online');
     } else {
+        const currentAlbum = album.value[id];
+        if (currentAlbum && player.lookup[currentAlbum.meta.name] == undefined) {
+            return;
+        }
         router.push(`/album/${id}`);
     }
 }

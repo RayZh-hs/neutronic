@@ -274,7 +274,7 @@ useHotkeyBindings('general', {
         event.preventDefault();
         showOverlay(binding);
     },
-}, { allowInInput: true });
+}, { allowInInput: false });
 
 const handleKeyup = (event) => {
     if (!isActive.value || !holdReleaseKey.value) {
