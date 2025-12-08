@@ -72,6 +72,8 @@ Vue component: `LevelEditorView.vue`
 - `editor.apply-tool`: Apply tool to selection, defaults to `f`.
 - `editor.cancel-selection`: Cancel selection, defaults to `escape`.
 - `editor.copy`: Copy level to clipboard, defaults to `ctrl+c`.
+- `editor.back`: Go back to custom levels, defaults to `escape|backspace`.
+- `editor.play`: Play level, defaults to `ctrl+enter`.
 
 ## Playback View
 
@@ -82,3 +84,16 @@ Vue component: `PlaybackView.vue`
 - `playback.goto-end`: Go to playback end, defaults to `l`.
 - `playback.step-backward`: Step backward, defaults to `j`.
 - `playback.step-forward`: Step forward, defaults to `k`.
+
+## Custom Selection View
+
+Vue component: `CustomSelectionView.vue`
+
+- `custom-selection.toggle-mode`: Toggle between recordings and levels, defaults to `ctrl+tab`.
+- `custom-selection.new-level`: Create new level, defaults to `+`.
+- `custom-selection.previous-level`: Previous level/recording, defaults to `j`.
+- `custom-selection.next-level`: Next level/recording, defaults to `l`.
+- `custom-selection.edit-level`: Edit selected level, defaults to `k|enter`.
+- `custom-selection.delete`: Delete selected level/recording, defaults to `delete`.
+- `custom-selection.play`: Play selected level/recording, defaults to `ctrl+enter`.
+- `custom-selection.back`: Go back to landing page, defaults to `escape|backspace`.

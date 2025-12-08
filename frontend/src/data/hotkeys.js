@@ -30,6 +30,7 @@ export const defaultHotkeyMap = {
         'level.reset': ['r'],
         'level.toggle-record': ['q'],
         'level.play-recording': ['shift+q'],
+        'level.back': ['escape', 'backspace'],
     },
     editor: {
         'editor.board-tool': ['b', '1'],
@@ -39,6 +40,7 @@ export const defaultHotkeyMap = {
         'editor.remover-tool': ['r', 'x', '5'],
         'editor.clear-all': ['ctrl+q'],
         'editor.focus': ['ctrl+space'],
+        'editor.back': ['escape', 'backspace'],
     },
     playback: {
         'playback.play-pause': ['ctrl+space'],

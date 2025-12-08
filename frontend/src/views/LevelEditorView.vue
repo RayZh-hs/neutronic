@@ -811,6 +811,10 @@ useHotkeyBindings('editor', {
         event.preventDefault();
         callCenterMap();
     },
+    'editor.back': ({ event }) => {
+        event.preventDefault();
+        router.push('/custom');
+    },
     'editor.save': ({ event }) => {
         event.preventDefault();
         onSave();
@@ -933,7 +937,10 @@ onMounted(() => {
     <div class="top-container">
         <!-- The left side of the top section -->
         <div class="u-gap-16"></div>
-        <ion-button name="arrow-back-circle-outline" size="1.6rem" @click="router.push('/custom')" class="a-fade-in" />
+        <ion-button name="arrow-back-circle-outline" size="1.6rem" @click="router.push('/custom')" class="a-fade-in"
+            data-hotkey-target="editor.back"
+            data-hotkey-label="Back"
+        />
         <ion-button name="save-outline" size="1.6rem" class="a-fade-in a-delay-1" @click="onSave" />
         <div class="u-gap-5"></div>
         <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
