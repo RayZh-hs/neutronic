@@ -119,10 +119,25 @@ const handleResetAccount = () => {
             Your progress and custom levels live in this browser. Export to back up or share, import to restore.
         </p>
         <div class="user-actions-container">
-            <button class="card-button" type="button" @click="handleExport">Export account (.json)</button>
-            <button class="card-button" type="button" @click="startImport">Import account (.json)</button>
-            <button class="card-button card-button--danger" type="button" @click="handleResetAccount">Clear Account Data</button>
+            <n-button class="user-action-button" @click="handleExport">
+                <template #default>Export</template>
+                <template #icon>
+                    <ion-icon name="download-outline"></ion-icon>
+                </template>
+            </n-button>
+            <n-button class="user-action-button" @click="startImport">
+                <template #default>Import</template>
+                <template #icon>
+                    <ion-icon name="folder-open-outline"></ion-icon>
+                </template>
+            </n-button>
         </div>
+            <n-button class="user-action-button" type="error" outline @click="handleResetAccount">
+                <template #default>Reset Account</template>
+                <template #icon>
+                    <ion-icon name="trash-outline"></ion-icon>
+                </template>
+            </n-button>
     </div>
 </template>
 
@@ -205,33 +220,16 @@ const handleResetAccount = () => {
 
 .user-actions-container {
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    flex-direction: row;
+    justify-content: space-between;
 }
 
-.card-button {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 0.35rem;
-    padding: 0.4rem 0.8rem;
-    color: inherit;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s;
+.user-action-button {
+    flex: 1;
+    margin-right: 0.5rem;
 
-    &:hover {
-        border-color: $n-primary;
-        color: $n-primary;
-    }
-
-    &--danger {
-        background: rgba(255, 59, 48, 0.12);
-        border-color: rgba(255, 59, 48, 0.18);
-
-        &:hover {
-            border-color: #ff3b30;
-            color: #ff3b30;
-        }
+    &:last-child {
+        margin-right: 0;
     }
 }
 
