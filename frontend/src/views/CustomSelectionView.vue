@@ -209,18 +209,10 @@ const deleteRecording = (rec) => {
 };
 
 const playRecording = (rec) => {
-    const prebuiltInfo = getPrebuiltLevelInfo(rec.levelId);
-    if (prebuiltInfo) {
-        router.push({
-            path: `/album/${prebuiltInfo.albumIndex}/${rec.levelId}`,
-            query: { recordingId: rec.id }
-        });
-    } else {
-        router.push({
-            path: `/custom/play/${rec.levelId}`,
-            query: { recordingId: rec.id }
-        });
-    }
+    router.push({
+        path: `/playback/${rec.levelId}`,
+        query: { recordingId: rec.id }
+    });
 };
 </script>
 
