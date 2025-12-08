@@ -1,0 +1,50 @@
+export const defaultHotkeyMap = {
+    general: {
+        'general.view-hotkeys': ['space'],
+    },
+    landing: {
+        'landing.info': ['j'],
+        'landing.play': ['k'],
+        'landing.settings': ['l'],
+    },
+    album: {
+        'album.previous': ['j', 'a', 'left-arrow'],
+        'album.next': ['l', 'd', 'right-arrow'],
+        'album.enter': ['k', 'enter'],
+        'album.back': ['escape', 'backspace'],
+    },
+    'sub-album': {
+        'sub-album.previous': ['j', 'a', 'left-arrow'],
+        'sub-album.next': ['l', 'd', 'right-arrow'],
+        'sub-album.enter': ['k', 'enter'],
+        'sub-album.back': ['escape', 'backspace'],
+    },
+    level: {
+        'level.up': ['w', 'up-arrow'],
+        'level.down': ['s', 'down-arrow'],
+        'level.left': ['a', 'left-arrow'],
+        'level.right': ['d', 'right-arrow'],
+        'level.previous-particle': ['j'],
+        'level.next-particle': ['l'],
+        'level.toggle-focus': ['k', 'enter'],
+        'level.reset': ['r'],
+        'level.toggle-record': ['q'],
+        'level.play-recording': ['shift+q'],
+    },
+    editor: {
+        'editor.board-tool': ['b', '1'],
+        'editor.portal-tool': ['p', '2'],
+        'editor.positron-tool': ['+', '3'],
+        'editor.electron-tool': ['-', '4'],
+        'editor.remover-tool': ['r', 'x', '5'],
+        'editor.clear-all': ['ctrl+q'],
+        'editor.focus': ['ctrl+space'],
+    },
+    playback: {
+        'playback.play-pause': ['ctrl+space'],
+        'playback.goto-beginning': ['h'],
+        'playback.goto-end': ['l'],
+        'playback.step-backward': ['j'],
+        'playback.step-forward': ['k'],
+    },
+};

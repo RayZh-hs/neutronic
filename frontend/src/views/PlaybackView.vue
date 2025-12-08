@@ -17,6 +17,7 @@ import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils'
 import { randomFloatFromInterval } from '@/functions/mathUtils';
 import { useRecordingsStore } from '@/functions/useRecordings';
 import { getCustomLevelById } from '@/functions/useAccount';
+import { useHotkeyBindings } from '@/functions/useHotkeys';
 
 const recordingsStore = useRecordingsStore();
 const baseLevelDefinition = ref(null);
@@ -618,6 +619,29 @@ const handleGoBack = () => {
     router.go(-1);
 }
 
+useHotkeyBindings('playback', {
+    'playback.play-pause': ({ event }) => {
+        event.preventDefault();
+        togglePlayback();
+    },
+    'playback.goto-beginning': ({ event }) => {
+        event.preventDefault();
+        goToStart();
+    },
+    'playback.goto-end': ({ event }) => {
+        event.preventDefault();
+        goToEnd();
+    },
+    'playback.step-backward': ({ event }) => {
+        event.preventDefault();
+        stepBackward();
+    },
+    'playback.step-forward': ({ event }) => {
+        event.preventDefault();
+        stepForward();
+    },
+});
+
 </script>
 
 <template>
@@ -637,11 +661,53 @@ const handleGoBack = () => {
         <h1 class="viewport__level-name a-fade-in" v-show="isStartingAnimation">{{ name }}</h1>
 
         <div class="playback-controls a-fade-in" v-show="!isStartingAnimation">
-            <ion-button name="play-skip-back-outline" size="1.6rem" @click="goToStart"></ion-button>
-            <ion-button name="chevron-back-outline" size="1.6rem" @click="stepBackward" :disabled="currentStepIndex <= 0"></ion-button>
-            <ion-button :name="isPlaybackActive ? 'pause-outline' : 'play-outline'" size="2rem" @click="togglePlayback"></ion-button>
-            <ion-button name="chevron-forward-outline" size="1.6rem" @click="stepForward" :disabled="currentStepIndex >= playbackQueue.length"></ion-button>
-            <ion-button name="play-skip-forward-outline" size="1.6rem" @click="goToEnd"></ion-button>
+            <ion-button
+                name="play-skip-back-outline"
+                size="1.6rem"
+                data-hotkey-target="playback.goto-beginning"
+                data-hotkey-label="Go to start"
+                data-hotkey-group="playback-controls"
+                data-hotkey-group-side="right"
+                @click="goToStart"
+            ></ion-button>
+            <ion-button
+                name="chevron-back-outline"
+                size="1.6rem"
+                data-hotkey-target="playback.step-backward"
+                data-hotkey-label="Step backward"
+                data-hotkey-group="playback-controls"
+                data-hotkey-group-side="right"
+                @click="stepBackward"
+                :disabled="currentStepIndex <= 0"
+            ></ion-button>
+            <ion-button
+                :name="isPlaybackActive ? 'pause-outline' : 'play-outline'"
+                size="2rem"
+                data-hotkey-target="playback.play-pause"
+                data-hotkey-label="Play or pause"
+                data-hotkey-group="playback-controls"
+                data-hotkey-group-side="right"
+                @click="togglePlayback"
+            ></ion-button>
+            <ion-button
+                name="chevron-forward-outline"
+                size="1.6rem"
+                data-hotkey-target="playback.step-forward"
+                data-hotkey-label="Step forward"
+                data-hotkey-group="playback-controls"
+                data-hotkey-group-side="right"
+                @click="stepForward"
+                :disabled="currentStepIndex >= playbackQueue.length"
+            ></ion-button>
+            <ion-button
+                name="play-skip-forward-outline"
+                size="1.6rem"
+                data-hotkey-target="playback.goto-end"
+                data-hotkey-label="Go to end"
+                data-hotkey-group="playback-controls"
+                data-hotkey-group-side="right"
+                @click="goToEnd"
+            ></ion-button>
         </div>
 
         <div v-for="(container, index) in containersWithAttr" :key="container.id" :style="container.style"

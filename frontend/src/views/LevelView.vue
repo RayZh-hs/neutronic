@@ -16,6 +16,7 @@ import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } f
 import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils';
 import { randomFloatFromInterval } from '@/functions/mathUtils';
 import { useRecordingsStore, addRecordingForLevel } from '@/functions/useRecordings';
+import { useHotkeyBindings } from '@/functions/useHotkeys';
 
 const levelViewConfig = useSessionStorage('level-view-config', {});
 const recordingsStore = useRecordingsStore();
@@ -250,19 +251,6 @@ const isMoveValid = (currentColor, currentId, newPos) => {
     return true;
 }
 
-const handleKeydown = (event) => {
-    if (isPlaybackActive.value) {
-        event.preventDefault();
-        return;
-    }
-    const keyMapping = {
-        'ArrowUp': 'up',
-        'ArrowDown': 'down',
-        'ArrowLeft': 'left',
-        'ArrowRight': 'right'
-    }
-    if (keyMapping[event.key]) moveParticle(keyMapping[event.key]);
-};
 const updateMapAfterCollision = (r, c) => {
 
     if (hasPortalAt(r, c)) {
@@ -648,6 +636,41 @@ const handleSelectParticle = (particle) => {
     if (particle === selected.value) selected.value = null;
     else if (canInteract.value && !disableInteraction.value && !particle.colliding && !particle.transporting) { selected.value = particle; }
 };
+const focusParticleByOffset = (offset) => {
+    const particles = gameState.value.particles;
+    if (!particles || particles.length === 0) {
+        return;
+    }
+    const currentIndex = particles.findIndex((particle) => particle === selected.value);
+    if (currentIndex === -1) {
+        selected.value = offset > 0 ? particles[0] : particles[particles.length - 1];
+        return;
+    }
+    const nextIndex = (currentIndex + offset + particles.length) % particles.length;
+    selected.value = particles[nextIndex];
+};
+const focusPreviousParticle = () => focusParticleByOffset(-1);
+const focusNextParticle = () => focusParticleByOffset(1);
+const toggleParticleFocus = () => {
+    if (selected.value) {
+        selected.value = null;
+        return;
+    }
+    if (gameState.value.particles.length > 0) {
+        selected.value = gameState.value.particles[0];
+    }
+};
+const playLatestRecordingEntry = () => {
+    const latest = levelRecordings.value.at(-1);
+    if (!latest) {
+        return;
+    }
+    startPlayback(latest);
+};
+const handleDirectionalHotkey = (direction, { event }) => {
+    event.preventDefault();
+    moveParticle(direction);
+};
 const containersWithAttr = computed(() => {
     return gameState.value.containers.map(item => {
         const position = getPositionForContainers(item);
@@ -802,12 +825,10 @@ onMounted(async () => {
         console.log(gameState.value);
         initializeRuntimeState(true);
         console.log(gameState.value);
-        window.addEventListener('keydown', handleKeydown);
     }
 });
 
 onBeforeUnmount(() => {
-    window.removeEventListener('keydown', handleKeydown);
     selected.value = null;
     stopPlayback();
 });
@@ -842,6 +863,37 @@ const handleGoBack = () => {
     }
 }
 
+useHotkeyBindings('level', {
+    'level.up': (payload) => handleDirectionalHotkey('up', payload),
+    'level.down': (payload) => handleDirectionalHotkey('down', payload),
+    'level.left': (payload) => handleDirectionalHotkey('left', payload),
+    'level.right': (payload) => handleDirectionalHotkey('right', payload),
+    'level.previous-particle': ({ event }) => {
+        event.preventDefault();
+        focusPreviousParticle();
+    },
+    'level.next-particle': ({ event }) => {
+        event.preventDefault();
+        focusNextParticle();
+    },
+    'level.toggle-focus': ({ event }) => {
+        event.preventDefault();
+        toggleParticleFocus();
+    },
+    'level.reset': ({ event }) => {
+        event.preventDefault();
+        restartGame();
+    },
+    'level.toggle-record': ({ event }) => {
+        event.preventDefault();
+        handleRecordButtonClick();
+    },
+    'level.play-recording': ({ event }) => {
+        event.preventDefault();
+        playLatestRecordingEntry();
+    },
+});
+
 </script>
 
 <template>
@@ -854,8 +906,16 @@ const handleGoBack = () => {
                 <span class="steps-complex__steps-label" v-if="stepsGoal">/</span>
                 <span class="steps-complex__steps-aim" v-if="stepsGoal">{{ stepsGoal }}</span>
                 <div class="u-rel u-gap-14"></div>
-                <ion-button name="refresh-outline" size="1.6rem" class="reset-btn"
-                    @click="router.go(router.currentRoute.value)"></ion-button>
+                <ion-button
+                    name="refresh-outline"
+                    size="1.6rem"
+                    class="reset-btn"
+                    data-hotkey-target="level.reset"
+                    data-hotkey-label="Reset level"
+                    data-hotkey-group="level-controls"
+                    data-hotkey-group-side="right"
+                    @click="router.go(router.currentRoute.value)"
+                ></ion-button>
                 <div class="u-rel u-gap-8"></div>
                 <div class="recording-controls">
                     <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :show-arrow="false">
@@ -864,6 +924,10 @@ const handleGoBack = () => {
                                 name="radio-button-on-outline"
                                 size="1.6rem"
                                 class="record-btn"
+                                data-hotkey-target="level.toggle-record"
+                                data-hotkey-label="Record"
+                                data-hotkey-group="level-controls"
+                                data-hotkey-group-side="right"
                                 :disabled="recordingButtonDisabled"
                                 :color="isRecordingActive ? '#ff6b3a' : undefined"
                                 @click="handleRecordButtonClick"
@@ -879,6 +943,10 @@ const handleGoBack = () => {
                                     name="play-circle-outline"
                                     size="1.6rem"
                                     class="play-btn"
+                                    data-hotkey-target="level.play-recording"
+                                    data-hotkey-label="Play recording"
+                                    data-hotkey-group="level-controls"
+                                    data-hotkey-group-side="right"
                                     :color="isPlaybackActive ? '#4cc9f0' : undefined"
                                 ></ion-button>
                             </template>
@@ -906,7 +974,7 @@ const handleGoBack = () => {
                 'obscure': particle.obscure,
                 'a-fade-in-raw': isStartingAnimation,
                 'a-delay-12': isStartingAnimation
-            }" :id="particle.id">
+            }" :id="particle.id" data-hotkey-target="level.focus-particle" data-hotkey-dynamic>
         </div>
         <!-- <p style="position: absolute; top: 2rem">
             {{ recording }}
@@ -950,7 +1018,7 @@ const handleGoBack = () => {
                 </template>
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)" v-else>
                     <template #trigger>
-                        <ion-button name="chevron-back-outline" class="a-fade-in a-delay-16"
+                        <ion-button name="chevron-back-outline" class="a-fade-in a-delay-20"
                             @click="handleGoBack"></ion-button>
                     </template>
                     <span>Back</span>

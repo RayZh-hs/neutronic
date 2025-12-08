@@ -2,6 +2,7 @@
 import { darkTheme } from 'naive-ui';
 import AbstractBackground from './components/AbstractBackground.vue';
 import AccountCard from './components/AccountCard.vue';
+import HotkeysOverlay from './components/HotkeysOverlay.vue';
 import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
 import { computed } from 'vue';
@@ -49,6 +50,7 @@ const showUserButton = computed(() => {
               <p>Made with ♥️ by Norb @ 2025</p>
             </div>
             <abstract-background />
+            <hotkeys-overlay />
           </main>
         </n-modal-provider>
       </n-message-provider>
