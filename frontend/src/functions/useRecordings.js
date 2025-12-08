@@ -15,6 +15,7 @@ const normalizeEntry = (payload = {}) => ({
     levelName: payload.levelName || null,
     author: payload.author || null,
     recording: Array.isArray(payload.recording) ? payload.recording : [],
+    map: payload.map || null,
 });
 
 export const useRecordingsStore = () => recordingsStore;

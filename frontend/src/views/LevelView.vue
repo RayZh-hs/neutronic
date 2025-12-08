@@ -20,6 +20,7 @@ import { useRecordingsStore, addRecordingForLevel } from '@/functions/useRecordi
 const levelViewConfig = useSessionStorage('level-view-config', {});
 const recordingsStore = useRecordingsStore();
 const baseLevelDefinition = ref(null);
+const fullLevelData = ref(null);
 const recordingSession = ref({
     active: false,
     startedAt: null,
@@ -76,6 +77,7 @@ const canInteract = computed(() => isLevelLoaded.value && !isPanning.value && !d
 const doSmoothAnimate = computed(() => isLevelLoaded.value && !isPanning.value && !isCustomAnimating.value);
 
 const loadLevelFromString = (levelString) => {
+    fullLevelData.value = levelString;
     name.value = levelString.meta.name;
     author.value = levelString.meta.author;
     mapSize.value = {
@@ -430,7 +432,8 @@ const handleRecordingCompletion = () => {
         levelName: name.value,
         author: author.value,
         steps,
-        recording: JSON.parse(JSON.stringify(recording.value))
+        recording: JSON.parse(JSON.stringify(recording.value)),
+        map: JSON.parse(JSON.stringify(fullLevelData.value))
     });
     clearRecordingSession();
 };
