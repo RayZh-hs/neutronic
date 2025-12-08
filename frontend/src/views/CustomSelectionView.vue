@@ -8,11 +8,42 @@ import LevelCard from '@/components/LevelCard.vue';
 import IonButton from '@/components/IonButton.vue';
 import { customSelectionWindowSize } from '@/data/constants';
 import { useAccountStore, renameAccount, removeCustomLevel } from '@/functions/useAccount';
+import { useRecordingsStore, removeRecordingForLevel } from '@/functions/useRecordings';
 
 const router = useRouter();
 const account = useAccountStore();
 const message = useMessage();
 const dialog = useDialog();
+
+const headerHover = ref(false);
+const isCreateIconVisible = ref(false);
+
+const currentView = ref('levels'); // 'levels', 'recordings'
+const pendingView = ref('levels');
+const options = ['levels', 'recordings'];
+
+watch(headerHover, (newVal) => {
+    if (newVal) {
+        pendingView.value = currentView.value;
+    } else {
+        currentView.value = pendingView.value;
+    }
+});
+
+const handleWheel = (e) => {
+    if (!headerHover.value) return;
+    e.preventDefault();
+    const delta = Math.sign(e.deltaY);
+    const idx = options.indexOf(pendingView.value);
+    let newIdx = idx + delta;
+    if (newIdx < 0) newIdx = 0;
+    if (newIdx >= options.length) newIdx = options.length - 1;
+    pendingView.value = options[newIdx];
+};
+
+const selectOption = (opt) => {
+    pendingView.value = opt;
+};
 
 const sliceWindow = ref({
     begin: 0,
@@ -25,10 +56,29 @@ const sortedCustomLevels = computed(() => {
     );
 });
 
-const total = computed(() => sortedCustomLevels.value.length);
+const recordingsStore = useRecordingsStore();
+const allRecordings = computed(() => {
+    const all = [];
+    for (const [levelId, recordings] of Object.entries(recordingsStore.value)) {
+        if (Array.isArray(recordings)) {
+            recordings.forEach(rec => {
+                all.push({ ...rec, levelId });
+            });
+        }
+    }
+    return all.sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt));
+});
 
-const pagedLevels = computed(() => {
-    return sortedCustomLevels.value.slice(sliceWindow.value.begin, sliceWindow.value.end);
+const total = computed(() => {
+    if (currentView.value === 'levels') return sortedCustomLevels.value.length;
+    if (currentView.value === 'recordings') return allRecordings.value.length;
+    return 0;
+});
+
+const pagedItems = computed(() => {
+    const list = currentView.value === 'levels' ? sortedCustomLevels.value :
+                 allRecordings.value;
+    return list.slice(sliceWindow.value.begin, sliceWindow.value.end);
 });
 
 const levelEditorConfig = useSessionStorage('level-editor-config', {
@@ -45,7 +95,13 @@ const adjustWindowBounds = () => {
     }
 };
 
-watch(total, adjustWindowBounds);
+watch([total, currentView], () => {
+    sliceWindow.value.begin = 0;
+    sliceWindow.value.end = customSelectionWindowSize;
+    if (currentView.value === 'recordings') {
+        isCreateIconVisible.value = false;
+    }
+});
 
 const nextWindow = () => {
     if (sliceWindow.value.end >= total.value) { return; }
@@ -108,6 +164,10 @@ const createCustomLevel = () => {
     });
 };
 
+const createItem = () => {
+    if (currentView.value === 'levels') createCustomLevel();
+};
+
 const editLevel = (uuid) => {
     levelEditorConfig.value = { loadFromLevelView: false };
     router.push(`/custom/edit/${uuid}`);
@@ -133,30 +193,83 @@ const deleteLevel = (uuid) => {
         }
     });
 };
+
+const deleteRecording = (rec) => {
+    dialog.warning({
+        title: 'Delete Recording',
+        content: 'Are you sure you want to delete this recording?',
+        positiveText: 'Delete',
+        negativeText: 'Cancel',
+        onPositiveClick: () => {
+            removeRecordingForLevel(rec.levelId, rec.id);
+            message.success('Recording deleted');
+        }
+    });
+};
 </script>
 
 <template>
     <div class="wrapper">
+        <div class="overlay" :class="{ active: headerHover }"></div>
         <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in"
             @click="router.push('/album')"></ion-icon>
-        <n-flex align="baseline">
-            <h1 class="a-fade-in">Custom Levels</h1>
+        <n-flex align="baseline" class="header-container">
+            <h1 class="a-fade-in title-text">
+                Custom 
+                <span class="view-selector" @mouseenter="headerHover = true" @mouseleave="headerHover = false" @wheel="handleWheel">
+                    <span class="current-text" :class="{ hidden: headerHover }">
+                        {{ currentView.charAt(0).toUpperCase() + currentView.slice(1) }}
+                    </span>
+                    <div class="view-menu" v-show="headerHover">
+                        <div class="view-list" :style="{ transform: `translateY(calc(-${options.indexOf(pendingView)} * 1.5em))` }">
+                            <div 
+                                v-for="opt in options" 
+                                :key="opt" 
+                                class="view-option" 
+                                :class="{ selected: opt === pendingView }"
+                                @click="selectOption(opt)"
+                            >
+                                {{ opt.charAt(0).toUpperCase() + opt.slice(1) }}
+                            </div>
+                        </div>
+                    </div>
+                </span>
+            </h1>
             <div class="gap-5" />
-            <IonButton name="add-circle-outline" class="a-fade-in" size="2.2rem"
-                @click="createCustomLevel"
+            <IonButton v-if="currentView !== 'recordings'" name="add-circle-outline" class="a-fade-in create-icon" :class="{'create-icon-hide': headerHover, 'a-fade-in--visible': isCreateIconVisible}" size="2.2rem"
+                @click="createItem"
+                @animationend="isCreateIconVisible = true"
             ></IonButton>
         </n-flex>
         <div class="level-container">
-            <level-card v-for="(level, index) in pagedLevels" :name="level.level.meta.name" :uuid="level.id"
-                :best-moves="level.bestMoves" :updated-at="level.updatedAt" :key="level.id"
-                :published="level.level.meta.published"
-                class="a-fade-in"
-                :class="{ [`a-delay-${index + 1}`]: true }"
-                @edit="editLevel"
-                @play="playLevel"
-                @delete="deleteLevel"
-            ></level-card>
-            <p v-if="total === 0" class="a-fade-in a-delay-5">You don't have any yet. Click on the <span class="u-green">add</span> button to start building.</p>
+            <template v-if="currentView === 'levels'">
+                <level-card v-for="(level, index) in pagedItems" :name="level.level.meta.name" :uuid="level.id"
+                    :best-moves="level.bestMoves" :updated-at="level.updatedAt" :key="level.id"
+                    :published="level.level.meta.published"
+                    class="a-fade-in"
+                    :class="{ [`a-delay-${index + 1}`]: true }"
+                    @edit="editLevel"
+                    @play="playLevel"
+                    @delete="deleteLevel"
+                ></level-card>
+            </template>
+            <template v-else-if="currentView === 'recordings'">
+                <div v-for="(rec, index) in pagedItems" :key="rec.id" class="recording-card a-fade-in" :class="{ [`a-delay-${index + 1}`]: true }">
+                    <div class="rec-info">
+                        <span class="rec-date">{{ new Date(rec.recordedAt).toLocaleString() }}</span>
+                        <span class="rec-level">Level: {{ rec.levelName || rec.levelId }}</span>
+                        <span class="rec-steps">Steps: {{ rec.steps }}</span>
+                    </div>
+                    <div class="rec-actions">
+                        <ion-icon name="trash-outline" @click="deleteRecording(rec)"></ion-icon>
+                    </div>
+                </div>
+            </template>
+
+            <p v-if="total === 0" class="a-fade-in a-delay-5">
+                You don't have any {{ currentView }} yet. 
+                <span v-if="currentView !== 'recordings'">Click on the <span class="u-green">add</span> button to start building.</span>
+            </p>
         </div>
     </div>
     <ion-icon name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in" @click="prevWindow"
@@ -188,11 +301,121 @@ const deleteLevel = (uuid) => {
         flex-direction: column;
         gap: 1rem;
         align-items: center;
+        width: 100%;
 
         p {
             font-weight: 400;
             letter-spacing: .25pt;
         }
+    }
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+
+    &.active {
+        opacity: 1;
+    }
+}
+
+.header-container {
+    position: relative;
+    z-index: 20;
+}
+
+.view-selector {
+    position: relative;
+    cursor: pointer;
+    display: inline-block;
+    height: 1.5em;
+    line-height: 1.5em;
+    overflow: visible;
+    
+    .current-text {
+        display: inline-block;
+        transition: opacity 0.2s;
+        &.hidden {
+            opacity: 0;
+        }
+    }
+
+    .view-menu {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 1.5em;
+        overflow: visible;
+        
+        .view-list {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            
+            .view-option {
+                height: 1.5em;
+                line-height: 1.5em;
+                white-space: nowrap;
+                cursor: pointer;
+                opacity: 0.5;
+                transition: opacity 0.3s, transform 0.3s;
+                transform: scale(0.9);
+                transform-origin: left center;
+                
+                &.selected {
+                    transform: scale(1);
+                }
+                
+                &:hover {
+                    opacity: 1;
+                }
+            }
+        }
+    }
+}
+
+.create-icon {
+    transition: all 0.3s ease !important;
+    visibility: visible;
+
+    &.create-icon-hide {
+        opacity: 0 !important;
+    }
+}
+
+.recording-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 600px;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    
+    .rec-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        
+        .rec-date { font-size: 0.9rem; color: #aaa; }
+        .rec-level { font-weight: bold; }
+    }
+    
+    .rec-actions {
+        font-size: 1.5rem;
+        cursor: pointer;
+        &:hover { color: #ff4d4f; }
     }
 }
 

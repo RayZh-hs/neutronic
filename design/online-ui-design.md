@@ -1,6 +1,6 @@
 # Online Section UI Design
 
-The Online section provides access to user-generated content, including levels, albums and solutions.
+The Online section provides access to user-generated content, including levels and solutions.
 
 ## Level Browser
 
@@ -14,10 +14,6 @@ Players can filter levels by name and author (@author:), uuid (@uuid: and @uuid-
 5. Difficulty rating (1-5 stars)
 
 The search bar and filters are at the top of the level browser page.
-
-## Album Browser
-
-A custom album is a collection of levels created by a user. The albums are browseable and filterable in a similar manner to levels, with the exception that the demo screen shows the album card instead.
 
 ## Solution Browser
 

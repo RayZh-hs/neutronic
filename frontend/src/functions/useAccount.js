@@ -122,10 +122,11 @@ export const upsertCustomLevel = (levelPayload) => {
 };
 
 export const removeCustomLevel = (levelId) => {
-    accountState.value.customLevels = accountState.value.customLevels.filter(
-        (entry) => entry.id !== levelId
-    );
-    markDirty();
+    const index = accountState.value.customLevels.findIndex((entry) => entry.id === levelId);
+    if (index >= 0) {
+        accountState.value.customLevels.splice(index, 1);
+        markDirty();
+    }
 };
 
 export const recordCustomLevelResult = (levelId, payload) => {
