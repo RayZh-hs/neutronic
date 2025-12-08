@@ -298,6 +298,22 @@ const stepBackward = () => {
     }
 };
 
+const goToStart = () => {
+    stopPlayback();
+    currentStepIndex.value = 0;
+    restoreBaseLevelState({ obscure: false });
+};
+
+const goToEnd = () => {
+    stopPlayback();
+    restoreBaseLevelState({ obscure: false });
+    // Replay all steps instantly
+    for (let i = 0; i < playbackQueue.value.length; i++) {
+        executeStep(playbackQueue.value[i], { instant: true });
+    }
+    currentStepIndex.value = playbackQueue.value.length;
+};
+
 const executeStep = (step, options = {}) => {
     const particle = gameState.value.particles.find((p) => Number(p.id.split('-')[1]) === step.id);
     if (!particle) return;
