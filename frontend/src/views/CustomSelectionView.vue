@@ -9,6 +9,7 @@ import IonButton from '@/components/IonButton.vue';
 import { customSelectionWindowSize } from '@/data/constants';
 import { useAccountStore, renameAccount, removeCustomLevel } from '@/functions/useAccount';
 import { useRecordingsStore, removeRecordingForLevel } from '@/functions/useRecordings';
+import { getPrebuiltLevelInfo } from '@/functions/levelUtils';
 
 const router = useRouter();
 const account = useAccountStore();
@@ -206,6 +207,21 @@ const deleteRecording = (rec) => {
         }
     });
 };
+
+const playRecording = (rec) => {
+    const prebuiltInfo = getPrebuiltLevelInfo(rec.levelId);
+    if (prebuiltInfo) {
+        router.push({
+            path: `/album/${prebuiltInfo.albumIndex}/${rec.levelId}`,
+            query: { recordingId: rec.id }
+        });
+    } else {
+        router.push({
+            path: `/custom/play/${rec.levelId}`,
+            query: { recordingId: rec.id }
+        });
+    }
+};
 </script>
 
 <template>
@@ -215,7 +231,7 @@ const deleteRecording = (rec) => {
             @click="router.push('/album')"></ion-icon>
         <n-flex align="baseline" class="header-container">
             <h1 class="a-fade-in title-text">
-                Custom 
+                My 
                 <span class="view-selector" @mouseenter="headerHover = true" @mouseleave="headerHover = false" @wheel="handleWheel">
                     <span class="current-text" :class="{ hidden: headerHover }">
                         {{ currentView.charAt(0).toUpperCase() + currentView.slice(1) }}
@@ -256,11 +272,11 @@ const deleteRecording = (rec) => {
             <template v-else-if="currentView === 'recordings'">
                 <div v-for="(rec, index) in pagedItems" :key="rec.id" class="recording-card a-fade-in" :class="{ [`a-delay-${index + 1}`]: true }">
                     <div class="rec-info">
+                        <span class="rec-level">{{ rec.levelName || rec.levelId }}<span class="rec-steps">Steps: {{ rec.steps }}</span></span>
                         <span class="rec-date">{{ new Date(rec.recordedAt).toLocaleString() }}</span>
-                        <span class="rec-level">Level: {{ rec.levelName || rec.levelId }}</span>
-                        <span class="rec-steps">Steps: {{ rec.steps }}</span>
                     </div>
                     <div class="rec-actions">
+                        <ion-icon name="play-circle-outline" @click="playRecording(rec)"></ion-icon>
                         <ion-icon name="trash-outline" @click="deleteRecording(rec)"></ion-icon>
                     </div>
                 </div>
@@ -397,25 +413,54 @@ const deleteRecording = (rec) => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+    min-width: 40vw;
     max-width: 600px;
     padding: 1rem;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
+    transition: background 0.1s;
     
     .rec-info {
         display: flex;
         flex-direction: column;
+        align-items: flex-start;
         gap: 0.2rem;
         
-        .rec-date { font-size: 0.9rem; color: #aaa; }
-        .rec-level { font-weight: bold; }
+        .rec-date {
+            font-size: 0.7rem;
+            color: #aaa;
+        }
+        .rec-level {
+            font-weight: bold;
+            .rec-steps {
+                margin-left: 1rem;
+                font-weight: normal;
+                color: #ccc;
+            }
+        }
     }
     
     .rec-actions {
+        display: flex;
+        gap: 1rem;
         font-size: 1.5rem;
-        cursor: pointer;
-        &:hover { color: #ff4d4f; }
+
+        ion-icon {
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+
+            &:hover {
+                transform: scale(1.1);
+            }
+
+            &[name="play-circle-outline"]:hover {
+                color: $n-primary;
+            }
+
+            &[name="trash-outline"]:hover {
+                color: #ff4d4f;
+            }
+        }
     }
 }
 

@@ -801,6 +801,14 @@ onMounted(async () => {
         initializeRuntimeState(true);
         console.log(gameState.value);
         window.addEventListener('keydown', handleKeydown);
+
+        const recordingId = router.currentRoute.value.query.recordingId;
+        if (recordingId) {
+            const entry = levelRecordings.value.find((rec) => rec.id === recordingId);
+            if (entry) {
+                startPlayback(entry);
+            }
+        }
     }
 });
 

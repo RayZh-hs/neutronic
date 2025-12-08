@@ -81,8 +81,9 @@ const handleDelete = () => emit('delete', props.uuid);
 
 <style lang="scss" scoped>
 .main-container {
-    width: 30rem;
-    background: linear-gradient(45deg, #25252589, #1a1919c0);
+    min-width: 40vw;
+    max-width: 600px;
+    background: rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -90,8 +91,7 @@ const handleDelete = () => emit('delete', props.uuid);
     transition: all 0.3s ease-in-out;
 
     &:hover {
-        outline: 1px solid rgba(245, 245, 245, 0.229);
-        background: linear-gradient(45deg, #25252589, #1a1919c0);
+        background: rgba(255, 255, 255, 0.075);
         
         .details-wrapper {
             grid-template-rows: 1fr;

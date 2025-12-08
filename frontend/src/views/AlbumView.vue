@@ -91,7 +91,7 @@ onMounted(() => {
                 />
             </swiper-slide>
             <swiper-slide>
-                <subtitled-album-card name="Custom" subtitle="Build your own puzzles." icon="create-outline"
+                <subtitled-album-card name="Custom" subtitle="Your own puzzles and recordings." icon="create-outline"
                     @click="jumpToReferent" class="a-fade-in"
                 ></subtitled-album-card>
             </swiper-slide>
