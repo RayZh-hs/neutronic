@@ -16,6 +16,14 @@ import { useEditorEntities } from "@/functions/useEditorEntities";
 import { useAccountStore, getCustomLevelById, upsertCustomLevel } from "@/functions/useAccount";
 import { useHotkeyBindings } from "@/functions/useHotkeys";
 
+overrideHotkeyOverlayConfig({
+    groups: {
+        'play-button': {
+            columnOffset: 40,
+        },
+    },
+})
+
 const router = useRouter();
 const message = useMessage();
 const dialog = useDialog();

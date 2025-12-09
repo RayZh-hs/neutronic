@@ -12,7 +12,8 @@ const DEFAULT_GROUP_CONFIG = {
 };
 
 const DEFAULT_CONFIG = {
-    group: { ...DEFAULT_GROUP_CONFIG },
+    defaultGroup: { ...DEFAULT_GROUP_CONFIG },
+    groups: {},
 };
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -34,14 +35,41 @@ const deepMerge = (target, source) => {
 
 export const useHotkeyOverlayConfig = () => hotkeyOverlayConfig;
 
+export const getHotkeyGroupConfig = (groupId) => {
+    const defaultConfig = hotkeyOverlayConfig.defaultGroup || DEFAULT_GROUP_CONFIG;
+    const groupOverrides = (groupId && hotkeyOverlayConfig.groups && hotkeyOverlayConfig.groups[groupId]) || null;
+    return {
+        ...DEFAULT_GROUP_CONFIG,
+        ...defaultConfig,
+        ...(groupOverrides || {}),
+    };
+};
+
+const normalizeOverrides = (overrides = {}) => {
+    if (!overrides || typeof overrides !== 'object') {
+        return {};
+    }
+    const normalized = { ...overrides };
+    if (Object.prototype.hasOwnProperty.call(normalized, 'group')) {
+        normalized.defaultGroup = {
+            ...(normalized.defaultGroup || {}),
+            ...normalized.group,
+        };
+        delete normalized.group;
+    }
+    return normalized;
+};
+
 export const overrideHotkeyOverlayConfig = (overrides = {}) => {
     const previous = clone(hotkeyOverlayConfig);
-    deepMerge(hotkeyOverlayConfig, overrides);
+    const normalized = normalizeOverrides(overrides);
+    deepMerge(hotkeyOverlayConfig, normalized);
     return () => {
         deepMerge(hotkeyOverlayConfig, previous);
     };
 };
 
 export const resetHotkeyOverlayConfig = () => {
-    hotkeyOverlayConfig.group = { ...DEFAULT_GROUP_CONFIG };
+    hotkeyOverlayConfig.defaultGroup = { ...DEFAULT_GROUP_CONFIG };
+    hotkeyOverlayConfig.groups = {};
 };

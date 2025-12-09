@@ -9,11 +9,13 @@ const curAtButton = ref('none');
 const showInfo = ref(false);
 
 overrideHotkeyOverlayConfig({
-    group: {
-        columnOffset: 110,
-        rowOffset: 20,
-        verticalSpacing: 40,
-        horizontalSpacing: 80,
+    groups: {
+        landing: {
+            columnOffset: 110,
+            rowOffset: 20,
+            verticalSpacing: 40,
+            horizontalSpacing: 80,
+        },
     },
 });
 

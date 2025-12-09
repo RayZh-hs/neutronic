@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { useHotkeyBindings, getPrimaryBindingLabel, getBindingsForAction, hotkeyUtils } from '@/functions/useHotkeys';
-import { useHotkeyOverlayConfig } from '@/data/hotkeyOverlayConfig';
+import { getHotkeyGroupConfig } from '@/data/hotkeyOverlayConfig';
 
 const isActive = ref(false);
 const overlayItems = ref([]);
@@ -9,7 +9,6 @@ const dynamicTargets = ref([]);
 const holdReleaseKey = ref(null);
 const compoundStrokes = ref([]);
 let isMounted = false;
-const overlayConfig = useHotkeyOverlayConfig();
 
 const MIN_DISPLAY_TOP = 12;
 const DEFAULT_GROUP_SIDE = 'right';
@@ -273,8 +272,7 @@ const getConnectorOrigin = (item, placement) => {
     }
 };
 
-const layoutColumnGroup = (groupItems, placement, viewportWidth) => {
-    const config = overlayConfig.group;
+const layoutColumnGroup = (groupItems, placement, viewportWidth, config) => {
     const boundingBox = getGroupBoundingBox(groupItems);
     const side = (placement.horizontal && placement.horizontal.direction) || DEFAULT_GROUP_SIDE;
     const anchorEdge = side === 'right' ? boundingBox.maxX : boundingBox.minX;
@@ -336,8 +334,7 @@ const layoutColumnGroup = (groupItems, placement, viewportWidth) => {
     });
 };
 
-const layoutRowGroup = (groupItems, placement, viewportWidth) => {
-    const config = overlayConfig.group;
+const layoutRowGroup = (groupItems, placement, viewportWidth, config) => {
     const boundingBox = getGroupBoundingBox(groupItems);
     const verticalDirective = placement.vertical || placement.primary || { direction: 'top' };
     const rowDirection = verticalDirective.direction === 'bottom' ? 'bottom' : 'top';
@@ -404,20 +401,23 @@ const layoutHotkeyGroups = (items, viewportWidth) => {
             return;
         }
         if (!groups.has(item.groupId)) {
-            groups.set(item.groupId, []);
+            groups.set(item.groupId, {
+                items: [],
+                config: getHotkeyGroupConfig(item.groupId),
+            });
         }
-        groups.get(item.groupId).push(item);
+        groups.get(item.groupId).items.push(item);
     });
-    groups.forEach((groupItems) => {
+    groups.forEach(({ items: groupItems, config }) => {
         if (groupItems.length === 0) {
             return;
         }
         const placement = parseGroupPlacement(groupItems[0].groupSide);
         if (!placement.horizontal) {
-            layoutRowGroup(groupItems, placement, viewportWidth);
+            layoutRowGroup(groupItems, placement, viewportWidth, config);
         }
         else {
-            layoutColumnGroup(groupItems, placement, viewportWidth);
+            layoutColumnGroup(groupItems, placement, viewportWidth, config);
         }
     });
 };
