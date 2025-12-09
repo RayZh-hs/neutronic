@@ -1256,7 +1256,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Modals and popups -->
-    <n-modal v-model:show="showConfirmDeletionModal">
+    <n-modal v-model:show="showConfirmDeletionModal" data-hotkey-popup="true">
         <n-card class="confirm-deletion__card">
             <h2 class="confirm-deletion__title">Confirm Deletion?</h2>
             <p class="confirm-deletion__text">

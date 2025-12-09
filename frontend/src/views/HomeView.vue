@@ -86,7 +86,7 @@ useHotkeyBindings('landing', {
             </div>
         </div>
     </div>
-    <n-modal v-model:show="showInfo">
+    <n-modal v-model:show="showInfo" data-hotkey-popup="true">
         <n-card title="Neutronic" class="info-card">
             <template #header-extra>
                 <img src="/logo-dark.svg" class="logo">

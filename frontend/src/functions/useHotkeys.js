@@ -6,6 +6,15 @@ const SEQUENCE_HISTORY_LIMIT = 4;
 const MODIFIER_ORDER = ['ctrl', 'meta', 'alt', 'shift'];
 const MODIFIER_SET = new Set(MODIFIER_ORDER);
 const SHIFT_IMPLIED_KEYS = new Set(['~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '{', '}', '|', ':', '"', '<', '>', '?']);
+const POPUP_GUARD_SELECTORS = [
+    '[data-hotkey-popup="true"]',
+    '[role="dialog"]',
+    '[role="alertdialog"]',
+    '[aria-modal="true"]',
+    '.n-modal',
+    '.n-dialog',
+    '.n-drawer',
+];
 
 const KEY_ALIASES = {
     ' ': 'space',
@@ -67,6 +76,41 @@ const hotkeyState = {
 };
 
 const storageAvailable = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+const isVisibleElement = (element) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return false;
+    }
+    if (!element || typeof element.getBoundingClientRect !== 'function') {
+        return false;
+    }
+    if (typeof element.getAttribute === 'function' && element.getAttribute('aria-hidden') === 'true') {
+        return false;
+    }
+    const rect = element.getBoundingClientRect();
+    if ((rect.width === 0 && rect.height === 0) || (element.isConnected === false)) {
+        return false;
+    }
+    const style = window.getComputedStyle(element);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+};
+
+const hasBlockingPopup = () => {
+    if (typeof document === 'undefined' || typeof window === 'undefined') {
+        return false;
+    }
+    for (let selectorIndex = 0; selectorIndex < POPUP_GUARD_SELECTORS.length; selectorIndex += 1) {
+        const selector = POPUP_GUARD_SELECTORS[selectorIndex];
+        const elements = document.querySelectorAll(selector);
+        for (let elementIndex = 0; elementIndex < elements.length; elementIndex += 1) {
+            const element = elements[elementIndex];
+            if (isVisibleElement(element)) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
 
 const loadOverrides = () => {
     if (!storageAvailable) {
@@ -306,6 +350,9 @@ const ensureInitialized = () => {
     }
     const handleKeydown = (event) => {
         if (event.defaultPrevented) {
+            return;
+        }
+        if (hasBlockingPopup()) {
             return;
         }
         const chord = normalizeChordFromEvent(event);

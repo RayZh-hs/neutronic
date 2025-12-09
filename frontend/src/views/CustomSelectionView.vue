@@ -378,6 +378,7 @@ const playRecording = (rec) => {
         data-hotkey-label="Next"
     ></ion-icon>
     <n-modal v-model:show="showNamePrompt" preset="dialog" title="What should we call you?" positive-text="Continue"
+        data-hotkey-popup="true"
         negative-text="Cancel" @positive-click="confirmNamePrompt" @negative-click="closeNamePrompt">
         <p>Pick a name so we can sign your custom levels.</p>
         <n-input class="u-mt-2" v-model:value="nameInput" placeholder="Enter a display name" maxlength="32"
