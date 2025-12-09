@@ -2,10 +2,20 @@
 import { router } from '../router';
 import { ref } from 'vue';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
+import { overrideHotkeyOverlayConfig } from '@/data/hotkeyOverlayConfig';
 
 const curAtButton = ref('none');
 
 const showInfo = ref(false);
+
+overrideHotkeyOverlayConfig({
+    group: {
+        columnOffset: 110,
+        rowOffset: 20,
+        verticalSpacing: 40,
+        horizontalSpacing: 80,
+    },
+});
 
 useHotkeyBindings('landing', {
     'landing.info': ({ event }) => {
@@ -33,6 +43,8 @@ useHotkeyBindings('landing', {
                 @mouseover="curAtButton = 'info'" @mouseleave="curAtButton = 'none'"
                 data-hotkey-target="landing.info"
                 data-hotkey-label="Info"
+                data-hotkey-group="landing"
+                data-hotkey-group-side="bottom right"
             >
                 <ion-icon name="information-outline" class="form-button" size="large"></ion-icon>
             </div>
@@ -41,6 +53,7 @@ useHotkeyBindings('landing', {
                 @mouseover="curAtButton = 'play'" @mouseleave="curAtButton = 'none'"
                 data-hotkey-target="landing.play"
                 data-hotkey-label="Play"
+                data-hotkey-group="landing"
             >
                 <ion-icon name="play-outline" class="form-button" size="large"></ion-icon>
             </div>
@@ -48,6 +61,7 @@ useHotkeyBindings('landing', {
                 @mouseleave="curAtButton = 'none'"
                 data-hotkey-target="landing.settings"
                 data-hotkey-label="Settings"
+                data-hotkey-group="landing"
             >
                 <ion-icon name="settings-outline" class="form-button" size="large"></ion-icon>
             </div>

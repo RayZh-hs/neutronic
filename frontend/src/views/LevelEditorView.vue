@@ -1,14 +1,10 @@
 <script setup>
 //: Vue-specific imports
-import { onMounted, ref, computed, watch } from "vue";
+import { onMounted, onBeforeUnmount, ref, computed, watch } from "vue";
 import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog, get, assert } from "@vueuse/core";
 import { useRouter } from "vue-router";
 import { useDialog } from "naive-ui";
-
-const router = useRouter();
-const message = useMessage();
-const keys = useMagicKeys();
-const dialog = useDialog();
+import { overrideHotkeyOverlayConfig } from "@/data/hotkeyOverlayConfig";
 
 //: Custom Components
 import IonButton from "@/components/IonButton.vue"
@@ -19,6 +15,11 @@ import { easeOutCubic, easeOutSine, refAnimateToObject } from "../functions/anim
 import { useEditorEntities } from "@/functions/useEditorEntities";
 import { useAccountStore, getCustomLevelById, upsertCustomLevel } from "@/functions/useAccount";
 import { useHotkeyBindings } from "@/functions/useHotkeys";
+
+const router = useRouter();
+const message = useMessage();
+const keys = useMagicKeys();
+const dialog = useDialog();
 
 /**
  * This function is called to center the map on the screen.
@@ -811,10 +812,6 @@ useHotkeyBindings('editor', {
         event.preventDefault();
         callCenterMap();
     },
-    'editor.back': ({ event }) => {
-        event.preventDefault();
-        router.push('/custom');
-    },
     'editor.save': ({ event }) => {
         event.preventDefault();
         onSave();
@@ -931,6 +928,12 @@ onMounted(() => {
     setInterval(updateToolSpritePosition, 1000 / levelEditorRefreshFrequency);
 });
 
+onBeforeUnmount(() => {
+    if (typeof restoreHotkeyOverlayConfig === "function") {
+        restoreHotkeyOverlayConfig();
+    }
+});
+
 </script>
 
 <template>
@@ -940,8 +943,17 @@ onMounted(() => {
         <ion-button name="arrow-back-circle-outline" size="1.6rem" @click="router.push('/custom')" class="a-fade-in"
             data-hotkey-target="editor.back"
             data-hotkey-label="Back"
+            data-hotkey-group="top-left"
+            data-hotkey-group-side="bottom right"
+            data-hotkey-label-position="inline"
         />
-        <ion-button name="save-outline" size="1.6rem" class="a-fade-in a-delay-1" @click="onSave" />
+        <ion-button name="save-outline" size="1.6rem" class="a-fade-in a-delay-1" @click="onSave"
+            data-hotkey-target="editor.save"
+            data-hotkey-label="Save"
+            data-hotkey-group="top-left"
+            data-hotkey-group-side="bottom right"
+            data-hotkey-label-position="inline"
+        />
         <div class="u-gap-5"></div>
         <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
         <p class="slash-separator a-fade-in a-delay-2">/</p>
@@ -959,9 +971,27 @@ onMounted(() => {
         <!-- Developer tools -->
         <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center">
             <span>Developer Tools:</span>
-            <ion-button name="cloud-upload-outline" size="1.6rem" @click="openUploadLevelDialog"></ion-button>
-            <ion-button name="download-outline" size="1.6rem" @click="downloadLevel"></ion-button>
-            <ion-button name="copy-outline" size="1.6rem" @click="copyLevelToClipboard"></ion-button>
+            <ion-button name="cloud-upload-outline" size="1.6rem" @click="openUploadLevelDialog"
+                data-hotkey-target="editor.upload-level"
+                data-hotkey-label="Upload Level"
+                data-hotkey-group="dev-tools"
+                data-hotkey-group-side="bottom right"
+                data-hotkey-label-position="inline"
+            ></ion-button>
+            <ion-button name="download-outline" size="1.6rem" @click="downloadLevel"
+                data-hotkey-target="editor.download-level"
+                data-hotkey-label="Download Level"
+                data-hotkey-group="dev-tools"
+                data-hotkey-group-side="bottom right"
+                data-hotkey-label-position="inline"
+            ></ion-button>
+            <ion-button name="copy-outline" size="1.6rem" @click="copyLevelToClipboard"
+                data-hotkey-target="editor.copy"
+                data-hotkey-label="Copy Level"
+                data-hotkey-group="dev-tools"
+                data-hotkey-group-side="bottom right"
+                data-hotkey-label-position="inline"
+            ></ion-button>
         </n-flex>
         <div class="u-gap-1"></div>
         <span class="steps-goal-label a-fade-in a-delay-5">Steps Goal</span>

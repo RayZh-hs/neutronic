@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { useHotkeyBindings, getPrimaryBindingLabel, hotkeyUtils } from '@/functions/useHotkeys';
+import { useHotkeyOverlayConfig } from '@/data/hotkeyOverlayConfig';
 
 const isActive = ref(false);
 const overlayItems = ref([]);
@@ -9,6 +10,7 @@ const holdReleaseKey = ref(null);
 const digitBuffer = ref('');
 let digitResetHandle = null;
 let isMounted = false;
+const overlayConfig = useHotkeyOverlayConfig();
 
 const clearDigitBuffer = () => {
     digitBuffer.value = '';
@@ -29,10 +31,7 @@ const scheduleDigitReset = () => {
 };
 
 const MIN_DISPLAY_TOP = 12;
-const GROUP_COLUMN_OFFSET = 110;
-const GROUP_VERTICAL_SPACING = 40;
-const GROUP_TAG_HALF_HEIGHT = 14;
-const GROUP_VERTICAL_OFFSET = -30;
+const DEFAULT_GROUP_SIDE = 'right';
 const STANDALONE_VERTICAL_GAP = 12;
 const STANDALONE_HORIZONTAL_GAP = 16;
 const ESTIMATED_TAG_HEIGHT = 34;
@@ -68,6 +67,222 @@ const elementPlacementStrategies = {
     }),
 };
 
+const parseGroupPlacement = (rawValue = '') => {
+    const normalized = (rawValue || DEFAULT_GROUP_SIDE).toLowerCase();
+    const tokens = normalized.split(/\s+/).filter(Boolean);
+    const directives = tokens
+        .map((token) => {
+            if (token === 'left' || token === 'right') {
+                return { axis: 'horizontal', direction: token };
+            }
+            if (token === 'top' || token === 'bottom') {
+                return { axis: 'vertical', direction: token };
+            }
+            return null;
+        })
+        .filter(Boolean);
+    if (directives.length === 0) {
+        directives.push({ axis: 'horizontal', direction: DEFAULT_GROUP_SIDE });
+    }
+    return {
+        directives,
+        primary: directives[0],
+        secondary: directives[1] || null,
+        horizontal: directives.find((directive) => directive.axis === 'horizontal') || null,
+        vertical: directives.find((directive) => directive.axis === 'vertical') || null,
+    };
+};
+
+const getGroupBoundingBox = (groupItems) => {
+    return groupItems.reduce((acc, item) => ({
+        minX: Math.min(acc.minX, item.anchorX),
+        maxX: Math.max(acc.maxX, item.anchorX),
+        minY: Math.min(acc.minY, item.anchorY),
+        maxY: Math.max(acc.maxY, item.anchorY),
+    }), {
+        minX: Infinity,
+        maxX: -Infinity,
+        minY: Infinity,
+        maxY: -Infinity,
+    });
+};
+
+const buildConnectorSegments = ({ startX, startY, targetX, targetY, directives }) => {
+    if ((targetX === undefined || targetX === null) && (targetY === undefined || targetY === null)) {
+        return [];
+    }
+    const moves = [];
+    directives.forEach((directive) => {
+        if (directive.axis === 'vertical' && targetY !== null && targetY !== undefined) {
+            moves.push('vertical');
+        }
+        if (directive.axis === 'horizontal' && targetX !== null && targetX !== undefined) {
+            moves.push('horizontal');
+        }
+    });
+    if (moves.length === 0) {
+        if (targetY !== null && targetY !== undefined) {
+            moves.push('vertical');
+        }
+        if (targetX !== null && targetX !== undefined) {
+            moves.push('horizontal');
+        }
+    }
+    const segments = [];
+    let currentX = startX;
+    let currentY = startY;
+    const moveHorizontal = () => {
+        if (targetX === null || targetX === undefined || currentX === targetX) {
+            return;
+        }
+        segments.push({
+            orientation: 'horizontal',
+            left: Math.min(currentX, targetX),
+            top: currentY,
+            width: Math.abs(targetX - currentX),
+        });
+        currentX = targetX;
+    };
+    const moveVertical = () => {
+        if (targetY === null || targetY === undefined || currentY === targetY) {
+            return;
+        }
+        segments.push({
+            orientation: 'vertical',
+            left: currentX - 1,
+            top: Math.min(currentY, targetY),
+            height: Math.abs(targetY - currentY),
+        });
+        currentY = targetY;
+    };
+    moves.forEach((axis) => {
+        if (axis === 'horizontal') {
+            moveHorizontal();
+        }
+        else if (axis === 'vertical') {
+            moveVertical();
+        }
+    });
+    moveHorizontal();
+    moveVertical();
+    return segments;
+};
+
+const getConnectorOrigin = (item, placement) => {
+    const rect = item.rect;
+    const primaryDirection = placement?.primary?.direction;
+    if (!primaryDirection) {
+        return { x: item.anchorX, y: item.anchorY };
+    }
+    switch (primaryDirection) {
+        case 'top':
+            return { x: item.anchorX, y: rect.top };
+        case 'bottom':
+            return { x: item.anchorX, y: rect.bottom };
+        case 'left':
+            return { x: rect.left, y: item.anchorY };
+        case 'right':
+            return { x: rect.right, y: item.anchorY };
+        default:
+            return { x: item.anchorX, y: item.anchorY };
+    }
+};
+
+const layoutColumnGroup = (groupItems, placement, viewportWidth) => {
+    const config = overlayConfig.group;
+    const boundingBox = getGroupBoundingBox(groupItems);
+    const side = (placement.horizontal && placement.horizontal.direction) || DEFAULT_GROUP_SIDE;
+    const anchorEdge = side === 'right' ? boundingBox.maxX : boundingBox.minX;
+    const rawColumn = side === 'right'
+        ? anchorEdge + config.columnOffset
+        : anchorEdge - config.columnOffset;
+    const columnX = clampValue(rawColumn, 16, Math.max(16, viewportWidth - 16));
+    const verticalDirective = placement.vertical;
+    const sorted = groupItems.slice().sort((a, b) => a.anchorY - b.anchorY);
+    const spacing = config.verticalSpacing;
+    const directionMultiplier = verticalDirective?.direction === 'top' ? -1 : 1;
+    let currentTop = verticalDirective
+        ? (verticalDirective.direction === 'top'
+            ? Math.max(MIN_DISPLAY_TOP, boundingBox.minY - config.rowOffset)
+            : boundingBox.maxY + config.rowOffset)
+        : -Infinity;
+    sorted.forEach((item, index) => {
+        let displayTop;
+        if (verticalDirective) {
+            displayTop = index === 0 ? currentTop : currentTop + (spacing * directionMultiplier);
+            currentTop = displayTop;
+        }
+        else {
+            const desiredTop = Math.max(item.anchorY - config.tagHalfHeight + config.verticalBaselineOffset, MIN_DISPLAY_TOP);
+            displayTop = Math.max(desiredTop, currentTop + spacing);
+            currentTop = displayTop;
+        }
+        displayTop = Math.max(displayTop, MIN_DISPLAY_TOP);
+        const targetX = columnX;
+        const targetY = displayTop + config.tagHalfHeight;
+        const origin = getConnectorOrigin(item, placement);
+        const segments = buildConnectorSegments({
+            startX: origin.x,
+            startY: origin.y,
+            targetX,
+            targetY,
+            directives: placement.directives,
+        });
+        item.displayLeft = columnX;
+        item.displayTop = displayTop;
+        item.align = side === 'right' ? 'right' : 'left';
+        item.connectorSegments = segments.length ? segments : null;
+    });
+};
+
+const layoutRowGroup = (groupItems, placement, viewportWidth) => {
+    const config = overlayConfig.group;
+    const boundingBox = getGroupBoundingBox(groupItems);
+    const verticalDirective = placement.vertical || placement.primary || { direction: 'top' };
+    const rowDirection = verticalDirective.direction === 'bottom' ? 'bottom' : 'top';
+    const rowTop = rowDirection === 'top'
+        ? Math.max(MIN_DISPLAY_TOP, boundingBox.minY - config.rowOffset)
+        : boundingBox.maxY + config.rowOffset;
+    const horizontalDirective = placement.horizontal;
+    const sorted = groupItems.slice().sort((a, b) => a.anchorX - b.anchorX);
+    const spacing = config.horizontalSpacing;
+    const directionMultiplier = horizontalDirective?.direction === 'left' ? -1 : 1;
+    let currentCenter = horizontalDirective
+        ? (horizontalDirective.direction === 'left'
+            ? boundingBox.minX - config.columnOffset
+            : boundingBox.maxX + config.columnOffset)
+        : -Infinity;
+    sorted.forEach((item, index) => {
+        let center;
+        if (horizontalDirective) {
+            center = index === 0 ? currentCenter : currentCenter + (spacing * directionMultiplier);
+            currentCenter = center;
+        }
+        else {
+            const desiredCenter = item.anchorX + config.horizontalBaselineOffset;
+            center = desiredCenter > currentCenter + spacing
+                ? desiredCenter
+                : currentCenter + spacing;
+            currentCenter = center;
+        }
+        center = clampValue(center, 16, Math.max(16, viewportWidth - 16));
+        const targetX = center;
+        const targetY = rowTop + config.tagHalfHeight;
+        const origin = getConnectorOrigin(item, placement);
+        const segments = buildConnectorSegments({
+            startX: origin.x,
+            startY: origin.y,
+            targetX,
+            targetY,
+            directives: placement.directives,
+        });
+        item.displayLeft = center;
+        item.displayTop = rowTop;
+        item.align = 'center';
+        item.connectorSegments = segments.length ? segments : null;
+    });
+};
+
 const applyStandalonePlacements = (items, viewportWidth) => {
     items.forEach((item) => {
         if (item.groupId) {
@@ -96,43 +311,13 @@ const layoutHotkeyGroups = (items, viewportWidth) => {
         if (groupItems.length === 0) {
             return;
         }
-        const averageX = groupItems.reduce((sum, entry) => sum + entry.anchorX, 0) / groupItems.length;
-        const defaultSide = averageX > viewportWidth / 2 ? 'left' : 'right';
-        const orientation = groupItems[0].groupSide || defaultSide;
-        const anchorRange = orientation === 'right'
-            ? Math.max(...groupItems.map((entry) => entry.anchorX))
-            : Math.min(...groupItems.map((entry) => entry.anchorX));
-        const column = orientation === 'right'
-            ? anchorRange + GROUP_COLUMN_OFFSET
-            : anchorRange - GROUP_COLUMN_OFFSET;
-        const sorted = groupItems.slice().sort((a, b) => a.anchorY - b.anchorY);
-        let currentTop = -Infinity;
-        sorted.forEach((item) => {
-            const desiredTop = Math.max(item.anchorY - GROUP_TAG_HALF_HEIGHT - GROUP_VERTICAL_OFFSET, MIN_DISPLAY_TOP);
-            const displayTop = Math.max(desiredTop, currentTop + GROUP_VERTICAL_SPACING);
-            currentTop = displayTop;
-            const connectorY = displayTop + GROUP_TAG_HALF_HEIGHT;
-            const rootY = item.rect.bottom;
-            const verticalTop = Math.min(rootY, connectorY);
-            const verticalHeight = Math.abs(rootY - connectorY);
-            const horizontalLeft = Math.min(item.anchorX, column);
-            const horizontalWidth = Math.abs(item.anchorX - column);
-            item.displayTop = displayTop;
-            item.displayLeft = column;
-            item.align = orientation;
-            item.connector = {
-                vertical: {
-                    left: item.anchorX - 1,
-                    top: verticalTop,
-                    height: verticalHeight,
-                },
-                horizontal: {
-                    left: horizontalLeft,
-                    top: connectorY,
-                    width: horizontalWidth,
-                },
-            };
-        });
+        const placement = parseGroupPlacement(groupItems[0].groupSide);
+        if (!placement.horizontal) {
+            layoutRowGroup(groupItems, placement, viewportWidth);
+        }
+        else {
+            layoutColumnGroup(groupItems, placement, viewportWidth);
+        }
     });
 };
 
@@ -161,9 +346,9 @@ const buildOverlayTargets = () => {
         const actionId = node.dataset.hotkeyTarget || '';
         const isDynamic = Object.prototype.hasOwnProperty.call(node.dataset, 'hotkeyDynamic');
         const groupId = node.dataset.hotkeyGroup || null;
-        const groupSide = node.dataset.hotkeyGroupSide || null;
+        const groupSide = (node.dataset.hotkeyGroupSide || '').toLowerCase();
         const elementPlacement = (node.dataset.hotkeyElementPosition || 'below').toLowerCase();
-        const labelPlacement = (node.dataset.hotkeyLabelPosition || 'below').toLowerCase();
+        const labelPlacement = (node.dataset.hotkeyLabelPosition || 'inline').toLowerCase();
         const keyOverride = node.dataset.hotkeyHint || '';
         const baseLabel = node.dataset.hotkeyLabel || '';
         let keyLabel = keyOverride;
@@ -200,7 +385,7 @@ const buildOverlayTargets = () => {
             rect,
             isDynamic,
             element: node,
-            connector: null,
+            connectorSegments: null,
             align: 'center',
             groupId,
             groupSide,
@@ -354,23 +539,21 @@ onBeforeUnmount(() => {
         <div class="hotkey-overlay__backdrop"></div>
         <template v-for="item in overlayItems" :key="`${item.id}-connector`">
             <div
-                v-if="item.connector"
+                v-if="item.connectorSegments && item.connectorSegments.length"
                 class="hotkey-overlay__connector"
             >
                 <div
+                    v-for="(segment, index) in item.connectorSegments"
+                    :key="`${item.id}-segment-${index}`"
                     class="hotkey-overlay__connector-segment"
-                    :style="{
-                        left: `${item.connector.vertical.left}px`,
-                        top: `${item.connector.vertical.top}px`,
-                        height: `${item.connector.vertical.height}px`
+                    :class="{
+                        'hotkey-overlay__connector-segment--horizontal': segment.orientation === 'horizontal'
                     }"
-                ></div>
-                <div
-                    class="hotkey-overlay__connector-segment hotkey-overlay__connector-segment--horizontal"
                     :style="{
-                        left: `${item.connector.horizontal.left}px`,
-                        top: `${item.connector.horizontal.top}px`,
-                        width: `${item.connector.horizontal.width}px`
+                        left: `${segment.left}px`,
+                        top: `${segment.top}px`,
+                        width: segment.orientation === 'horizontal' ? `${segment.width}px` : '2px',
+                        height: segment.orientation === 'vertical' ? `${segment.height}px` : '2px'
                     }"
                 ></div>
             </div>

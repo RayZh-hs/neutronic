@@ -40,7 +40,12 @@ export const defaultHotkeyMap = {
         'editor.remover-tool': ['r', 'x', '5'],
         'editor.clear-all': ['ctrl+q'],
         'editor.focus': ['ctrl+space'],
-        'editor.back': ['escape', 'backspace'],
+        'editor.save': ['ctrl+s'],
+        'editor.delete-selection': ['delete'],
+        'editor.delete-containers': ['shift+delete'],
+        'editor.apply-tool': ['f'],
+        'editor.cancel-selection': ['escape'],
+        'editor.copy': ['ctrl+c'],
     },
     playback: {
         'playback.play-pause': ['ctrl+space'],
