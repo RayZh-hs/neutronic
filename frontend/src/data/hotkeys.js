@@ -1,11 +1,19 @@
 export const defaultHotkeyMap = {
     general: {
         'general.view-hotkeys': ['space'],
+        'general.github': ['g'],
     },
     landing: {
         'landing.info': ['j'],
         'landing.play': ['k'],
         'landing.settings': ['l'],
+    },
+    'custom-selection': {
+        'custom-selection.up': ['w', 'up-arrow'],
+        'custom-selection.down': ['s', 'down-arrow'],
+        'custom-selection.enter': ['k', 'enter'],
+        'custom-selection.back': ['escape', 'backspace'],
+        'custom-selection.delete': ['delete', 'x'],
     },
     album: {
         'album.previous': ['j', 'a', 'left-arrow'],
@@ -18,6 +26,16 @@ export const defaultHotkeyMap = {
         'sub-album.next': ['l', 'd', 'right-arrow'],
         'sub-album.enter': ['k', 'enter'],
         'sub-album.back': ['escape', 'backspace'],
+        'sub-album.level-1': ['1'],
+        'sub-album.level-2': ['2'],
+        'sub-album.level-3': ['3'],
+        'sub-album.level-4': ['4'],
+        'sub-album.level-5': ['5'],
+        'sub-album.level-6': ['6'],
+        'sub-album.level-7': ['7'],
+        'sub-album.level-8': ['8'],
+        'sub-album.level-9': ['9'],
+        'sub-album.level-10': ['0'],
     },
     level: {
         'level.up': ['w', 'up-arrow'],
@@ -31,6 +49,9 @@ export const defaultHotkeyMap = {
         'level.toggle-record': ['q'],
         'level.play-recording': ['shift+q'],
         'level.back': ['escape', 'backspace'],
+        'level.on-finish.restart': ['r'],
+        'level.on-finish.level-select': ['escape', 'backspace'],
+        'level.on-finish.next': ['enter', 'space'],
     },
     editor: {
         'editor.board-tool': ['b', '1'],
@@ -46,6 +67,9 @@ export const defaultHotkeyMap = {
         'editor.apply-tool': ['f'],
         'editor.cancel-selection': ['escape'],
         'editor.copy': ['ctrl+c'],
+        'editor.back': ['escape'],
+        'editor.dev-tools': ['`'],
+        'editor.play': ['enter'],
     },
     playback: {
         'playback.play-pause': ['ctrl+space'],

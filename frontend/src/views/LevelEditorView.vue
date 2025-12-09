@@ -17,7 +17,7 @@ import { useAccountStore, getCustomLevelById, upsertCustomLevel } from "@/functi
 import { useHotkeyBindings } from "@/functions/useHotkeys";
 
 const router = useRouter();
-const message = useMessage();
+const message = useMagicKeys();
 const keys = useMagicKeys();
 const dialog = useDialog();
 
@@ -52,6 +52,8 @@ const accountStore = useAccountStore();
 const account = computed(() => accountStore.value.profile);
 
 const currentLevelId = computed(() => router.currentRoute.value.params.uuid);
+
+const showDevTools = ref(true);
 
 // - tracking the level name
 const levelName = ref("New Level");
@@ -840,6 +842,18 @@ useHotkeyBindings('editor', {
         event.preventDefault();
         copyLevelToClipboard();
     },
+    'editor.back': ({ event }) => {
+        event.preventDefault();
+        router.push('/custom');
+    },
+    'editor.dev-tools': ({ event }) => {
+        event.preventDefault();
+        showDevTools.value = !showDevTools.value;
+    },
+    'editor.play': ({ event }) => {
+        event.preventDefault();
+        playLevel();
+    },
 }, { allowInInput: false });
 
 onClickOutside(selectionToolbar, onSelectCancel);
@@ -969,7 +983,7 @@ onBeforeUnmount(() => {
         <!-- The right side of the top section -->
         <div class="u-mla"></div>
         <!-- Developer tools -->
-        <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center">
+        <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center" v-show="showDevTools">
             <span>Developer Tools:</span>
             <ion-button name="cloud-upload-outline" size="1.6rem" @click="openUploadLevelDialog"
                 data-hotkey-target="editor.upload-level"
@@ -1008,7 +1022,13 @@ onBeforeUnmount(() => {
         <span class="score a-fade-in a-delay-6"
         :class="{'score--na': !currentBest}">{{ currentBest || 'NA' }}</span>
         <div class="u-gap-4"></div>
-        <ion-button name="play-outline" class="a-fade-in a-delay-7" size="1.6rem" @click="playLevel"/>
+        <ion-button name="play-outline" class="a-fade-in a-delay-7" size="1.6rem" @click="playLevel"
+            data-hotkey-target="editor.play"
+            data-hotkey-label="Play"
+            data-hotkey-group="top-left"
+            data-hotkey-group-side="bottom right"
+            data-hotkey-label-position="inline"
+        />
         <div class="u-gap-30"></div>
     </div>
     <code>

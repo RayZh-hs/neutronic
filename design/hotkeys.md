@@ -5,6 +5,8 @@ Neutronic can be played with hotkeys or mouse controls. Below is a list of the d
 ## General Hotkeys
 
 - `general.view-hotkeys`: Show hotkeys overlay, defaults to `space`.
+- `general.toggle-account`: Toggle account menu, defaults to `-`.
+- `general.open-github`: Open GitHub repository, defaults to `=`.
 
 ## Landing Page
 

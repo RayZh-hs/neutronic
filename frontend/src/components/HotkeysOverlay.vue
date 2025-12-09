@@ -346,7 +346,7 @@ const buildOverlayTargets = () => {
         const actionId = node.dataset.hotkeyTarget || '';
         const isDynamic = Object.prototype.hasOwnProperty.call(node.dataset, 'hotkeyDynamic');
         const groupId = node.dataset.hotkeyGroup || null;
-        const groupSide = (node.dataset.hotkeyGroupSide || '').toLowerCase();
+        const groupSide = (node.dataset.hotkeyGroupSide || 'bottom right').toLowerCase();
         const elementPlacement = (node.dataset.hotkeyElementPosition || 'below').toLowerCase();
         const labelPlacement = (node.dataset.hotkeyLabelPosition || 'inline').toLowerCase();
         const keyOverride = node.dataset.hotkeyHint || '';

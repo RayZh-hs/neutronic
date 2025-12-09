@@ -1,2 +1,13 @@
 [+] Convert bg img from png to svg (or other formats)
-[ ] Modify hotkey grouping system
+[+] Modify hotkey grouping system
+[+] Custom Selection needs hotkey binding
+[+] SubAlbum View: Levels need to be annotated and bound (use Center mode) from 1 on
+[ ] Level View: Fix particle id at beginning; DO NOT recalculate on particle demise
+[+] Level View: Restart/Select/Next has not been bound
+[+] Level Editor: Back has not been bound
+[+] Level Editor: Dev Tools have not been bound
+[+] Level Editor: Play has not been bound
+[+] General: Github/Account has not been bound (group, mode: bottom left)
+[ ] Settings system has not been implemented
+[ ] Publishing custom levels has not been implemented, including editing metadata
+[ ] Online section has not been implemented

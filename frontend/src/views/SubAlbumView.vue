@@ -89,6 +89,17 @@ const enterLevel = (levelNumber) => {
     }, 100);
 }
 
+const levelBindings = {};
+for (let i = 1; i <= 10; i++) {
+    levelBindings[`sub-album.level-${i}`] = ({ event }) => {
+        event.preventDefault();
+        const indexOnPage = (i === 10 ? 0 : i) - 1;
+        if (indexOnPage >= pagedLevels.value.length) return;
+        const levelNumber = windowStart.value + indexOnPage + 1;
+        enterLevel(levelNumber);
+    };
+}
+
 useHotkeyBindings('sub-album', {
     'sub-album.previous': ({ event }) => {
         event.preventDefault();
@@ -98,18 +109,7 @@ useHotkeyBindings('sub-album', {
         event.preventDefault();
         nextWindow();
     },
-    'sub-album.enter': ({ event }) => {
-        // This one is tricky as it depends on selection or context.
-        // For now, we might not have a "selected level" concept in this view to enter.
-        // If the user wants to enter the *first* available level on the page, we could do that,
-        // but it might be unexpected.
-        // Leaving empty or implementing a selection logic would be better.
-        // Given the current UI, maybe we just don't bind it to a specific action unless we add selection.
-    },
-    'sub-album.back': ({ event }) => {
-        event.preventDefault();
-        router.push('/album');
-    },
+    ...levelBindings,
 });
 
 </script>
@@ -138,6 +138,7 @@ useHotkeyBindings('sub-album', {
                 :key="num + 1 + windowRange.begin"
                 :level="num + 1 + windowRange.begin"
                 :status="getStatus(num + 1 + windowRange.begin)"
+                :hotkey="num < 9 ? (num + 1).toString() : (num === 9 ? '0' : '')"
                 @click="enterLevel(num + 1 + windowRange.begin)"
                 ></simple-level-card>
         </div>

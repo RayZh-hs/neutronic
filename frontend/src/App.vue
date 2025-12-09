@@ -6,10 +6,19 @@ import HotkeysOverlay from './components/HotkeysOverlay.vue';
 import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
 import { computed } from 'vue';
+import { useHotkeyBindings } from '@/functions/useHotkeys';
 
 const openGitHub = () => {
   window.open("https://github.com/RayZh-hs/neutronic", "_blank");
 };
+
+useHotkeyBindings('general', {
+    'general.github': ({ event }) => {
+        event.preventDefault();
+        openGitHub();
+    },
+});
+
 const route = useRoute();
 
 const showUserButton = computed(() => {
@@ -39,7 +48,13 @@ const showUserButton = computed(() => {
                 </template>
                 <AccountCard />
               </n-popover>
-              <IonButton name="logo-github" size="2rem" aria-label="github" @click="openGitHub" />
+              <IonButton name="logo-github" size="2rem" aria-label="github" @click="openGitHub"
+                data-hotkey-target="general.github"
+                data-hotkey-label="GitHub"
+                data-hotkey-group="general"
+                data-hotkey-group-side="bottom left"
+                data-hotkey-label-position="left"
+              />
             </div>
             <router-view v-slot="{ Component }">
               <!-- <transition name="zoom" mode="out-in"> -->

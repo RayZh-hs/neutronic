@@ -10,6 +10,7 @@ import { customSelectionWindowSize } from '@/data/constants';
 import { useAccountStore, renameAccount, removeCustomLevel } from '@/functions/useAccount';
 import { useRecordingsStore, removeRecordingForLevel } from '@/functions/useRecordings';
 import { getPrebuiltLevelInfo } from '@/functions/levelUtils';
+import { useHotkeyBindings } from '@/functions/useHotkeys';
 
 const router = useRouter();
 const account = useAccountStore();
@@ -86,6 +87,70 @@ const levelEditorConfig = useSessionStorage('level-editor-config', {
     loadFromLevelView: false,
 });
 const levelViewConfig = useSessionStorage('level-view-config', {});
+
+const focusedIndex = ref(-1);
+
+watch([currentView, pagedItems], () => {
+    focusedIndex.value = -1;
+});
+
+useHotkeyBindings('custom-selection', {
+    'custom-selection.up': ({ event }) => {
+        event.preventDefault();
+        if (focusedIndex.value > 0) {
+            focusedIndex.value--;
+        } else if (sliceWindow.value.begin > 0) {
+            prevWindow();
+            // Wait for next tick or assume pagedItems will update?
+            // pagedItems is computed, so it updates when sliceWindow updates.
+            // But we might need to wait for it.
+            // However, we can just set it to customSelectionWindowSize - 1, 
+            // and if pagedItems is smaller, it might be out of bounds.
+            // But prevWindow implies we are going back to a full page usually.
+            // Let's be safe.
+            setTimeout(() => {
+                focusedIndex.value = pagedItems.value.length - 1;
+            }, 0);
+        }
+    },
+    'custom-selection.down': ({ event }) => {
+        event.preventDefault();
+        if (focusedIndex.value < pagedItems.value.length - 1) {
+            focusedIndex.value++;
+        } else if (sliceWindow.value.end < total.value) {
+            nextWindow();
+            setTimeout(() => {
+                focusedIndex.value = 0;
+            }, 0);
+        } else if (focusedIndex.value === -1 && pagedItems.value.length > 0) {
+            focusedIndex.value = 0;
+        }
+    },
+    'custom-selection.enter': ({ event }) => {
+        event.preventDefault();
+        if (focusedIndex.value === -1) return;
+        const item = pagedItems.value[focusedIndex.value];
+        if (currentView.value === 'levels') {
+            playLevel(item.id);
+        } else {
+            playRecording(item);
+        }
+    },
+    'custom-selection.back': ({ event }) => {
+        event.preventDefault();
+        router.push('/album');
+    },
+    'custom-selection.delete': ({ event }) => {
+        event.preventDefault();
+        if (focusedIndex.value === -1) return;
+        const item = pagedItems.value[focusedIndex.value];
+        if (currentView.value === 'levels') {
+            deleteLevel(item.id);
+        } else {
+            deleteRecording(item);
+        }
+    },
+});
 
 const adjustWindowBounds = () => {
     if (sliceWindow.value.begin >= total.value) {
@@ -255,14 +320,14 @@ const playRecording = (rec) => {
                     :best-moves="level.bestMoves" :updated-at="level.updatedAt" :key="level.id"
                     :published="level.level.meta.published"
                     class="a-fade-in"
-                    :class="{ [`a-delay-${index + 1}`]: true }"
+                    :class="{ [`a-delay-${index + 1}`]: true, focused: index === focusedIndex }"
                     @edit="editLevel"
                     @play="playLevel"
                     @delete="deleteLevel"
                 ></level-card>
             </template>
             <template v-else-if="currentView === 'recordings'">
-                <div v-for="(rec, index) in pagedItems" :key="rec.id" class="recording-card a-fade-in" :class="{ [`a-delay-${index + 1}`]: true }">
+                <div v-for="(rec, index) in pagedItems" :key="rec.id" class="recording-card a-fade-in" :class="{ [`a-delay-${index + 1}`]: true, focused: index === focusedIndex }">
                     <div class="rec-info">
                         <span class="rec-level">{{ rec.levelName || rec.levelId }}<span class="rec-steps">Steps: {{ rec.steps }}</span></span>
                         <span class="rec-date">{{ new Date(rec.recordedAt).toLocaleString() }}</span>
@@ -316,6 +381,12 @@ const playRecording = (rec) => {
             letter-spacing: .25pt;
         }
     }
+}
+
+.focused {
+    transform: scale(1.02);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--n-primary);
 }
 
 .overlay {

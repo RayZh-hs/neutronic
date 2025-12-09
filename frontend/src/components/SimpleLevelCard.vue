@@ -7,6 +7,7 @@ const props = defineProps({
         validator: value => ['perfect', 'finished', 'open', 'locked'].includes(value)
     },
     level: Number,
+    hotkey: String,
 })
 
 </script>
@@ -23,6 +24,15 @@ const props = defineProps({
 
 <style lang="scss" scoped>
 @use "sass:color";
+
+.hotkey-hint {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 0.8rem;
+    opacity: 0.5;
+    font-family: monospace;
+}
 
 .level-card {
     width: $level-select-grid-scale;

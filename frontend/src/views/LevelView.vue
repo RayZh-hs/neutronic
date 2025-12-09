@@ -1032,7 +1032,7 @@ useHotkeyBindings('level', {
                     data-hotkey-target="level.reset"
                     data-hotkey-label="Reset level"
                     data-hotkey-group="level-controls"
-                    data-hotkey-group-side="right"
+                    data-hotkey-group-side="bottom right"
                     data-hotkey-label-position="inline"
                     @click="router.go(router.currentRoute.value)"
                 ></ion-button>
@@ -1047,7 +1047,7 @@ useHotkeyBindings('level', {
                                 data-hotkey-target="level.toggle-record"
                                 data-hotkey-label="Record"
                                 data-hotkey-group="level-controls"
-                                data-hotkey-group-side="right"
+                                data-hotkey-group-side="bottom right"
                                 data-hotkey-label-position="inline"
                                 :disabled="recordingButtonDisabled"
                                 :color="isRecordingActive ? '#ff6b3a' : undefined"
@@ -1067,7 +1067,7 @@ useHotkeyBindings('level', {
                                     data-hotkey-target="level.play-recording"
                                     data-hotkey-label="Play recording"
                                     data-hotkey-group="level-controls"
-                                    data-hotkey-group-side="right"
+                                    data-hotkey-group-side="bottom right"
                                     data-hotkey-label-position="inline"
                                     :color="isPlaybackActive ? '#4cc9f0' : undefined"
                                 ></ion-button>
@@ -1124,6 +1124,7 @@ useHotkeyBindings('level', {
                             data-hotkey-target="level.on-finish.restart"
                             data-hotkey-label="Restart"
                             data-hotkey-group="level-finish"
+                            data-hotkey-group-side="bottom right"
                             data-hotkey-label-position="inline"
                         ></ion-button>
                     </template>
