@@ -7,7 +7,7 @@ import CustomSelectionView from './views/CustomSelectionView.vue'
 import LevelView from './views/LevelView.vue'
 import LevelEditorView from './views/LevelEditorView.vue'
 import PlaybackView from './views/PlaybackView.vue'
-// import UserLoginView from './views/UserLoginView.disabled.vue'
+import SettingsView from './views/SettingsView.vue'
 
 const routes = [
     { path: '/', component: HomeView },
@@ -18,7 +18,7 @@ const routes = [
     { path: '/custom/edit/:uuid', component: LevelEditorView },
     { path: '/custom/play/:uuid', component: LevelView },
     { path: '/playback/:levelId', component: PlaybackView },
-    // { path: '/login', component: UserLoginView },
+    { path: '/settings', component: SettingsView },
 ]
 
 export const router = createRouter({

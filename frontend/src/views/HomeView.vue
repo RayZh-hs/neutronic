@@ -30,7 +30,7 @@ useHotkeyBindings('landing', {
     },
     'landing.settings': ({ event }) => {
         event.preventDefault();
-        // No action yet
+        router.push('/settings');
     },
 });
 

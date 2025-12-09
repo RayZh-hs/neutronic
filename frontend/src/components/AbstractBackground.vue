@@ -1,4 +1,10 @@
-<script setup></script>
+<script setup>
+import { useSettings } from '@/functions/useSettings';
+import { computed } from 'vue';
+
+const settings = useSettings();
+const animationState = computed(() => settings.value.disableAnimations ? 'paused' : 'running');
+</script>
 
 <template>
     <div class="bg bg-lay-1" />
@@ -27,18 +33,21 @@ $background-size-3: 40rem;
             background-size: $background-size-1;
             opacity: 30%;
             animation: scroll-bg-1 40s linear infinite; /* Added animation */
+            animation-play-state: v-bind(animationState);
         }
         &2 {
             background-image: url(@/assets/dotgrid/JS-dotGrid-1.webp);
             background-size: $background-size-2;
             opacity: 20%;
             animation: scroll-bg-2 60s linear infinite; /* Added animation */
+            animation-play-state: v-bind(animationState);
         }
         &3 {
             background-image: url(@/assets/dotgrid/JS-dotGrid-2.webp);
             background-size: $background-size-3;
             opacity: 20%;
             animation: scroll-bg-3 80s linear infinite; /* Added animation */
+            animation-play-state: v-bind(animationState);
         }
     }
 }
