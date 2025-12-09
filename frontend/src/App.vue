@@ -53,7 +53,7 @@ const showUserButton = computed(() => {
                 data-hotkey-label="GitHub"
                 data-hotkey-group="general"
                 data-hotkey-group-side="bottom left"
-                data-hotkey-label-position="left"
+                data-hotkey-label-position="inline"
               />
             </div>
             <router-view v-slot="{ Component }">

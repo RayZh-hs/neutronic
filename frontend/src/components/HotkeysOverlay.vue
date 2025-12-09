@@ -196,7 +196,12 @@ const layoutColumnGroup = (groupItems, placement, viewportWidth) => {
     const rawColumn = side === 'right'
         ? anchorEdge + config.columnOffset
         : anchorEdge - config.columnOffset;
-    const columnX = clampValue(rawColumn, 16, Math.max(16, viewportWidth - 16));
+    const viewportMinX = 16;
+    const viewportMaxX = Math.max(16, viewportWidth - 16);
+    const tagHalfWidth = config.tagHalfWidth || ESTIMATED_TAG_WIDTH / 2;
+    const tagWidth = tagHalfWidth * 2;
+    const clampTagLeft = (value) => clampValue(value, viewportMinX, Math.max(viewportMinX, viewportMaxX - tagWidth));
+    const columnX = clampValue(rawColumn, viewportMinX, viewportMaxX);
     const verticalDirective = placement.vertical;
     const sorted = groupItems.slice().sort((a, b) => a.anchorY - b.anchorY);
     const spacing = config.verticalSpacing;
@@ -218,17 +223,28 @@ const layoutColumnGroup = (groupItems, placement, viewportWidth) => {
             currentTop = displayTop;
         }
         displayTop = Math.max(displayTop, MIN_DISPLAY_TOP);
-        const targetX = columnX;
+        let displayLeft;
+        let connectorX;
+        if (side === 'left') {
+            displayLeft = clampTagLeft(columnX - tagWidth);
+            connectorX = displayLeft + tagWidth;
+            item.inlineReverse = item.labelPlacement === 'inline';
+        }
+        else {
+            displayLeft = clampTagLeft(columnX);
+            connectorX = displayLeft;
+            item.inlineReverse = false;
+        }
         const targetY = displayTop + config.tagHalfHeight;
         const origin = getConnectorOrigin(item, placement);
         const segments = buildConnectorSegments({
             startX: origin.x,
             startY: origin.y,
-            targetX,
+            targetX: connectorX,
             targetY,
             directives: placement.directives,
         });
-        item.displayLeft = columnX;
+        item.displayLeft = displayLeft;
         item.displayTop = displayTop;
         item.align = side === 'right' ? 'right' : 'left';
         item.connectorSegments = segments.length ? segments : null;
@@ -568,7 +584,13 @@ onBeforeUnmount(() => {
                 top: `${item.displayTop}px`
             }"
         >
-            <div class="hotkey-overlay__tag-content" :class="[`hotkey-overlay__tag-content--${item.labelPlacement || 'below'}`]">
+            <div
+                class="hotkey-overlay__tag-content"
+                :class="[
+                    `hotkey-overlay__tag-content--${item.labelPlacement || 'below'}`,
+                    { 'hotkey-overlay__tag-content--reverse': item.inlineReverse }
+                ]"
+            >
                 <div class="hotkey-overlay__tag-key">
                     {{ item.key }}
                 </div>
@@ -642,6 +664,11 @@ onBeforeUnmount(() => {
 .hotkey-overlay__tag-content--inline {
     flex-direction: row;
     align-items: center;
+}
+
+.hotkey-overlay__tag-content--inline.hotkey-overlay__tag-content--reverse {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
 }
 
 .hotkey-overlay__tag-content--below {

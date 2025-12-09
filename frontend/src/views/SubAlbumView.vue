@@ -101,6 +101,10 @@ for (let i = 1; i <= 10; i++) {
 }
 
 useHotkeyBindings('sub-album', {
+    'sub-album.back': ({ event }) => {
+        event.preventDefault();
+        router.push('/album');
+    },
     'sub-album.previous': ({ event }) => {
         event.preventDefault();
         prevWindow();

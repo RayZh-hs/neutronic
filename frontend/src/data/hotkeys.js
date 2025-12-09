@@ -1,7 +1,7 @@
 export const defaultHotkeyMap = {
     general: {
         'general.view-hotkeys': ['space'],
-        'general.github': ['g'],
+        'general.github': ['='],
     },
     landing: {
         'landing.info': ['j'],
