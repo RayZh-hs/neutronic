@@ -112,33 +112,16 @@ const hasBlockingPopup = () => {
     return false;
 };
 
+import { useAccountStore } from './useAccount';
+
 const loadOverrides = () => {
-    if (!storageAvailable) {
-        return {};
-    }
-    try {
-        const raw = window.localStorage.getItem(HOTKEY_STORAGE_KEY);
-        if (!raw) {
-            return {};
-        }
-        const parsed = JSON.parse(raw);
-        return typeof parsed === 'object' && parsed ? parsed : {};
-    }
-    catch {
-        return {};
-    }
+    const account = useAccountStore();
+    return account.value.hotkeys || {};
 };
 
 const persistOverrides = () => {
-    if (!storageAvailable) {
-        return;
-    }
-    try {
-        window.localStorage.setItem(HOTKEY_STORAGE_KEY, JSON.stringify(hotkeyState.overrides));
-    }
-    catch {
-        // Ignore storage errors
-    }
+    const account = useAccountStore();
+    account.value.hotkeys = { ...hotkeyState.overrides };
 };
 
 hotkeyState.overrides = loadOverrides();

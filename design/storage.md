@@ -138,3 +138,73 @@ $particles
 <array: particles>:
     - $color(R/B) $row $column
 ```
+
+## Local Storage (Version 2)
+
+The application uses two main local storage keys to organize data:
+
+1.  `neutronic-account`: Stores user-specific data.
+2.  `neutronic-environment`: Stores environment-specific data.
+
+### neutronic-account
+
+This storage key holds all user progress, settings, and content.
+
+```json
+{
+    "version": 2,
+    "profile": {
+        "username": "Player",
+        "saved": true,
+        "lastExportedAt": null
+    },
+    "progress": {
+        "perfected": [],
+        "passed": [],
+        "lookup": {},
+        "custom": {}
+    },
+    "customLevels": [
+        {
+            "id": "...",
+            "level": { ... },
+            "createdAt": "...",
+            "updatedAt": "...",
+            "bestMoves": null
+        }
+    ],
+    "settings": {
+        "disableAnimations": false,
+        "musicVolume": 50,
+        "sfxVolume": 50
+    },
+    "hotkeys": {
+        // Custom hotkey overrides
+    },
+    "recordings": {
+        // Map of levelId to array of recordings
+        "level-id": [
+            {
+                "id": "...",
+                "recordedAt": "...",
+                "steps": 0,
+                "levelId": "...",
+                "levelName": "...",
+                "author": "...",
+                "recording": [],
+                "map": null
+            }
+        ]
+    }
+}
+```
+
+### neutronic-environment
+
+This storage key holds transient or environment-specific state that doesn't need to be exported with the user account.
+
+```json
+{
+    "swiper-page-memory": 0
+}
+```

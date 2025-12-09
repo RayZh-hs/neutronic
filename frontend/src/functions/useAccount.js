@@ -5,7 +5,7 @@ import defaultPlayerProgress from "@/data/defaultPlayerProgress.json";
 const cloneDefaultProgress = () => JSON.parse(JSON.stringify(defaultPlayerProgress));
 
 const createDefaultAccount = () => ({
-    version: 1,
+    version: 2,
     profile: {
         username: "Player",
         saved: true,
@@ -16,6 +16,13 @@ const createDefaultAccount = () => ({
         custom: {},
     },
     customLevels: [],
+    settings: {
+        disableAnimations: false,
+        musicVolume: 50,
+        sfxVolume: 50,
+    },
+    hotkeys: {},
+    recordings: {},
 });
 
 const normalizeProgress = (progress = {}) => {
@@ -160,7 +167,7 @@ export const markAccountSaved = () => {
 export const importAccountFromString = (raw) => {
     const parsed = JSON.parse(raw);
     accountState.value = {
-        version: 1,
+        version: 2,
         profile: {
             username: parsed.profile?.username?.trim() || "Player",
             saved: true,
@@ -168,6 +175,13 @@ export const importAccountFromString = (raw) => {
         },
         progress: normalizeProgress(parsed.progress),
         customLevels: normalizeCustomLevels(parsed.customLevels),
+        settings: parsed.settings || {
+            disableAnimations: false,
+            musicVolume: 50,
+            sfxVolume: 50,
+        },
+        hotkeys: parsed.hotkeys || {},
+        recordings: parsed.recordings || {},
     };
 };
 
@@ -221,4 +235,32 @@ export const hasFinishedAlbum = (albumIndex) => {
         albums[albumIndex].content.length ===
         currentAlbumLookup.passed + currentAlbumLookup.perfected
     );
+};
+
+export const getAccountSettings = () => accountState.value.settings;
+
+export const updateAccountSettings = (newSettings) => {
+    accountState.value.settings = {
+        ...accountState.value.settings,
+        ...newSettings,
+    };
+    markDirty();
+};
+
+export const getAccountHotkeys = () => accountState.value.hotkeys;
+
+export const updateAccountHotkeys = (newHotkeys) => {
+    accountState.value.hotkeys = {
+        ...newHotkeys,
+    };
+    markDirty();
+};
+
+export const getAccountRecordings = () => accountState.value.recordings;
+
+export const updateAccountRecordings = (newRecordings) => {
+    accountState.value.recordings = {
+        ...newRecordings,
+    };
+    markDirty();
 };

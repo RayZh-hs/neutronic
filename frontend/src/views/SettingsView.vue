@@ -95,6 +95,7 @@ const handleDeleteAccount = () => {
         negativeText: 'Cancel',
         onPositiveClick: () => {
             localStorage.removeItem('neutronic-account');
+            localStorage.removeItem('neutronic-environment');
             window.location.reload();
         }
     });

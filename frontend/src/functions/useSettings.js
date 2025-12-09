@@ -1,9 +1,12 @@
-import { useStorage } from '@vueuse/core';
+import { computed } from 'vue';
+import { useAccountStore } from './useAccount';
 
-const settingsState = useStorage('neutronic-settings', {
-    disableAnimations: false,
-    musicVolume: 50,
-    sfxVolume: 50,
-});
-
-export const useSettings = () => settingsState;
+export const useSettings = () => {
+    const account = useAccountStore();
+    return computed({
+        get: () => account.value.settings,
+        set: (val) => {
+            account.value.settings = val;
+        }
+    });
+};

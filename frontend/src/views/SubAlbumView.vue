@@ -20,11 +20,16 @@ import { useHotkeyBindings } from '@/functions/useHotkeys';
 const player = getAccountProgress();
 
 const albumIndex = computed(() => Number(router.currentRoute.value.params.id));
-const currentAlbum = computed(() => album.value[albumIndex.value]);
-const totalLevels = computed(() => currentAlbum.value.content.length);
-const playerProgress = computed(() => player.lookup[currentAlbum.value.meta.name]);
-const perfects = computed(() => playerProgress.value.perfected);
-const passes = computed(() => playerProgress.value.passed);
+const currentAlbum = computed(() => album.value?.[albumIndex.value]);
+const isValidAlbum = computed(() => isAlbumLoaded.value && !!currentAlbum.value);
+
+const totalLevels = computed(() => currentAlbum.value?.content?.length || 0);
+const playerProgress = computed(() => {
+    if (!currentAlbum.value) return { perfected: 0, passed: 0 };
+    return player.lookup[currentAlbum.value.meta.name] || { perfected: 0, passed: 0 };
+});
+const perfects = computed(() => playerProgress.value.perfected || 0);
+const passes = computed(() => playerProgress.value.passed || 0);
 
 const LEVELS_PER_PAGE = 12;
 const windowStart = ref(0);
@@ -33,7 +38,7 @@ const windowRange = computed(() => ({
     end: Math.min(windowStart.value + LEVELS_PER_PAGE, totalLevels.value),
 }));
 const pagedLevels = computed(() =>
-    currentAlbum.value.content.slice(windowRange.value.begin, windowRange.value.end)
+    currentAlbum.value?.content.slice(windowRange.value.begin, windowRange.value.end) || []
 );
 
 const canShiftForward = computed(() => windowRange.value.end < totalLevels.value);
@@ -74,7 +79,7 @@ const getNextRoute = (levelNumber) => {
 const levelViewConfig = useSessionStorage('level-view-config', {}, { mergeDefaults: true })
 
 const enterLevel = (levelNumber) => {
-    if (!isAlbumLoaded) { return; }
+    if (!isValidAlbum.value) { return; }
     const levelId = getLevelIdByNumber(levelNumber);
     if (!isAccessibleToPrebuiltLevel(levelId)) {
         return;
@@ -126,7 +131,7 @@ useHotkeyBindings('sub-album', {
         data-hotkey-element-position="right"
         data-hotkey-label-position="right"
     ></ion-icon>
-    <div class="wrapper" v-if="isAlbumLoaded">
+    <div class="wrapper" v-if="isValidAlbum">
         <div class="header-container">
             <h1 class="album-title a-fade-in">{{ currentAlbum.meta.name }}</h1>
             <div class="header-container__right a-fade-in a-delay-1">

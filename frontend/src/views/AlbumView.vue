@@ -24,15 +24,15 @@ const modules = ref([Pagination, Navigation, Mousewheel]);
 const swiperRef = ref(null);
 // const swiperPage = ref(0);
 // Change the swiperPage to a local-storage object
-const swiperPage = useLocalStorage('swiper-page-memory', 0);
+const swiperPage = useLocalStorage('neutronic-environment', { 'swiper-page-memory': 0 });
 
 const updatePage = (swiper) => {
-    swiperPage.value = swiper.realIndex;
+    swiperPage.value['swiper-page-memory'] = swiper.realIndex;
     console.log(swiperPage.value);
 };
 
 const initPage = (swiper) => {
-    swiper.slideTo(swiperPage.value, 0);
+    swiper.slideTo(swiperPage.value['swiper-page-memory'], 0);
     console.log("Swiper initialized at ", swiper.realIndex);
 }
 
@@ -60,7 +60,7 @@ const albumLength = computed(() => album.value.length)
 
 //: Jump to referring page
 const jumpToReferent = () => {
-    const id = swiperPage.value;
+    const id = swiperPage.value['swiper-page-memory'];
     console.log("Jumping to ", id);
     if (id === albumLength.value) {
         router.push('/custom');

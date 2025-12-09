@@ -1,11 +1,11 @@
-import { useStorage } from "@vueuse/core";
+import { useAccountStore } from "./useAccount";
+import { computed } from "vue";
 
-const recordingsStore = useStorage(
-    "recordings",
-    {},
-    localStorage,
-    { mergeDefaults: true }
-);
+const account = useAccountStore();
+const recordingsStore = computed({
+    get: () => account.value.recordings,
+    set: (val) => { account.value.recordings = val; }
+});
 
 const normalizeEntry = (payload = {}) => ({
     id: payload.id || `rec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
