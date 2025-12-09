@@ -1,4 +1,4 @@
-import { onBeforeUnmount } from 'vue';
+import { onBeforeUnmount, reactive } from 'vue';
 import { defaultHotkeyMap } from '@/data/hotkeys';
 
 const HOTKEY_STORAGE_KEY = 'neutronic.hotkeys';
@@ -66,14 +66,14 @@ const DISPLAY_ALIASES = {
     '-': '-',
 };
 
-const hotkeyState = {
+const hotkeyState = reactive({
     initialized: false,
     listeners: new Map(),
     history: [],
     overrides: {},
     contextCache: new Map(),
     overridesVersion: 0,
-};
+});
 
 const storageAvailable = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 
@@ -473,6 +473,22 @@ export const setHotkeyBindings = (actionId, bindings) => {
     hotkeyState.overridesVersion += 1;
     hotkeyState.contextCache.delete(context);
     persistOverrides();
+};
+
+export const addHotkeyBinding = (actionId, binding) => {
+    if (!actionId) {
+        return;
+    }
+    const [context] = actionId.split('.');
+    if (!context) {
+        return;
+    }
+    const merged = mergeBindingsForContext(context);
+    const currentBindings = merged[actionId] || [];
+    const bindingsArray = Array.isArray(currentBindings) ? currentBindings : [currentBindings];
+    
+    const newBindings = [...bindingsArray, binding];
+    setHotkeyBindings(actionId, newBindings);
 };
 
 export const resetHotkeyBindings = (actionId) => {

@@ -13,6 +13,7 @@ import { defaultHotkeyMap } from '@/data/hotkeys';
 import { 
     getBindingsForAction, 
     setHotkeyBindings, 
+    addHotkeyBinding,
     resetHotkeyBindings, 
     hotkeyUtils,
     formatBindingSequence
@@ -100,7 +101,7 @@ const handleDeleteAccount = () => {
 };
 
 // --- Hotkey Settings ---
-const recordingAction = ref(null);
+const recordingState = ref({ actionId: null, mode: null });
 
 const getHotkeysByCategory = (category) => {
     return Object.entries(defaultHotkeyMap[category] || {});
@@ -109,23 +110,23 @@ const getHotkeysByCategory = (category) => {
 const getBindingLabel = (actionId) => {
     const bindings = getBindingsForAction(actionId);
     if (!bindings || bindings.length === 0) return 'None';
-    return bindings.map(b => formatBindingSequence([b])).join(', ');
+    return bindings.map(b => formatBindingSequence(b)).join(', ');
 };
 
-const startRecording = (actionId) => {
-    recordingAction.value = actionId;
+const startRecording = (actionId, mode = 'replace') => {
+    recordingState.value = { actionId, mode };
     message.info('Press a key combination...');
 };
 
 const handleKeyDown = (e) => {
-    if (!recordingAction.value) return;
+    if (!recordingState.value.actionId) return;
     
     e.preventDefault();
     e.stopPropagation();
 
     // Allow escape to cancel
     if (e.key === 'Escape') {
-        recordingAction.value = null;
+        recordingState.value = { actionId: null, mode: null };
         return;
     }
 
@@ -133,9 +134,14 @@ const handleKeyDown = (e) => {
     // Don't bind just modifier keys
     if (['ctrl', 'shift', 'alt', 'meta'].includes(chord)) return;
 
-    setHotkeyBindings(recordingAction.value, chord);
-    recordingAction.value = null;
-    message.success('Hotkey updated');
+    if (recordingState.value.mode === 'add') {
+        addHotkeyBinding(recordingState.value.actionId, chord);
+        message.success('Hotkey added');
+    } else {
+        setHotkeyBindings(recordingState.value.actionId, chord);
+        message.success('Hotkey updated');
+    }
+    recordingState.value = { actionId: null, mode: null };
 };
 
 onMounted(() => {
@@ -165,7 +171,7 @@ const formatActionName = (actionId) => {
         data-hotkey-element-position="right"
         data-hotkey-label-position="right"
     ></ion-icon>
-    <div class="settings-view-container">
+    <div class="settings-view-container a-fade-in">
         <div class="settings-left-container">
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'">
                 <template #icon>
@@ -202,104 +208,146 @@ const formatActionName = (actionId) => {
             </h2>
 
             <div class="settings-content">
-                <!-- General Settings -->
-                <div v-if="activeTab === 'general'" class="settings-group">
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <h3>Disable Background Animations</h3>
-                            <p>Turn off the moving background for better performance.</p>
+                <Transition name="fade" mode="out-in">
+                    <!-- General Settings -->
+                    <div v-if="activeTab === 'general'" class="settings-group" key="general">
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <h3>Disable Background Animations</h3>
+                                <p>Turn off the moving background for better performance.</p>
+                            </div>
+                            <n-switch v-model:value="settings.disableAnimations" />
                         </div>
-                        <n-switch v-model:value="settings.disableAnimations" />
-                    </div>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <h3>Music Volume</h3>
-                            <p>Adjust the background music volume.</p>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <h3>Music Volume</h3>
+                                <p>Adjust the background music volume.</p>
+                            </div>
+                            <div class="setting-control">
+                                <!-- <n-slider v-model:value="settings.musicVolume" :step="1" disabled /> -->
+                                <span class="coming-soon">(Coming Soon)</span>
+                            </div>
                         </div>
-                        <div class="setting-control">
-                            <!-- <n-slider v-model:value="settings.musicVolume" :step="1" disabled /> -->
-                            <span class="coming-soon">(Coming Soon)</span>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <h3>SFX Volume</h3>
+                                <p>Adjust the sound effects volume.</p>
+                            </div>
+                            <div class="setting-control">
+                                <!-- <n-slider v-model:value="settings.sfxVolume" :step="1" disabled /> -->
+                                <span class="coming-soon">(Coming Soon)</span>
+                            </div>
                         </div>
+
+                        <div style="height: 5rem;" />
                     </div>
 
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <h3>SFX Volume</h3>
-                            <p>Adjust the sound effects volume.</p>
+                    <!-- Account Settings -->
+                    <div v-else-if="activeTab === 'account'" class="settings-group" key="account">
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <h3>Display Name</h3>
+                                <p>How you appear on leaderboards and shared levels.</p>
+                            </div>
+                            <div class="setting-control">
+                                <n-input v-model:value="username" placeholder="Enter username" maxlength="32" />
+                            </div>
                         </div>
-                        <div class="setting-control">
-                            <!-- <n-slider v-model:value="settings.sfxVolume" :step="1" disabled /> -->
-                            <span class="coming-soon">(Coming Soon)</span>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Account Settings -->
-                <div v-if="activeTab === 'account'" class="settings-group">
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <h3>Display Name</h3>
-                            <p>How you appear on leaderboards and shared levels.</p>
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <h3>Data Management</h3>
+                                <p>Import or export your progress and levels.</p>
+                            </div>
+                            <div class="setting-actions">
+                                <input type="file" ref="fileInput" style="display: none" accept=".json" @change="handleImport" />
+                                <n-button @click="handleExport">Export Data</n-button>
+                                <n-button @click="triggerImport">Import Data</n-button>
+                            </div>
                         </div>
-                        <div class="setting-control">
-                            <n-input v-model:value="username" placeholder="Enter username" maxlength="32" />
+
+                        <div class="setting-item danger-zone">
+                            <div class="setting-label">
+                                <h3>Danger Zone</h3>
+                                <p>Irreversible actions.</p>
+                            </div>
+                            <div class="setting-actions">
+                                <n-button type="error" @click="handleDeleteAccount" class="full-button">
+                                    <template #icon><ion-icon name="trash-outline"></ion-icon></template>
+                                    Delete Account
+                                </n-button>
+                            </div>
                         </div>
+
+                        <div style="height: 5rem;" />
                     </div>
 
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <h3>Data Management</h3>
-                            <p>Import or export your progress and levels.</p>
-                        </div>
-                        <div class="setting-actions">
-                            <input type="file" ref="fileInput" style="display: none" accept=".json" @change="handleImport" />
-                            <n-button @click="handleExport">Export Data</n-button>
-                            <n-button @click="triggerImport">Import Data</n-button>
-                        </div>
-                    </div>
-
-                    <div class="setting-item danger-zone">
-                        <div class="setting-label">
-                            <h3>Danger Zone</h3>
-                            <p>Irreversible actions.</p>
-                        </div>
-                        <div class="setting-actions">
-                            <n-button type="error" @click="handleDeleteAccount">Delete Account</n-button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Hotkey Settings -->
-                <div v-if="activeTab === 'hotkeys'" class="settings-group hotkeys-list">
-                    <n-collapse>
-                        <n-collapse-item v-for="(actions, category) in defaultHotkeyMap" :key="category" :title="category.charAt(0).toUpperCase() + category.slice(1)" :name="category">
-                            <div class="hotkey-grid">
-                                <div v-for="([actionId, defaultBindings]) in Object.entries(actions)" :key="actionId" class="hotkey-row">
-                                    <span class="hotkey-name">{{ formatActionName(actionId) }}</span>
-                                    <div class="hotkey-controls">
-                                        <n-button 
-                                            size="small" 
-                                            :type="recordingAction === actionId ? 'primary' : 'default'"
-                                            @click="startRecording(actionId)"
-                                        >
-                                            {{ recordingAction === actionId ? 'Press keys...' : getBindingLabel(actionId) }}
-                                        </n-button>
-                                        <n-button size="small" circle @click="resetHotkey(actionId)" title="Reset to default">
-                                            <template #icon><ion-icon name="refresh-outline"></ion-icon></template>
-                                        </n-button>
+                    <!-- Hotkey Settings -->
+                    <div v-else-if="activeTab === 'hotkeys'" class="settings-group hotkeys-list" key="hotkeys">
+                        <n-collapse class="hotkey-container">
+                            <n-collapse-item v-for="(actions, category) in defaultHotkeyMap" :key="category" :title="category.charAt(0).toUpperCase() + category.slice(1)" :name="category" class="hotkey-collapse-item">
+                                <div class="hotkey-grid">
+                                    <div v-for="([actionId, defaultBindings]) in Object.entries(actions)" :key="actionId" class="hotkey-row">
+                                        <span class="hotkey-name"> •&nbsp&nbsp{{ formatActionName(actionId) }}</span>
+                                        <div class="hotkey-controls">
+                                            <n-button 
+                                                size="small" 
+                                                :type="recordingState.actionId === actionId && recordingState.mode === 'replace' ? 'primary' : 'default'"
+                                                @click="startRecording(actionId, 'replace')"
+                                                class="keystroke-record-btn"
+                                            >
+                                                {{ recordingState.actionId === actionId && recordingState.mode === 'replace' ? 'Press keys...' : getBindingLabel(actionId) }}
+                                            </n-button>
+                                            <n-button 
+                                                size="small" 
+                                                @click="startRecording(actionId, 'add')" 
+                                                title="Add hotkey"
+                                                :type="recordingState.actionId === actionId && recordingState.mode === 'add' ? 'primary' : 'default'"
+                                            >
+                                                <template #icon><ion-icon name="add-outline"></ion-icon></template>
+                                            </n-button>
+                                            <n-button size="small" @click="resetHotkey(actionId)" title="Reset to default">
+                                                <template #icon><ion-icon name="refresh-outline"></ion-icon></template>
+                                            </n-button>
+                                            <div style="width: 3rem"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </n-collapse-item>
-                    </n-collapse>
-                </div>
+                            </n-collapse-item>
+                        </n-collapse>
+                    </div>
+                </Transition>
             </div>
         </div>
     </div>
 </template>
 
+<style>
+.n-collapse-item__header-main {
+    font-size: 1.2rem;
+}
+</style>
+
 <style scoped lang="scss">
+
+/* Stagger Animation Keyframes */
+@keyframes slideInStagger {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.keystroke-record-btn {
+    min-width: 10rem;
+}
 
 .form-button {
     min-width: 1.5rem;
@@ -315,7 +363,8 @@ const formatActionName = (actionId) => {
     .settings-left-container {
         position: relative;
         top: 30%;
-        width: min(30%, 15rem);
+        width: calc(min(30%, 15rem) - 0.6rem);
+        margin-right: 0.6rem;
         height: 60%;
 
         display: flex;
@@ -331,7 +380,9 @@ const formatActionName = (actionId) => {
             padding: 1rem;
             // erase hint box
             outline: none !important;
-            
+            opacity: 0; /* Start hidden */
+            animation: slideInStagger 0.5s ease-out forwards;
+
             &.active {
                 border-left: 3px solid white;
                 background-color: rgba(255, 255, 255, 0.1)
@@ -340,6 +391,15 @@ const formatActionName = (actionId) => {
         
         .back-button-container {
             margin-top: auto;
+        }
+
+        /* Stagger delays for sidebar items */
+        > .settings-section-button:nth-child(1) { animation-delay: 0.1s; }
+        > .settings-section-button:nth-child(2) { animation-delay: 0.2s; }
+        > .settings-section-button:nth-child(3) { animation-delay: 0.3s; }
+        
+        .back-button-container .settings-section-button {
+            animation-delay: 0.4s;
         }
     }
 
@@ -356,6 +416,7 @@ const formatActionName = (actionId) => {
             font-size: 2.4rem;
             font-weight: 400;
             margin: 1.4rem 0;
+            margin-top: 2rem;
             height: 5rem;
             flex-shrink: 0;
         }
@@ -363,7 +424,8 @@ const formatActionName = (actionId) => {
         .settings-content {
             flex: 1;
             overflow-y: auto;
-            padding-bottom: 4rem;
+            overflow-x: hidden;
+            margin-bottom: 2rem;
             display: flex;
             
             /* Scrollbar styling */
@@ -389,47 +451,61 @@ const formatActionName = (actionId) => {
     width: 100%;
     margin: auto 0;
     flex-direction: column;
-}
 
-.setting-item {
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    // background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
-
-    &.danger-zone {
-        border: 1px solid rgba(255, 0, 0, 0.3);
-        background: rgba(255, 0, 0, 0.05);
-    }
-
-    .setting-label {
-        h3 {
-            text-align: left;
-            margin: 0 0 0.5rem 0;
-            font-size: 1.2rem;
-        }
-        p {
-            margin: 0;
-            opacity: 0.7;
-            font-size: 0.9rem;
-        }
-    }
-    
-    .setting-control {
-        min-width: 200px;
+    .setting-item {
+        position: relative;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
         align-items: center;
-        gap: 1rem;
-    }
-    
-    .setting-actions {
-        display: flex;
-        gap: 1rem;
+        padding: 1rem;
+        // background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        opacity: 0; /* Start hidden */
+        animation: slideInStagger 0.5s ease-out forwards;
+
+        &.danger-zone {
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            background: rgba(255, 0, 0, 0.05);
+        }
+
+        .setting-label {
+            h3 {
+                text-align: left;
+                margin: 0 0 0.5rem 0;
+                font-size: 1.2rem;
+            }
+            p {
+                margin: 0;
+                opacity: 0.7;
+                font-size: 0.9rem;
+            }
+        }
+        
+        .setting-control {
+            min-width: 250px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .setting-actions {
+            min-width: 250px;
+            display: flex;
+            gap: 1rem;
+
+            .full-button {
+                width: 100%;
+            }
+        }
+
+        /* Generate delays for up to 10 items */
+        @for $i from 1 through 10 {
+            &:nth-child(#{$i}) {
+                animation-delay: #{$i * 0.1}s;
+            }
+        }
     }
 }
 
@@ -460,6 +536,7 @@ const formatActionName = (actionId) => {
         }
         
         .hotkey-name {
+            margin-left: 1rem;
             font-size: 1rem;
         }
         
@@ -469,5 +546,61 @@ const formatActionName = (actionId) => {
             align-items: center;
         }
     }
+
+    /* Target the collapse items which are the direct children of the collapse component's content slot usually, 
+       but here we target the n-collapse-item component which renders as a div usually */
+    :deep(.n-collapse-item) {
+        opacity: 0;
+        animation: slideInStagger 0.5s ease-out forwards;
+        
+        @for $i from 1 through 15 {
+            &:nth-child(#{$i}) {
+                animation-delay: #{$i * 0.05}s;
+            }
+        }
+    }
+}
+
+.hotkey-container {
+    margin: 16px;
+
+    .hotkey-collapse-item {
+        margin-right: calc(16px + 1.2rem);
+    }
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.settings-section-button {
+    transition: all 0.3s ease;
+}
+
+.settings-section-button:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.05);
+    padding-left: 1.2rem;
+}
+
+.settings-section-button.active {
+    transition: all 0.3s ease;
+    padding-left: 1.5rem;
+}
+
+.setting-item {
+    transition: all 0.3s ease;
+}
+
+.setting-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(5px);
 }
 </style>
