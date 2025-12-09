@@ -9,7 +9,7 @@ export const defaultHotkeyMap = {
         'landing.settings': ['l'],
     },
     'custom-selection': {
-        'custom-selection.toggle-mode': ['ctrl+tab'],
+        'custom-selection.toggle-mode': ['f'],
         'custom-selection.new-level': ['+'],
         'custom-selection.previous-level': ['j', 'up-arrow', 'w'],
         'custom-selection.next-level': ['l', 'down-arrow', 's'],

@@ -93,9 +93,10 @@ Vue component: `CustomSelectionView.vue`
 
 - `custom-selection.toggle-mode`: Toggle between recordings and levels, defaults to `ctrl+tab`.
 - `custom-selection.new-level`: Create new level, defaults to `+`.
-- `custom-selection.previous-level`: Previous level/recording, defaults to `j`.
-- `custom-selection.next-level`: Next level/recording, defaults to `l`.
+- `custom-selection.previous-level`: Previous level/recording, defaults to `j|w|up-arrow`.
+- `custom-selection.next-level`: Next level/recording, defaults to `l|s|down-arrow`.
 - `custom-selection.edit-level`: Edit selected level, defaults to `k|enter`.
 - `custom-selection.delete`: Delete selected level/recording, defaults to `delete`.
 - `custom-selection.play`: Play selected level/recording, defaults to `ctrl+enter`.
+- `custom-selection.back`: Back to album view, defaults to `escape|backspace`.
 - `custom-selection.back`: Go back to landing page, defaults to `escape|backspace`.

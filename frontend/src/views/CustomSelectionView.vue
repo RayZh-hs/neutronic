@@ -296,11 +296,19 @@ const playRecording = (rec) => {
     <div class="wrapper">
         <div class="overlay" :class="{ active: headerHover }"></div>
         <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in"
-            @click="router.push('/album')"></ion-icon>
+            @click="router.push('/album')"
+            data-hotkey-target="custom-selection.back"
+            data-hotkey-label="Back"
+            data-hotkey-element-position="right"
+        ></ion-icon>
         <n-flex align="baseline" class="header-container">
             <h1 class="a-fade-in title-text">
                 My 
-                <span class="view-selector" @mouseenter="headerHover = true" @mouseleave="headerHover = false" @wheel="handleWheel">
+                <span class="view-selector" @mouseenter="headerHover = true" @mouseleave="headerHover = false" @wheel="handleWheel"
+                    data-hotkey-target="custom-selection.toggle-mode"
+                    data-hotkey-label="Toggle Mode"
+                    data-hotkey-element-position="below"
+                >
                     <span class="current-text" :class="{ hidden: headerHover }">
                         {{ currentView.charAt(0).toUpperCase() + currentView.slice(1) }}
                     </span>
@@ -323,6 +331,9 @@ const playRecording = (rec) => {
             <IonButton v-if="currentView !== 'recordings'" name="add-circle-outline" class="a-fade-in create-icon" :class="{'create-icon-hide': headerHover, 'a-fade-in--visible': isCreateIconVisible}" size="2.2rem"
                 @click="createItem"
                 @animationend="isCreateIconVisible = true"
+                data-hotkey-target="custom-selection.new-level"
+                data-hotkey-label="New Level"
+                data-hotkey-element-position="right"
             ></IonButton>
         </n-flex>
         <div class="level-container">
@@ -357,9 +368,15 @@ const playRecording = (rec) => {
         </div>
     </div>
     <ion-icon name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in" @click="prevWindow"
-        :class="{ disabled: sliceWindow.begin <= 0 }"></ion-icon>
+        :class="{ disabled: sliceWindow.begin <= 0 }"
+        data-hotkey-target="custom-selection.previous-level"
+        data-hotkey-label="Previous"
+    ></ion-icon>
     <ion-icon name="chevron-forward-outline" class="control-btn control-btn__forward a-fade-in" @click="nextWindow"
-        :class="{ disabled: sliceWindow.end >= total }"></ion-icon>
+        :class="{ disabled: sliceWindow.end >= total }"
+        data-hotkey-target="custom-selection.next-level"
+        data-hotkey-label="Next"
+    ></ion-icon>
     <n-modal v-model:show="showNamePrompt" preset="dialog" title="What should we call you?" positive-text="Continue"
         negative-text="Cancel" @positive-click="confirmNamePrompt" @negative-click="closeNamePrompt">
         <p>Pick a name so we can sign your custom levels.</p>
