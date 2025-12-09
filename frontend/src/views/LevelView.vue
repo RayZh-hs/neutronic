@@ -1006,6 +1006,8 @@ useHotkeyBindings('level', {
             gotoNextLevel();
         }
     },
+}, {
+    ignore: ['general.view-hotkeys']
 });
 
 </script>

@@ -8,6 +8,7 @@ import LevelView from './views/LevelView.vue'
 import LevelEditorView from './views/LevelEditorView.vue'
 import PlaybackView from './views/PlaybackView.vue'
 import SettingsView from './views/SettingsView.vue'
+import OnlineView from './views/OnlineView.vue'
 
 const routes = [
     { path: '/', component: HomeView },
@@ -19,6 +20,7 @@ const routes = [
     { path: '/custom/play/:uuid', component: LevelView },
     { path: '/playback/:levelId', component: PlaybackView },
     { path: '/settings', component: SettingsView },
+    { path: '/online', component: OnlineView },
 ]
 
 export const router = createRouter({

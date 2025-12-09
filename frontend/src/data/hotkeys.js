@@ -54,7 +54,7 @@ export const defaultHotkeyMap = {
         'level.back': ['backspace', '`'],
         'level.on-finish.restart': ['r'],
         'level.on-finish.level-select': ['backspace', '`'],
-        'level.on-finish.next': ['enter', 'space'],
+        'level.on-finish.next': ['enter'],
     },
     editor: {
         'editor.board-tool': ['b', '1'],
@@ -81,4 +81,7 @@ export const defaultHotkeyMap = {
         'playback.step-backward': ['j'],
         'playback.step-forward': ['k'],
     },
+    online: {
+        'online.back': ['backspace', '`'],
+    }
 };
