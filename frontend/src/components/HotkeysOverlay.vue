@@ -1,34 +1,15 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue';
-import { useHotkeyBindings, getPrimaryBindingLabel, hotkeyUtils } from '@/functions/useHotkeys';
+import { useHotkeyBindings, getPrimaryBindingLabel, getBindingsForAction, hotkeyUtils } from '@/functions/useHotkeys';
 import { useHotkeyOverlayConfig } from '@/data/hotkeyOverlayConfig';
 
 const isActive = ref(false);
 const overlayItems = ref([]);
 const dynamicTargets = ref([]);
 const holdReleaseKey = ref(null);
-const digitBuffer = ref('');
-let digitResetHandle = null;
+const compoundStrokes = ref([]);
 let isMounted = false;
 const overlayConfig = useHotkeyOverlayConfig();
-
-const clearDigitBuffer = () => {
-    digitBuffer.value = '';
-    if (digitResetHandle) {
-        clearTimeout(digitResetHandle);
-        digitResetHandle = null;
-    }
-};
-
-const scheduleDigitReset = () => {
-    if (digitResetHandle) {
-        clearTimeout(digitResetHandle);
-    }
-    digitResetHandle = setTimeout(() => {
-        digitBuffer.value = '';
-        digitResetHandle = null;
-    }, 700);
-};
 
 const MIN_DISPLAY_TOP = 12;
 const DEFAULT_GROUP_SIDE = 'right';
@@ -36,6 +17,67 @@ const STANDALONE_VERTICAL_GAP = 12;
 const STANDALONE_HORIZONTAL_GAP = 16;
 const ESTIMATED_TAG_HEIGHT = 34;
 const ESTIMATED_TAG_WIDTH = 80;
+const MODIFIER_CHORDS = new Set(['ctrl', 'alt', 'shift', 'meta']);
+
+const isNumericToken = (value = '') => /^\d+$/.test(value);
+
+const formatCompoundKeyLabel = (key = '') => {
+    if (!key || !key.includes(';')) {
+        return key;
+    }
+    const segments = key.split(';').map((segment) => segment.trim()).filter(Boolean);
+    if (segments.length === 0) {
+        return '';
+    }
+    let result = segments[0];
+    for (let index = 1; index < segments.length; index += 1) {
+        const previous = segments[index - 1];
+        const current = segments[index];
+        const insertSpace = !(isNumericToken(previous) && isNumericToken(current));
+        result += insertSpace ? ` ${current}` : current;
+    }
+    return result;
+};
+
+const normalizeCompoundParts = (segments = []) => {
+    return segments
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+        .map((segment) => (isNumericToken(segment) ? segment : hotkeyUtils.normalizeChordFromString(segment)))
+        .filter(Boolean);
+};
+
+const buildDynamicKeyData = (index, override) => {
+    const buildFromIndex = () => {
+        const parts = String(index).split('');
+        return {
+            matchKeyParts: parts,
+            rawKey: parts.join(';'),
+        };
+    };
+    if (override) {
+        const overrideParts = normalizeCompoundParts(override.split(';'));
+        if (overrideParts.length > 0) {
+            return {
+                matchKeyParts: overrideParts,
+                rawKey: overrideParts.join(';'),
+            };
+        }
+    }
+    return buildFromIndex();
+};
+
+const arraysEqual = (a = [], b = []) => {
+    if (a.length !== b.length) {
+        return false;
+    }
+    for (let index = 0; index < a.length; index += 1) {
+        if (a[index] !== b[index]) {
+            return false;
+        }
+    }
+    return true;
+};
 
 const clampValue = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -65,6 +107,49 @@ const elementPlacementStrategies = {
         top: item.anchorY,
         align: 'middle',
     }),
+};
+
+const applyCompoundFilters = () => {
+    const prefix = compoundStrokes.value;
+    const hasPrefix = prefix.length > 0;
+    overlayItems.value.forEach((item) => {
+        if (!hasPrefix) {
+            item.isDisabled = false;
+            return;
+        }
+        if (!item.matchKeyParts) {
+            item.isDisabled = true;
+            return;
+        }
+        if (prefix.length > item.matchKeyParts.length) {
+            item.isDisabled = true;
+            return;
+        }
+        const matches = prefix.every((token, index) => item.matchKeyParts[index] === token);
+        item.isDisabled = !matches;
+    });
+};
+
+const clearCompoundStrokes = () => {
+    compoundStrokes.value = [];
+    applyCompoundFilters();
+};
+
+const recordCompoundStroke = (chord) => {
+    compoundStrokes.value.push(chord);
+    applyCompoundFilters();
+};
+
+const applyCompoundSelection = () => {
+    if (compoundStrokes.value.length === 0) {
+        return false;
+    }
+    const match = dynamicTargets.value.find((target) => arraysEqual(target.matchKeyParts, compoundStrokes.value));
+    if (match && match.element) {
+        match.element.click();
+        return true;
+    }
+    return false;
 };
 
 const parseGroupPlacement = (rawValue = '') => {
@@ -362,22 +447,32 @@ const buildOverlayTargets = () => {
         const actionId = node.dataset.hotkeyTarget || '';
         const isDynamic = Object.prototype.hasOwnProperty.call(node.dataset, 'hotkeyDynamic');
         const groupId = node.dataset.hotkeyGroup || null;
-        const groupSide = (node.dataset.hotkeyGroupSide || 'bottom right').toLowerCase();
+        const groupSide = (node.dataset.hotkeyGroupSide || '').toLowerCase();
         const elementPlacement = (node.dataset.hotkeyElementPosition || 'below').toLowerCase();
         const labelPlacement = (node.dataset.hotkeyLabelPosition || 'inline').toLowerCase();
         const keyOverride = node.dataset.hotkeyHint || '';
         const baseLabel = node.dataset.hotkeyLabel || '';
         let keyLabel = keyOverride;
-        if (!keyLabel && !isDynamic) {
-            keyLabel = getPrimaryBindingLabel(actionId) || '';
-        }
-        if (!keyLabel && !isDynamic) {
-            keyLabel = 'Unbound';
-        }
+        let matchKeyParts = null;
         if (isDynamic) {
-            keyLabel = String(dynamicIndex);
+            const dynamicData = buildDynamicKeyData(dynamicIndex, keyOverride);
             dynamicIndex += 1;
+            keyLabel = dynamicData.rawKey;
+            matchKeyParts = dynamicData.matchKeyParts;
         }
+        else {
+            const bindingSequences = getBindingsForAction(actionId);
+            if (!keyLabel) {
+                keyLabel = getPrimaryBindingLabel(actionId) || '';
+            }
+            if (!keyLabel) {
+                keyLabel = 'Unbound';
+            }
+            if (!matchKeyParts && bindingSequences.length > 0) {
+                matchKeyParts = bindingSequences[0] ? [...bindingSequences[0]] : null;
+            }
+        }
+        const displayKey = formatCompoundKeyLabel(keyLabel);
         const anchorX = rect.left + rect.width / 2;
         const anchorY = rect.top + rect.height / 2;
         const top = Math.max(rect.top - 28, 8);
@@ -407,11 +502,15 @@ const buildOverlayTargets = () => {
             groupSide,
             elementPlacement,
             labelPlacement,
+            matchKeyParts,
+            isDisabled: false,
+            inlineReverse: false,
+            displayKey,
         };
         items.push(entry);
-        if (isDynamic) {
+        if (matchKeyParts && matchKeyParts.length > 0) {
             dynamics.push({
-                key: keyLabel,
+                matchKeyParts,
                 element: node,
             });
         }
@@ -420,6 +519,7 @@ const buildOverlayTargets = () => {
     applyStandalonePlacements(items, viewportWidth);
     overlayItems.value = items;
     dynamicTargets.value = dynamics;
+    applyCompoundFilters();
 };
 
 const tokenizeChord = (chord = '') => {
@@ -458,16 +558,17 @@ const deriveHoldReleaseKey = (binding = []) => {
 
 const showOverlay = (binding) => {
     holdReleaseKey.value = deriveHoldReleaseKey(binding);
+    clearCompoundStrokes();
     buildOverlayTargets();
     isActive.value = true;
 };
 
 const hideOverlay = () => {
+    clearCompoundStrokes();
     isActive.value = false;
     holdReleaseKey.value = null;
     overlayItems.value = [];
     dynamicTargets.value = [];
-    clearDigitBuffer();
 };
 
 useHotkeyBindings('general', {
@@ -486,67 +587,56 @@ const handleKeyup = (event) => {
         return;
     }
     if (normalized === holdReleaseKey.value) {
+        applyCompoundSelection();
         hideOverlay();
     }
 };
 
-const handleDigitSelection = (digit) => {
-    if (dynamicTargets.value.length === 0) {
-        return;
-    }
-    const nextBuffer = digitBuffer.value + digit;
-    const exactMatch = dynamicTargets.value.find((target) => target.key === nextBuffer);
-    if (exactMatch && exactMatch.element) {
-        digitBuffer.value = '';
-        scheduleDigitReset();
-        exactMatch.element.click();
-        return;
-    }
-    const hasPartial = dynamicTargets.value.some((target) => target.key.startsWith(nextBuffer));
-    if (hasPartial) {
-        digitBuffer.value = nextBuffer;
-        scheduleDigitReset();
-        return;
-    }
-    const restartMatch = dynamicTargets.value.find((target) => target.key.startsWith(digit));
-    if (restartMatch) {
-        digitBuffer.value = digit;
-        scheduleDigitReset();
-    }
-    else {
-        clearDigitBuffer();
-    }
-};
-
-const digitKeydownHandler = (event) => {
-    if (!isActive.value || dynamicTargets.value.length === 0) {
+const compoundKeydownHandler = (event) => {
+    if (!isActive.value || !holdReleaseKey.value) {
         return;
     }
     if (event.defaultPrevented) {
         return;
     }
-    const isDigit = event.key.length === 1 && /[0-9]/.test(event.key);
-    if (!isDigit) {
+    const chord = hotkeyUtils.normalizeChordFromEvent(event);
+    if (!chord) {
+        return;
+    }
+    if (chord === holdReleaseKey.value) {
+        return;
+    }
+    if (MODIFIER_CHORDS.has(chord)) {
+        return;
+    }
+    if (chord === 'escape') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        clearCompoundStrokes();
+        return;
+    }
+    if (event.repeat) {
+        event.preventDefault();
         return;
     }
     event.preventDefault();
     event.stopImmediatePropagation();
-    handleDigitSelection(event.key);
+    recordCompoundStroke(chord);
 };
 
 onMounted(() => {
     isMounted = true;
     window.addEventListener('keyup', handleKeyup, { capture: false });
-    window.addEventListener('keydown', digitKeydownHandler, { capture: true });
+    window.addEventListener('keydown', compoundKeydownHandler, { capture: true });
     window.addEventListener('blur', hideOverlay);
 });
 
 onBeforeUnmount(() => {
     isMounted = false;
     window.removeEventListener('keyup', handleKeyup, { capture: false });
-    window.removeEventListener('keydown', digitKeydownHandler, { capture: true });
+    window.removeEventListener('keydown', compoundKeydownHandler, { capture: true });
     window.removeEventListener('blur', hideOverlay);
-    clearDigitBuffer();
+    clearCompoundStrokes();
 });
 </script>
 
@@ -557,6 +647,7 @@ onBeforeUnmount(() => {
             <div
                 v-if="item.connectorSegments && item.connectorSegments.length"
                 class="hotkey-overlay__connector"
+                :class="{ 'hotkey-overlay__connector--disabled': item.isDisabled }"
             >
                 <div
                     v-for="(segment, index) in item.connectorSegments"
@@ -578,7 +669,10 @@ onBeforeUnmount(() => {
             v-for="item in overlayItems"
             :key="item.id"
             class="hotkey-overlay__tag"
-            :class="[`hotkey-overlay__tag--${item.align || 'center'}`]"
+            :class="[
+                `hotkey-overlay__tag--${item.align || 'center'}`,
+                { 'hotkey-overlay__tag--disabled': item.isDisabled }
+            ]"
             :style="{
                 left: `${item.displayLeft}px`,
                 top: `${item.displayTop}px`
@@ -592,7 +686,7 @@ onBeforeUnmount(() => {
                 ]"
             >
                 <div class="hotkey-overlay__tag-key">
-                    {{ item.key }}
+                    {{ item.displayKey }}
                 </div>
                 <div class="hotkey-overlay__tag-label" v-if="item.label">
                     {{ item.label }}
@@ -630,6 +724,10 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: flex-start;
     pointer-events: none;
+}
+
+.hotkey-overlay__tag--disabled {
+    opacity: 0.2;
 }
 
 .hotkey-overlay__tag--center {
@@ -711,5 +809,9 @@ onBeforeUnmount(() => {
 
 .hotkey-overlay__connector-segment--horizontal {
     height: 2px;
+}
+
+.hotkey-overlay__connector--disabled {
+    opacity: 0.25;
 }
 </style>

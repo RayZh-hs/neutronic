@@ -447,5 +447,6 @@ export const resetHotkeyBindings = (actionId) => {
 
 export const hotkeyUtils = {
     normalizeChordFromEvent,
+    normalizeChordFromString,
     normalizeKeyToken: normalizeToken,
 };

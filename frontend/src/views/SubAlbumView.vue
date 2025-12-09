@@ -143,6 +143,8 @@ useHotkeyBindings('sub-album', {
                 :level="num + 1 + windowRange.begin"
                 :status="getStatus(num + 1 + windowRange.begin)"
                 :hotkey="num < 9 ? (num + 1).toString() : (num === 9 ? '0' : '')"
+                :data-hotkey-target="num < 10 ? `sub-album.level-${num + 1}` : undefined"
+                data-hotkey-element-position="center"
                 @click="enterLevel(num + 1 + windowRange.begin)"
                 ></simple-level-card>
         </div>
