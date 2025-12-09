@@ -117,6 +117,7 @@ onMounted(() => {
         data-hotkey-label="Enter"
         data-hotkey-element-position="below"
         data-hotkey-label-position="right"
+        @click="jumpToReferent"
     />
     <!-- <p v-if="isAlbumLoaded">{{ album }}</p> -->
     <div class="side-container" v-if="isAlbumLoaded">
