@@ -95,25 +95,28 @@ watch([currentView, pagedItems], () => {
 });
 
 useHotkeyBindings('custom-selection', {
-    'custom-selection.up': ({ event }) => {
+    'custom-selection.toggle-mode': ({ event }) => {
+        event.preventDefault();
+        const idx = options.indexOf(currentView.value);
+        const nextIdx = (idx + 1) % options.length;
+        currentView.value = options[nextIdx];
+    },
+    'custom-selection.new-level': ({ event }) => {
+        event.preventDefault();
+        createItem();
+    },
+    'custom-selection.previous-level': ({ event }) => {
         event.preventDefault();
         if (focusedIndex.value > 0) {
             focusedIndex.value--;
         } else if (sliceWindow.value.begin > 0) {
             prevWindow();
-            // Wait for next tick or assume pagedItems will update?
-            // pagedItems is computed, so it updates when sliceWindow updates.
-            // But we might need to wait for it.
-            // However, we can just set it to customSelectionWindowSize - 1, 
-            // and if pagedItems is smaller, it might be out of bounds.
-            // But prevWindow implies we are going back to a full page usually.
-            // Let's be safe.
             setTimeout(() => {
                 focusedIndex.value = pagedItems.value.length - 1;
             }, 0);
         }
     },
-    'custom-selection.down': ({ event }) => {
+    'custom-selection.next-level': ({ event }) => {
         event.preventDefault();
         if (focusedIndex.value < pagedItems.value.length - 1) {
             focusedIndex.value++;
@@ -126,7 +129,15 @@ useHotkeyBindings('custom-selection', {
             focusedIndex.value = 0;
         }
     },
-    'custom-selection.enter': ({ event }) => {
+    'custom-selection.edit-level': ({ event }) => {
+        event.preventDefault();
+        if (focusedIndex.value === -1) return;
+        const item = pagedItems.value[focusedIndex.value];
+        if (currentView.value === 'levels') {
+            editLevel(item.id);
+        }
+    },
+    'custom-selection.play': ({ event }) => {
         event.preventDefault();
         if (focusedIndex.value === -1) return;
         const item = pagedItems.value[focusedIndex.value];

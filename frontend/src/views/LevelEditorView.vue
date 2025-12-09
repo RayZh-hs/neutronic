@@ -3,7 +3,7 @@
 import { onMounted, onBeforeUnmount, ref, computed, watch } from "vue";
 import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog, get, assert } from "@vueuse/core";
 import { useRouter } from "vue-router";
-import { useDialog } from "naive-ui";
+import { useDialog, useMessage } from "naive-ui";
 import { overrideHotkeyOverlayConfig } from "@/data/hotkeyOverlayConfig";
 
 //: Custom Components
@@ -17,8 +17,7 @@ import { useAccountStore, getCustomLevelById, upsertCustomLevel } from "@/functi
 import { useHotkeyBindings } from "@/functions/useHotkeys";
 
 const router = useRouter();
-const message = useMagicKeys();
-const keys = useMagicKeys();
+const message = useMessage();
 const dialog = useDialog();
 
 /**
@@ -266,7 +265,6 @@ const { isOutside: mouseOutsideToolbar } = useMouseInElement(refToolbar);
 // - active portal coloring
 
 import { levelPortalCycleColor, levelPortalCycleColorCount, levelMapPortalBackgroundAlpha } from "../data/constants";
-import { useMessage } from "naive-ui";
 
 const {
     boardTiles,
@@ -836,7 +834,11 @@ useHotkeyBindings('editor', {
     },
     'editor.cancel-selection': ({ event }) => {
         event.preventDefault();
-        onSelectCancel();
+        if (globalModeContext.value === 'select') {
+            onSelectCancel();
+        } else {
+            router.push('/custom');
+        }
     },
     'editor.copy': ({ event }) => {
         event.preventDefault();
@@ -1025,7 +1027,7 @@ onBeforeUnmount(() => {
         <ion-button name="play-outline" class="a-fade-in a-delay-7" size="1.6rem" @click="playLevel"
             data-hotkey-target="editor.play"
             data-hotkey-label="Play"
-            data-hotkey-group="top-left"
+            data-hotkey-group="play-button"
             data-hotkey-group-side="bottom right"
             data-hotkey-label-position="inline"
         />

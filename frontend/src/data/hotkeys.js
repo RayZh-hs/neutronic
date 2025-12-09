@@ -9,11 +9,14 @@ export const defaultHotkeyMap = {
         'landing.settings': ['l'],
     },
     'custom-selection': {
-        'custom-selection.up': ['w', 'up-arrow'],
-        'custom-selection.down': ['s', 'down-arrow'],
-        'custom-selection.enter': ['k', 'enter'],
+        'custom-selection.toggle-mode': ['ctrl+tab'],
+        'custom-selection.new-level': ['+'],
+        'custom-selection.previous-level': ['j', 'up-arrow', 'w'],
+        'custom-selection.next-level': ['l', 'down-arrow', 's'],
+        'custom-selection.edit-level': ['k', 'enter'],
+        'custom-selection.delete': ['delete'],
+        'custom-selection.play': ['ctrl+enter'],
         'custom-selection.back': ['escape', 'backspace'],
-        'custom-selection.delete': ['delete', 'x'],
     },
     album: {
         'album.previous': ['j', 'a', 'left-arrow'],

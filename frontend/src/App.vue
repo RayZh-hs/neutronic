@@ -28,6 +28,10 @@ const showUserButton = computed(() => {
   ].includes(route.path);
 });
 
+const showGeneralHotkeys = computed(() => {
+  return !route.path.includes('/custom/edit');
+});
+
 </script>
 
 <template>
@@ -51,6 +55,7 @@ const showUserButton = computed(() => {
               <IonButton name="logo-github" size="2rem" aria-label="github" @click="openGitHub"
                 data-hotkey-target="general.github"
                 data-hotkey-label="GitHub"
+                :data-hotkey-show="showGeneralHotkeys ? 'true' : 'false'"
                 data-hotkey-group="general"
                 data-hotkey-group-side="bottom left"
                 data-hotkey-label-position="inline"
