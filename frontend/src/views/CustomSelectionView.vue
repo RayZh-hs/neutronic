@@ -129,12 +129,28 @@ useHotkeyBindings('custom-selection', {
             focusedIndex.value = 0;
         }
     },
+    'custom-selection.previous-page': ({ event }) => {
+        event.preventDefault();
+        prevWindow();
+        focusedIndex.value = -1;
+    },
+    'custom-selection.next-page': ({ event }) => {
+        event.preventDefault();
+        nextWindow();
+        focusedIndex.value = -1;
+    },
+    'custom-selection.deselect': ({ event }) => {
+        event.preventDefault();
+        focusedIndex.value = -1;
+    },
     'custom-selection.edit-level': ({ event }) => {
         event.preventDefault();
         if (focusedIndex.value === -1) return;
         const item = pagedItems.value[focusedIndex.value];
         if (currentView.value === 'levels') {
             editLevel(item.id);
+        } else {
+            playRecording(item);
         }
     },
     'custom-selection.play': ({ event }) => {

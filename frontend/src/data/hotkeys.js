@@ -21,8 +21,11 @@ export const defaultHotkeyMap = {
     'custom-selection': {
         'custom-selection.toggle-mode': ['f'],
         'custom-selection.new-level': ['+'],
-        'custom-selection.previous-level': ['j', 'up-arrow', 'w'],
-        'custom-selection.next-level': ['l', 'down-arrow', 's'],
+        'custom-selection.previous-level': ['j', 'w', 'up-arrow'],
+        'custom-selection.next-level': ['l', 's', 'down-arrow'],
+        'custom-selection.previous-page': ['shift+j', 'a', 'left-arrow'],
+        'custom-selection.next-page': ['shift+l', 'd', 'right-arrow'],
+        'custom-selection.deselect': ['escape'],
         'custom-selection.edit-level': ['k', 'enter'],
         'custom-selection.delete': ['delete'],
         'custom-selection.play': ['ctrl+enter'],
