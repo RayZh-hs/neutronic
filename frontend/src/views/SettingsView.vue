@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSettings } from '@/functions/useSettings';
 import { 
@@ -16,7 +16,8 @@ import {
     addHotkeyBinding,
     resetHotkeyBindings, 
     hotkeyUtils,
-    formatBindingSequence
+    formatBindingSequence,
+    useHotkeyBindings
 } from '@/functions/useHotkeys';
 import { useMessage, useDialog } from 'naive-ui';
 
@@ -119,31 +120,145 @@ const startRecording = (actionId, mode = 'replace') => {
     message.info('Press a key combination...');
 };
 
-const handleKeyDown = (e) => {
-    if (!recordingState.value.actionId) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
+// --- Keyboard Navigation ---
+const focusedIndex = ref(-1);
+const expandedCategories = ref([]);
 
-    // Allow escape to cancel
-    if (e.key === 'Escape') {
+watch(activeTab, () => {
+    focusedIndex.value = -1;
+});
+
+const generalActions = [
+    {
+        id: 'toggle-animations',
+        action: () => { settings.disableAnimations = !settings.disableAnimations; }
+    }
+];
+
+const accountActions = [
+    {
+        id: 'focus-username',
+        action: () => {
+            const input = document.querySelector('.setting-control input');
+            if (input) input.focus();
+        }
+    },
+    {
+        id: 'export-data',
+        action: handleExport
+    },
+    {
+        id: 'import-data',
+        action: triggerImport
+    },
+    {
+        id: 'delete-account',
+        action: handleDeleteAccount
+    }
+];
+
+const hotkeyActions = computed(() => {
+    const actions = [];
+    for (const [category, catActions] of Object.entries(defaultHotkeyMap)) {
+        actions.push({
+            id: `cat-${category}`,
+            action: () => {
+                const idx = expandedCategories.value.indexOf(category);
+                if (idx === -1) expandedCategories.value.push(category);
+                else expandedCategories.value.splice(idx, 1);
+            }
+        });
+        
+        if (expandedCategories.value.includes(category)) {
+            for (const [actionId, _] of Object.entries(catActions)) {
+                actions.push({
+                    id: `action-${actionId}`,
+                    action: () => startRecording(actionId, 'replace')
+                });
+            }
+        }
+    }
+    return actions;
+});
+
+const currentActions = computed(() => {
+    if (activeTab.value === 'general') return generalActions;
+    if (activeTab.value === 'account') return accountActions;
+    if (activeTab.value === 'hotkeys') return hotkeyActions.value;
+    return [];
+});
+
+const isFocused = (id) => {
+    const action = currentActions.value[focusedIndex.value];
+    return action && action.id === id;
+};
+
+const handleKeyDown = (e) => {
+    if (recordingState.value.actionId) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Allow escape to cancel
+        if (e.key === 'Escape') {
+            recordingState.value = { actionId: null, mode: null };
+            return;
+        }
+
+        const chord = hotkeyUtils.normalizeChordFromEvent(e);
+        // Don't bind just modifier keys
+        if (['ctrl', 'shift', 'alt', 'meta'].includes(chord)) return;
+
+        if (recordingState.value.mode === 'add') {
+            addHotkeyBinding(recordingState.value.actionId, chord);
+            message.success('Hotkey added');
+        } else {
+            setHotkeyBindings(recordingState.value.actionId, chord);
+            message.success('Hotkey updated');
+        }
         recordingState.value = { actionId: null, mode: null };
         return;
     }
-
-    const chord = hotkeyUtils.normalizeChordFromEvent(e);
-    // Don't bind just modifier keys
-    if (['ctrl', 'shift', 'alt', 'meta'].includes(chord)) return;
-
-    if (recordingState.value.mode === 'add') {
-        addHotkeyBinding(recordingState.value.actionId, chord);
-        message.success('Hotkey added');
-    } else {
-        setHotkeyBindings(recordingState.value.actionId, chord);
-        message.success('Hotkey updated');
-    }
-    recordingState.value = { actionId: null, mode: null };
 };
+
+useHotkeyBindings('settings', {
+    'settings.tab-1': ({ event }) => {
+        event.preventDefault();
+        activeTab.value = 'general';
+    },
+    'settings.tab-2': ({ event }) => {
+        event.preventDefault();
+        activeTab.value = 'account';
+    },
+    'settings.tab-3': ({ event }) => {
+        event.preventDefault();
+        activeTab.value = 'hotkeys';
+    },
+    'settings.next': ({ event }) => {
+        event.preventDefault();
+        if (activeTab.value === 'hotkeys') return;
+        if (currentActions.value.length === 0) return;
+        if (focusedIndex.value === -1) focusedIndex.value = 0;
+        else focusedIndex.value = (focusedIndex.value + 1) % currentActions.value.length;
+    },
+    'settings.previous': ({ event }) => {
+        event.preventDefault();
+        if (activeTab.value === 'hotkeys') return;
+        if (currentActions.value.length === 0) return;
+        if (focusedIndex.value === -1) focusedIndex.value = currentActions.value.length - 1;
+        else if (focusedIndex.value <= 0) focusedIndex.value = currentActions.value.length - 1;
+        else focusedIndex.value--;
+    },
+    'settings.select': ({ event }) => {
+        event.preventDefault();
+        if (focusedIndex.value >= 0 && focusedIndex.value < currentActions.value.length) {
+            currentActions.value[focusedIndex.value].action();
+        }
+    },
+    'settings.back': ({ event }) => {
+        event.preventDefault();
+        router.back();
+    }
+});
 
 onMounted(() => {
     window.addEventListener('keydown', handleKeyDown, true);
@@ -174,7 +289,11 @@ const formatActionName = (actionId) => {
     ></ion-icon>
     <div class="settings-view-container a-fade-in">
         <div class="settings-left-container">
-            <n-button text class="settings-section-button" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'">
+            <n-button text class="settings-section-button" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"
+                data-hotkey-target="settings.tab-1"
+                data-hotkey-label="General"
+                data-hotkey-element-position="center"
+            >
                 <template #icon>
                     <ion-icon name="settings-outline" class="form-button"></ion-icon>
                 </template>
@@ -182,7 +301,11 @@ const formatActionName = (actionId) => {
                     General
                 </template>
             </n-button>
-            <n-button text class="settings-section-button" :class="{ active: activeTab === 'account' }" @click="activeTab = 'account'">
+            <n-button text class="settings-section-button" :class="{ active: activeTab === 'account' }" @click="activeTab = 'account'"
+                data-hotkey-target="settings.tab-2"
+                data-hotkey-label="Account"
+                data-hotkey-element-position="center"
+            >
                 <template #icon>
                     <ion-icon name="person-outline" class="form-button"></ion-icon>
                 </template>
@@ -190,7 +313,11 @@ const formatActionName = (actionId) => {
                     Account
                 </template>
             </n-button>
-            <n-button text class="settings-section-button" :class="{ active: activeTab === 'hotkeys' }" @click="activeTab = 'hotkeys'">
+            <n-button text class="settings-section-button" :class="{ active: activeTab === 'hotkeys' }" @click="activeTab = 'hotkeys'"
+                data-hotkey-target="settings.tab-3"
+                data-hotkey-label="Hotkeys"
+                data-hotkey-element-position="center"
+            >
                 <template #icon>
                     <ion-icon name="keypad-outline" class="form-button"></ion-icon>
                 </template>
@@ -207,12 +334,32 @@ const formatActionName = (actionId) => {
                 </span>
                 Settings
             </h2>
+            <div class="annotation-tag-container" v-if="activeTab !== 'hotkeys'">
+                <div
+                    data-hotkey-target="settings.previous"
+                    data-hotkey-label="Previous"
+                    data-hotkey-element-position="center"
+                    data-hotkey-label-position="below"
+                ></div>
+                <div
+                    data-hotkey-target="settings.select"
+                    data-hotkey-label="Select"
+                    data-hotkey-element-position="center"
+                    data-hotkey-label-position="below"
+                ></div>
+                <div
+                    data-hotkey-target="settings.next"
+                    data-hotkey-label="Next"
+                    data-hotkey-element-position="center"
+                    data-hotkey-label-position="below"
+                ></div>
+            </div>
 
             <div class="settings-content">
                 <Transition name="fade" mode="out-in">
                     <!-- General Settings -->
                     <div v-if="activeTab === 'general'" class="settings-group" key="general">
-                        <div class="setting-item">
+                        <div class="setting-item" :class="{ 'keyboard-focused': isFocused('toggle-animations') }">
                             <div class="setting-label">
                                 <h3>Disable Background Animations</h3>
                                 <p>Turn off the moving background for better performance.</p>
@@ -247,7 +394,7 @@ const formatActionName = (actionId) => {
 
                     <!-- Account Settings -->
                     <div v-else-if="activeTab === 'account'" class="settings-group" key="account">
-                        <div class="setting-item">
+                        <div class="setting-item" :class="{ 'keyboard-focused': isFocused('focus-username') }">
                             <div class="setting-label">
                                 <h3>Display Name</h3>
                                 <p>How you appear on leaderboards and shared levels.</p>
@@ -264,12 +411,12 @@ const formatActionName = (actionId) => {
                             </div>
                             <div class="setting-actions">
                                 <input type="file" ref="fileInput" style="display: none" accept=".json" @change="handleImport" />
-                                <n-button @click="handleExport">Export Data</n-button>
-                                <n-button @click="triggerImport">Import Data</n-button>
+                                <n-button @click="handleExport" :class="{ 'keyboard-focused': isFocused('export-data') }">Export Data</n-button>
+                                <n-button @click="triggerImport" :class="{ 'keyboard-focused': isFocused('import-data') }">Import Data</n-button>
                             </div>
                         </div>
 
-                        <div class="setting-item danger-zone">
+                        <div class="setting-item danger-zone" :class="{ 'keyboard-focused': isFocused('delete-account') }">
                             <div class="setting-label">
                                 <h3>Danger Zone</h3>
                                 <p>Irreversible actions.</p>
@@ -288,9 +435,9 @@ const formatActionName = (actionId) => {
                     <!-- Hotkey Settings -->
                     <div v-else-if="activeTab === 'hotkeys'" class="settings-group hotkeys-list" key="hotkeys">
                         <n-collapse class="hotkey-container">
-                            <n-collapse-item v-for="(actions, category) in defaultHotkeyMap" :key="category" :title="category.charAt(0).toUpperCase() + category.slice(1)" :name="category" class="hotkey-collapse-item">
+                            <n-collapse-item v-for="(actions, category) in defaultHotkeyMap" :key="category" :title="category.charAt(0).toUpperCase() + category.slice(1)" :name="category" class="hotkey-collapse-item" :class="{ 'keyboard-focused': isFocused(`cat-${category}`) }">
                                 <div class="hotkey-grid">
-                                    <div v-for="([actionId, defaultBindings]) in Object.entries(actions)" :key="actionId" class="hotkey-row">
+                                    <div v-for="([actionId, defaultBindings]) in Object.entries(actions)" :key="actionId" class="hotkey-row" :class="{ 'keyboard-focused': isFocused(`action-${actionId}`) }">
                                         <span class="hotkey-name"> •&nbsp&nbsp{{ formatActionName(actionId) }}</span>
                                         <div class="hotkey-controls">
                                             <n-button 
@@ -444,6 +591,18 @@ const formatActionName = (actionId) => {
                 background: rgba(255, 255, 255, 0.3);
             }
         }
+    }
+}
+
+.annotation-tag-container {
+    margin: 0 auto;
+    width: 50%;
+    height: 2px;    // for non-pruning
+    display: flex;
+
+    div {
+        translate: 0 1rem;
+        margin: 0 auto;
     }
 }
 
@@ -603,5 +762,10 @@ const formatActionName = (actionId) => {
 .setting-item:hover {
     background: rgba(255, 255, 255, 0.08);
     transform: translateX(5px);
+}
+
+.keyboard-focused {
+    outline: 2px solid var(--primary-color);
+    background-color: rgba(255, 255, 255, 0.1) !important;
 }
 </style>

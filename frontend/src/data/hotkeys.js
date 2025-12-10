@@ -8,6 +8,15 @@ export const defaultHotkeyMap = {
         'landing.play': ['k'],
         'landing.settings': ['l'],
     },
+    settings: {
+        'settings.tab-1': ['1'],
+        'settings.tab-2': ['2'],
+        'settings.tab-3': ['3'],
+        'settings.previous': ['j', 'up-arrow'],
+        'settings.next': ['l', 'down-arrow'],
+        'settings.select': ['k', 'enter'],
+        'settings.back': ['backspace', '`'],
+    },
     'custom-selection': {
         'custom-selection.toggle-mode': ['f'],
         'custom-selection.new-level': ['+'],
