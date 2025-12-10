@@ -12,6 +12,7 @@
 [+] Settings system has not been implemented
 [ ] Tutorial levels have not been implemented
     [ ] Level 1: Basic Movement (mouse click, WASD/arrow keys)
-    [ ] Level 2: Keyboard Controls (space bar to show all hotkeys) 
-[ ] Publishing custom levels has not been implemented, including editing metadata
-[ ] Online section has not been implemented
+    [ ] Level 2: Keyboard Controls (space bar to show all hotkeys)
+[ ] More levels need to be injected into the album
+[ ] Publishing custom levels has not been implemented, including editing metadata (not planned for public beta)
+[ ] Online section has not been implemented (not planned for public beta)

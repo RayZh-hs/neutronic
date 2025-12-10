@@ -275,7 +275,9 @@ const updateMapAfterCollision = (r, c) => {
     gameState.value.containers = gameState.value.containers.filter(item => item.row !== r || item.column !== c);
     gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
 
-    selected.value = null;
+    if (selected.value && selected.value.row === r && selected.value.column === c) {
+        selected.value = null;
+    }
     updateHasWon();
 };
 
