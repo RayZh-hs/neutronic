@@ -12,10 +12,17 @@ const openGitHub = () => {
   window.open("https://github.com/RayZh-hs/neutronic", "_blank");
 };
 
+const toggleAccountCard = ref(false);
+const hoverAccountButton = ref(false);
+
 useHotkeyBindings('general', {
     'general.github': ({ event }) => {
         event.preventDefault();
         openGitHub();
+    },
+    'general.account-toggle': ({ event }) => {
+        event.preventDefault();
+        toggleAccountCard.value = !toggleAccountCard.value;
     },
 });
 
@@ -43,10 +50,17 @@ const showGeneralHotkeys = computed(() => {
           <!-- main starts here -->
           <main>
             <div class="header">
-              <n-popover trigger="hover" raw placement="bottom-end">
+              <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccountButton">
                 <template #trigger>
                   <div class="header__user-button-wrapper">
                     <IonButton name="person-circle-outline" size="2rem" class="header__user-button"
+                      @mouseenter="hoverAccountButton=true" @mouseleave="hoverAccountButton=false"
+                      data-hotkey-target="general.account-toggle"
+                      data-hotkey-label="Account"
+                      :data-hotkey-show="showGeneralHotkeys ? 'true' : 'false'"
+                      data-hotkey-group="general"
+                      data-hotkey-group-side="bottom left"
+                      data-hotkey-label-position="inline"
                       v-if="showUserButton" />
                   </div>
                 </template>

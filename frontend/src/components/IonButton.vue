@@ -1,7 +1,4 @@
 <script setup>
-
-import { ref } from 'vue';
-
 const props = defineProps({
     name: {
         type: String,
@@ -18,6 +15,11 @@ const props = defineProps({
     disabled: {
         type: Boolean,
         default: false
+    },
+    enforceState: {
+        type: String,
+        default: 'none',
+        validator: (value) => ['none', 'on', 'off'].includes(value)
     }
 });
 

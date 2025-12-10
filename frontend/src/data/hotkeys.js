@@ -51,7 +51,7 @@ export const defaultHotkeyMap = {
         'sub-album.level-7': ['7'],
         'sub-album.level-8': ['8'],
         'sub-album.level-9': ['9'],
-        'sub-album.level-10': ['1 0', '0'],
+        'sub-album.level-10': ['1 0'],
         'sub-album.level-11': ['1 1'],
         'sub-album.level-12': ['1 2'],
         'sub-album.level-13': ['1 3'],

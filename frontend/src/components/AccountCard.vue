@@ -143,7 +143,7 @@ const handleResetAccount = () => {
 
 <style lang="scss" scoped>
 .account-card {
-    width: calc($account-card-width + 6rem);
+    width: calc($account-card-width + 7.5rem);
     background-color: $account-card-background-color;
     padding: 1rem;
     display: flex;
