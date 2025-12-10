@@ -18,6 +18,7 @@ import { randomFloatFromInterval } from '@/functions/mathUtils';
 import { useRecordingsStore } from '@/functions/useRecordings';
 import { getCustomLevelById } from '@/functions/useAccount';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
+import { overrideHotkeyOverlayConfig } from '@/data/hotkeyOverlayConfig';
 
 const recordingsStore = useRecordingsStore();
 const baseLevelDefinition = ref(null);
@@ -619,6 +620,16 @@ const handleGoBack = () => {
     router.go(-1);
 }
 
+//: Hotkey Bindings
+
+overrideHotkeyOverlayConfig({
+    groups: {
+        'playback-controls': {
+            rowOffset: 50,
+        },
+    },
+})
+
 useHotkeyBindings('playback', {
     'playback.play-pause': ({ event }) => {
         event.preventDefault();
@@ -640,12 +651,25 @@ useHotkeyBindings('playback', {
         event.preventDefault();
         stepForward();
     },
+    'playback.reset': ({ event }) => {
+        event.preventDefault();
+        router.go(0);
+    },
+    'playback.back': ({ event }) => {
+        event.preventDefault();
+        handleGoBack();
+    },
 });
 
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="handleGoBack"></ion-icon>
+    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="handleGoBack"
+        data-hotkey-target="playback.back"
+        data-hotkey-label="Back"
+        data-hotkey-element-position="right"
+        data-hotkey-label-position="inline"
+    ></ion-icon>
     <div class="viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
         @mouseleave="onPanEndWrapper" ref="refViewPort">
         <div class="steps-complex a-fade-in" v-show="!isStartingAnimation">
@@ -655,7 +679,10 @@ useHotkeyBindings('playback', {
                 <span class="steps-complex__steps-aim" v-if="stepsGoal">{{ stepsGoal }}</span>
                 <div class="u-rel u-gap-14"></div>
                 <ion-button name="refresh-outline" size="1.6rem" class="reset-btn"
-                    @click="router.go(0)"></ion-button>
+                    @click="router.go(0)"
+                    data-hotkey-target="playback.reset"
+                    data-hotkey-label="Reset"
+                ></ion-button>
             </div>
         </div>
         <h1 class="viewport__level-name a-fade-in" v-show="isStartingAnimation">{{ name }}</h1>

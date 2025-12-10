@@ -65,9 +65,9 @@ export const defaultHotkeyMap = {
         'level.toggle-record': ['q'],
         'level.play-recording': ['shift+q'],
         'level.back': ['backspace', '`'],
-        'level.on-finish.restart': ['r'],
-        'level.on-finish.level-select': ['backspace', '`'],
-        'level.on-finish.next': ['enter'],
+        'level.on-finish.restart': ['j'],
+        'level.on-finish.level-select': ['k', 'backspace', '`'],
+        'level.on-finish.next': ['l'],
     },
     editor: {
         'editor.board-tool': ['b', '1'],
@@ -93,6 +93,8 @@ export const defaultHotkeyMap = {
         'playback.goto-end': ['l'],
         'playback.step-backward': ['j'],
         'playback.step-forward': ['k'],
+        'playback.reset': ['r'],
+        'playback.back': ['backspace', '`'],
     },
     online: {
         'online.back': ['backspace', '`'],

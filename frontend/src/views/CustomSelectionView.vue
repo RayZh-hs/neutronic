@@ -353,6 +353,26 @@ const playRecording = (rec) => {
             ></IonButton>
         </n-flex>
         <div class="level-container">
+            <div class="level-annotation-container">
+                <div
+                    class="hotkey-annotation"
+                    data-hotkey-target="custom-selection.previous-level"
+                    data-hotkey-label="Previous"
+                    data-hotkey-label-position="below"
+                ></div>
+                <div
+                    class="hotkey-annotation"
+                    data-hotkey-target="custom-selection.play"
+                    :data-hotkey-label="'Enter ' + (currentView === 'levels' ? 'Level' : 'Recording')"
+                    data-hotkey-label-position="below"
+                ></div>
+                <div
+                    class="hotkey-annotation"
+                    data-hotkey-target="custom-selection.next-level"
+                    data-hotkey-label="Next"
+                    data-hotkey-label-position="below"
+                ></div>
+            </div>
             <template v-if="currentView === 'levels'">
                 <level-card v-for="(level, index) in pagedItems" :name="level.level.meta.name" :uuid="level.id"
                     :best-moves="level.bestMoves" :updated-at="level.updatedAt" :key="level.id"
@@ -385,13 +405,13 @@ const playRecording = (rec) => {
     </div>
     <ion-icon name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in" @click="prevWindow"
         :class="{ disabled: sliceWindow.begin <= 0 }"
-        data-hotkey-target="custom-selection.previous-level"
-        data-hotkey-label="Previous"
+        data-hotkey-target="custom-selection.previous-page"
+        data-hotkey-label="Previous Page"
     ></ion-icon>
     <ion-icon name="chevron-forward-outline" class="control-btn control-btn__forward a-fade-in" @click="nextWindow"
         :class="{ disabled: sliceWindow.end >= total }"
-        data-hotkey-target="custom-selection.next-level"
-        data-hotkey-label="Next"
+        data-hotkey-target="custom-selection.next-page"
+        data-hotkey-label="Next Page"
     ></ion-icon>
     <n-modal v-model:show="showNamePrompt" preset="dialog" title="What should we call you?" positive-text="Continue"
         data-hotkey-popup="true"
@@ -415,11 +435,25 @@ const playRecording = (rec) => {
     }
 
     .level-container {
+        position: relative;
         display: flex;
         flex-direction: column;
         gap: 1rem;
         align-items: center;
         width: 100%;
+
+        .level-annotation-container {
+            position: absolute;
+            display: flex;
+            top: 30%;
+            width: 60%;
+            height: 2px;
+
+            .hotkey-annotation {
+                flex: 1;
+                height: 100%;
+            }
+        }
 
         p {
             font-weight: 400;
