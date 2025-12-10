@@ -2,12 +2,16 @@
 [+] Modify hotkey grouping system
 [+] Custom Selection needs hotkey binding
 [+] SubAlbum View: Levels need to be annotated and bound (use Center mode) from 1 on
+[ ] SubAlbum View: Levels after 9 should be labeled 10, 11, ... (e.g. 1;0) dynamically, instead of stopping after 10
 [ ] Level View: Fix particle id at beginning; DO NOT recalculate on particle demise
 [+] Level View: Restart/Select/Next has not been bound
 [+] Level Editor: Back has not been bound
 [+] Level Editor: Dev Tools have not been bound
 [+] Level Editor: Play has not been bound
 [+] General: Github/Account has not been bound (group, mode: bottom left)
-[ ] Settings system has not been implemented
+[+] Settings system has not been implemented
+[ ] Tutorial levels have not been implemented
+    [ ] Level 1: Basic Movement (mouse click, WASD/arrow keys)
+    [ ] Level 2: Keyboard Controls (space bar to show all hotkeys) 
 [ ] Publishing custom levels has not been implemented, including editing metadata
 [ ] Online section has not been implemented
