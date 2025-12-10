@@ -16,6 +16,7 @@ export const defaultHotkeyMap = {
         'settings.next': ['l', 'down-arrow'],
         'settings.select': ['k', 'enter'],
         'settings.back': ['backspace', '`'],
+        'settings.deselect': ['escape'],
     },
     'custom-selection': {
         'custom-selection.toggle-mode': ['f'],

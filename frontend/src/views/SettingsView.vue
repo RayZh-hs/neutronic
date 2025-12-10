@@ -131,7 +131,15 @@ watch(activeTab, () => {
 const generalActions = [
     {
         id: 'toggle-animations',
-        action: () => { settings.disableAnimations = !settings.disableAnimations; }
+        action: () => { settings.value.disableAnimations = !settings.value.disableAnimations; }
+    },
+    {
+        id: 'music-volume',
+        action: () => {}
+    },
+    {
+        id: 'sfx-volume',
+        action: () => {}
     }
 ];
 
@@ -257,6 +265,10 @@ useHotkeyBindings('settings', {
     'settings.back': ({ event }) => {
         event.preventDefault();
         router.back();
+    },
+    'settings.deselect': ({ event }) => {
+        event.preventDefault();
+        focusedIndex.value = -1;
     }
 });
 
@@ -359,15 +371,15 @@ const formatActionName = (actionId) => {
                 <Transition name="fade" mode="out-in">
                     <!-- General Settings -->
                     <div v-if="activeTab === 'general'" class="settings-group" key="general">
-                        <div class="setting-item" :class="{ 'keyboard-focused': isFocused('toggle-animations') }">
+                        <div class="setting-item" :class="{ 'keyboard-focused-background': isFocused('toggle-animations') }">
                             <div class="setting-label">
                                 <h3>Disable Background Animations</h3>
                                 <p>Turn off the moving background for better performance.</p>
                             </div>
-                            <n-switch v-model:value="settings.disableAnimations" />
+                            <n-switch v-model:value="settings.disableAnimations" :class="{ 'keyboard-focused-object': isFocused('toggle-animations') }" style="padding: 0.2rem; border-radius: 0.25rem;" />
                         </div>
                         
-                        <div class="setting-item">
+                        <div class="setting-item" :class="{ 'keyboard-focused-background': isFocused('music-volume') }">
                             <div class="setting-label">
                                 <h3>Music Volume</h3>
                                 <p>Adjust the background music volume.</p>
@@ -378,7 +390,7 @@ const formatActionName = (actionId) => {
                             </div>
                         </div>
 
-                        <div class="setting-item">
+                        <div class="setting-item" :class="{ 'keyboard-focused-background': isFocused('sfx-volume') }">
                             <div class="setting-label">
                                 <h3>SFX Volume</h3>
                                 <p>Adjust the sound effects volume.</p>
@@ -394,35 +406,35 @@ const formatActionName = (actionId) => {
 
                     <!-- Account Settings -->
                     <div v-else-if="activeTab === 'account'" class="settings-group" key="account">
-                        <div class="setting-item" :class="{ 'keyboard-focused': isFocused('focus-username') }">
+                        <div class="setting-item" :class="{ 'keyboard-focused-background': isFocused('focus-username') }">
                             <div class="setting-label">
                                 <h3>Display Name</h3>
                                 <p>How you appear on leaderboards and shared levels.</p>
                             </div>
                             <div class="setting-control">
-                                <n-input v-model:value="username" placeholder="Enter username" maxlength="32" />
+                                <n-input v-model:value="username" placeholder="Enter username" maxlength="32" :class="{ 'keyboard-focused-object': isFocused('focus-username') }" />
                             </div>
                         </div>
 
-                        <div class="setting-item">
+                        <div class="setting-item" :class="{ 'keyboard-focused-background': isFocused('export-data') || isFocused('import-data') }">
                             <div class="setting-label">
                                 <h3>Data Management</h3>
                                 <p>Import or export your progress and levels.</p>
                             </div>
                             <div class="setting-actions">
                                 <input type="file" ref="fileInput" style="display: none" accept=".json" @change="handleImport" />
-                                <n-button @click="handleExport" :class="{ 'keyboard-focused': isFocused('export-data') }">Export Data</n-button>
-                                <n-button @click="triggerImport" :class="{ 'keyboard-focused': isFocused('import-data') }">Import Data</n-button>
+                                <n-button @click="handleExport" :class="{ 'keyboard-focused-object': isFocused('export-data') }">Export Data</n-button>
+                                <n-button @click="triggerImport" :class="{ 'keyboard-focused-object': isFocused('import-data') }">Import Data</n-button>
                             </div>
                         </div>
 
-                        <div class="setting-item danger-zone" :class="{ 'keyboard-focused': isFocused('delete-account') }">
+                        <div class="setting-item danger-zone" :class="{ 'keyboard-focused-background': isFocused('delete-account') }">
                             <div class="setting-label">
                                 <h3>Danger Zone</h3>
                                 <p>Irreversible actions.</p>
                             </div>
                             <div class="setting-actions">
-                                <n-button type="error" @click="handleDeleteAccount" class="full-button">
+                                <n-button type="error" @click="handleDeleteAccount" class="full-button" :class="{ 'keyboard-focused-object': isFocused('delete-account') }">
                                     <template #icon><ion-icon name="trash-outline"></ion-icon></template>
                                     Delete Account
                                 </n-button>
@@ -435,9 +447,9 @@ const formatActionName = (actionId) => {
                     <!-- Hotkey Settings -->
                     <div v-else-if="activeTab === 'hotkeys'" class="settings-group hotkeys-list" key="hotkeys">
                         <n-collapse class="hotkey-container">
-                            <n-collapse-item v-for="(actions, category) in defaultHotkeyMap" :key="category" :title="category.charAt(0).toUpperCase() + category.slice(1)" :name="category" class="hotkey-collapse-item" :class="{ 'keyboard-focused': isFocused(`cat-${category}`) }">
+                            <n-collapse-item v-for="(actions, category) in defaultHotkeyMap" :key="category" :title="category.charAt(0).toUpperCase() + category.slice(1)" :name="category" class="hotkey-collapse-item" :class="{ 'keyboard-focused-background': isFocused(`cat-${category}`) }">
                                 <div class="hotkey-grid">
-                                    <div v-for="([actionId, defaultBindings]) in Object.entries(actions)" :key="actionId" class="hotkey-row" :class="{ 'keyboard-focused': isFocused(`action-${actionId}`) }">
+                                    <div v-for="([actionId, defaultBindings]) in Object.entries(actions)" :key="actionId" class="hotkey-row" :class="{ 'keyboard-focused-background': isFocused(`action-${actionId}`) }">
                                         <span class="hotkey-name"> •&nbsp&nbsp{{ formatActionName(actionId) }}</span>
                                         <div class="hotkey-controls">
                                             <n-button 
@@ -480,6 +492,7 @@ const formatActionName = (actionId) => {
 </style>
 
 <style scoped lang="scss">
+@use '@/styles/constants.scss';
 
 /* Stagger Animation Keyframes */
 @keyframes slideInStagger {
@@ -764,8 +777,12 @@ const formatActionName = (actionId) => {
     transform: translateX(5px);
 }
 
-.keyboard-focused {
-    outline: 2px solid var(--primary-color);
+.keyboard-focused-background {
+    outline: 2px solid var(--primary-color) !important;
     background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.keyboard-focused-object {
+    outline: 2px solid $n-primary !important;
 }
 </style>
