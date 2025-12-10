@@ -16,7 +16,7 @@ import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } f
 import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils';
 import { randomFloatFromInterval } from '@/functions/mathUtils';
 import { useRecordingsStore, addRecordingForLevel } from '@/functions/useRecordings';
-import { useHotkeyBindings } from '@/functions/useHotkeys';
+import { useHotkeyBindings, useDigitInput } from '@/functions/useHotkeys';
 
 const levelViewConfig = useSessionStorage('level-view-config', {});
 const recordingsStore = useRecordingsStore();
@@ -700,70 +700,12 @@ const focusParticleAtIndex = (index) => {
     return true;
 };
 const particleHotkeyKeys = computed(() => gameState.value.particles.map((p) => getParticleHotkey(p)));
-let particleDigitBuffer = '';
-let particleDigitResetHandle = null;
-const clearParticleDigitBuffer = () => {
-    particleDigitBuffer = '';
-    if (particleDigitResetHandle) {
-        clearTimeout(particleDigitResetHandle);
-        particleDigitResetHandle = null;
-    }
-};
-const scheduleParticleDigitReset = () => {
-    if (particleDigitResetHandle) {
-        clearTimeout(particleDigitResetHandle);
-    }
-    particleDigitResetHandle = setTimeout(() => {
-        particleDigitBuffer = '';
-        particleDigitResetHandle = null;
-    }, 650);
-};
-const handleParticleDigitInput = (digit) => {
-    const keys = particleHotkeyKeys.value.map(k => k.replace(/;/g, ''));
-    if (keys.length === 0) {
-        return false;
-    }
-    const nextBuffer = particleDigitBuffer + digit;
-    const exactIndex = keys.findIndex((key) => key === nextBuffer);
-    if (exactIndex !== -1) {
-        const focused = focusParticleAtIndex(exactIndex);
-        clearParticleDigitBuffer();
-        return focused;
-    }
-    const hasPartial = keys.some((key) => key.startsWith(nextBuffer));
-    if (hasPartial) {
-        particleDigitBuffer = nextBuffer;
-        scheduleParticleDigitReset();
-        return true;
-    }
-    const restartIndex = keys.findIndex((key) => key.startsWith(digit));
-    if (restartIndex !== -1) {
-        particleDigitBuffer = digit;
-        scheduleParticleDigitReset();
-        return true;
-    }
-    clearParticleDigitBuffer();
-    return false;
-};
-const handleParticleDigitKeydown = (event) => {
-    if (event.defaultPrevented) {
-        return;
-    }
-    if (isEditableTarget(event.target)) {
-        return;
-    }
-    if (!event.key || event.key.length !== 1 || !/[0-9]/.test(event.key)) {
-        return;
-    }
-    if (event.key === '0' && particleDigitBuffer === '') {
-        return;
-    }
-    const consumed = handleParticleDigitInput(event.key);
-    if (consumed) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-};
+
+useDigitInput({
+    validKeys: particleHotkeyKeys,
+    onMatch: (index) => focusParticleAtIndex(index)
+});
+
 const playLatestRecordingEntry = () => {
     const latest = levelRecordings.value.at(-1);
     if (!latest) {
@@ -930,17 +872,11 @@ onMounted(async () => {
         initializeRuntimeState(true);
         console.log(gameState.value);
     }
-    window.addEventListener('keydown', handleParticleDigitKeydown);
 });
 
 onBeforeUnmount(() => {
     selected.value = null;
     stopPlayback();
-    window.removeEventListener('keydown', handleParticleDigitKeydown);
-    if (particleDigitResetHandle) {
-        clearTimeout(particleDigitResetHandle);
-        particleDigitResetHandle = null;
-    }
 });
 
 const updateViewConfig = () => {

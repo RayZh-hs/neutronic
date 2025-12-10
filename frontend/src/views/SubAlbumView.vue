@@ -1,7 +1,7 @@
 <script setup>
 
 import { useRouter } from 'vue-router';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useSessionStorage } from '@vueuse/core';
 
 const router = useRouter();
@@ -15,7 +15,7 @@ import SimpleLevelCard from '../components/SimpleLevelCard.vue';
 
 import { album, isAlbumLoaded } from '@/functions/useAlbum';
 import { getAccountProgress, isAccessibleToPrebuiltLevel } from '@/functions/useAccount';
-import { useHotkeyBindings } from '@/functions/useHotkeys';
+import { useHotkeyBindings, useDigitInput } from '@/functions/useHotkeys';
 
 const player = getAccountProgress();
 
@@ -94,13 +94,19 @@ const enterLevel = (levelNumber) => {
     }, 100);
 }
 
-const levelBindings = {};
-for (let i = 1; i <= 30; i++) {
-    levelBindings[`sub-album.level-${i}`] = ({ event }) => {
-        event.preventDefault();
-        enterLevel(i);
-    };
-}
+const getLevelHotkey = (levelNumber) => {
+    return levelNumber >= 10 ? String(levelNumber).split('').join(';') : String(levelNumber);
+};
+
+const levelHotkeyKeys = computed(() => {
+    if (!currentAlbum.value) return [];
+    return currentAlbum.value.content.map((_, index) => getLevelHotkey(index + 1));
+});
+
+useDigitInput({
+    validKeys: levelHotkeyKeys,
+    onMatch: (index) => enterLevel(index + 1)
+});
 
 useHotkeyBindings('sub-album', {
     'sub-album.back': ({ event }) => {
@@ -115,7 +121,6 @@ useHotkeyBindings('sub-album', {
         event.preventDefault();
         nextWindow();
     },
-    ...levelBindings,
 });
 
 </script>
@@ -145,7 +150,9 @@ useHotkeyBindings('sub-album', {
                 :level="num + 1 + windowRange.begin"
                 :status="getStatus(num + 1 + windowRange.begin)"
                 :hotkey="(num + 1 + windowRange.begin).toString().split('').join(';')"
-                :data-hotkey-target="`sub-album.level-${num + 1 + windowRange.begin}`"
+                data-hotkey-target="sub-album.select-level"
+                data-hotkey-dynamic
+                :data-hotkey-hint="getLevelHotkey(num + 1 + windowRange.begin)"
                 data-hotkey-element-position="center"
                 @click="enterLevel(num + 1 + windowRange.begin)"
                 ></simple-level-card>

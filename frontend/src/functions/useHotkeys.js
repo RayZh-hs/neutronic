@@ -1,4 +1,4 @@
-import { onBeforeUnmount, reactive } from 'vue';
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { defaultHotkeyMap } from '@/data/hotkeys';
 
 const HOTKEY_STORAGE_KEY = 'neutronic.hotkeys';
@@ -312,7 +312,7 @@ const findMatchForContext = (context) => {
     return null;
 };
 
-const isEditableTarget = (target) => {
+export const isEditableTarget = (target) => {
     if (!target) {
         return false;
     }
@@ -495,4 +495,97 @@ export const hotkeyUtils = {
     normalizeChordFromEvent,
     normalizeChordFromString,
     normalizeKeyToken: normalizeToken,
+};
+
+export const useDigitInput = ({
+    validKeys, // Ref<string[]> or string[]
+    onMatch,   // (index: number, key: string) => boolean | void
+    onUpdate,  // (buffer: string) => void
+    timeout = 650
+}) => {
+    const buffer = ref('');
+    let resetHandle = null;
+
+    const clearBuffer = () => {
+        buffer.value = '';
+        if (resetHandle) {
+            clearTimeout(resetHandle);
+            resetHandle = null;
+        }
+        if (onUpdate) onUpdate('');
+    };
+
+    const scheduleReset = () => {
+        if (resetHandle) clearTimeout(resetHandle);
+        resetHandle = setTimeout(() => {
+            clearBuffer();
+        }, timeout);
+    };
+
+    const handleInput = (digit) => {
+        const keys = Array.isArray(validKeys.value) ? validKeys.value : (Array.isArray(validKeys) ? validKeys : []);
+        const normalizedKeys = keys.map(k => k.replace(/;/g, ''));
+        
+        if (normalizedKeys.length === 0) return false;
+
+        const nextBuffer = buffer.value + digit;
+        const exactIndex = normalizedKeys.findIndex(key => key === nextBuffer);
+
+        if (exactIndex !== -1) {
+            const result = onMatch(exactIndex, normalizedKeys[exactIndex]);
+            clearBuffer();
+            // If onMatch returns explicit false, we don't consume the event? 
+            // But we already matched. 
+            // In LevelView, if focusParticleAtIndex returns false, handleParticleDigitInput returns false.
+            // So we should return result if it is boolean, otherwise true.
+            return typeof result === 'boolean' ? result : true;
+        }
+
+        const hasPartial = normalizedKeys.some(key => key.startsWith(nextBuffer));
+        if (hasPartial) {
+            buffer.value = nextBuffer;
+            if (onUpdate) onUpdate(nextBuffer);
+            scheduleReset();
+            return true;
+        }
+
+        // Check if the new digit starts a new valid sequence (restart)
+        const restartIndex = normalizedKeys.findIndex(key => key.startsWith(digit));
+        if (restartIndex !== -1) {
+            buffer.value = digit;
+            if (onUpdate) onUpdate(digit);
+            scheduleReset();
+            return true;
+        }
+
+        clearBuffer();
+        return false;
+    };
+
+    const handleKeydown = (event) => {
+        if (event.defaultPrevented) return;
+        if (isEditableTarget(event.target)) return;
+        
+        if (!event.key || event.key.length !== 1 || !/[0-9]/.test(event.key)) return;
+        if (event.key === '0' && buffer.value === '') return;
+
+        const consumed = handleInput(event.key);
+        if (consumed) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    };
+
+    onMounted(() => {
+        window.addEventListener('keydown', handleKeydown);
+    });
+
+    onBeforeUnmount(() => {
+        window.removeEventListener('keydown', handleKeydown);
+        clearBuffer();
+    });
+
+    return {
+        buffer
+    };
 };
