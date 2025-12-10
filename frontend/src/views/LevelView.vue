@@ -962,11 +962,19 @@ useHotkeyBindings('level', {
     'level.right': (payload) => handleDirectionalHotkey('right', payload),
     'level.previous-particle': ({ event }) => {
         event.preventDefault();
-        focusPreviousParticle();
+        if (hasWon.value) {
+            restartGame();
+        } else {
+            focusPreviousParticle();
+        }
     },
     'level.next-particle': ({ event }) => {
         event.preventDefault();
-        focusNextParticle();
+        if (hasWon.value && levelViewConfig.value.context === 'album') {
+            gotoNextLevel();
+        } else {
+            focusNextParticle();
+        }
     },
     'level.toggle-focus': ({ event }) => {
         event.preventDefault();

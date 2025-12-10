@@ -950,13 +950,22 @@ watch(currentLevelId, () => {
 onMounted(() => {
     initializeEditor();
     setInterval(updateToolSpritePosition, 1000 / levelEditorRefreshFrequency);
+    window.addEventListener('keydown', handleGlobalKeydown);
 });
 
 onBeforeUnmount(() => {
     if (typeof restoreHotkeyOverlayConfig === "function") {
         restoreHotkeyOverlayConfig();
     }
+    window.removeEventListener('keydown', handleGlobalKeydown);
 });
+
+const handleGlobalKeydown = (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        onSave();
+    }
+};
 
 </script>
 
