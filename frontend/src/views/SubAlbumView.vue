@@ -95,13 +95,10 @@ const enterLevel = (levelNumber) => {
 }
 
 const levelBindings = {};
-for (let i = 1; i <= 10; i++) {
+for (let i = 1; i <= 30; i++) {
     levelBindings[`sub-album.level-${i}`] = ({ event }) => {
         event.preventDefault();
-        const indexOnPage = (i === 10 ? 0 : i) - 1;
-        if (indexOnPage >= pagedLevels.value.length) return;
-        const levelNumber = windowStart.value + indexOnPage + 1;
-        enterLevel(levelNumber);
+        enterLevel(i);
     };
 }
 
@@ -147,8 +144,8 @@ useHotkeyBindings('sub-album', {
                 :key="num + 1 + windowRange.begin"
                 :level="num + 1 + windowRange.begin"
                 :status="getStatus(num + 1 + windowRange.begin)"
-                :hotkey="num < 9 ? (num + 1).toString() : (num === 9 ? '0' : '')"
-                :data-hotkey-target="num < 10 ? `sub-album.level-${num + 1}` : undefined"
+                :hotkey="(num + 1 + windowRange.begin).toString().split('').join(';')"
+                :data-hotkey-target="`sub-album.level-${num + 1 + windowRange.begin}`"
                 data-hotkey-element-position="center"
                 @click="enterLevel(num + 1 + windowRange.begin)"
                 ></simple-level-card>

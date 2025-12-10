@@ -89,6 +89,9 @@ const loadLevelFromString = (levelString) => {
     console.log("level config:", levelString);
     const containers = JSON.parse(JSON.stringify(levelString.content.containers));
     const particles = JSON.parse(JSON.stringify(levelString.content.particles));
+    particles.forEach((p, i) => {
+        if (!p.id) p.id = `particle-${i}`;
+    });
     baseLevelDefinition.value = {
         containers,
         particles
@@ -153,7 +156,7 @@ const loadLevelConfig = async () => {
 
 const initializeRuntimeState = (shouldObscure = true) => {
     gameState.value.particles.forEach((particle, index) => {
-        particle.id = `particle-${index}`;
+        if (!particle.id) particle.id = `particle-${index}`;
         particle.obscure = shouldObscure;
         particle.colliding = false;
         particle.transporting = false;
@@ -164,6 +167,16 @@ const initializeRuntimeState = (shouldObscure = true) => {
         container.obscure = shouldObscure;
         container.classes = [];
     });
+};
+
+const getParticleHotkey = (particle) => {
+    if (!particle || !particle.id) return '';
+    const parts = particle.id.split('-');
+    if (parts.length < 2) return '';
+    const index = parseInt(parts[1], 10);
+    if (isNaN(index)) return '';
+    const num = index + 1;
+    return num >= 10 ? String(num).split('').join(';') : String(num);
 };
 
 const restoreBaseLevelState = ({ obscure = false, resetRecording = true } = {}) => {
@@ -684,7 +697,7 @@ const focusParticleAtIndex = (index) => {
     selected.value = particle;
     return true;
 };
-const particleHotkeyKeys = computed(() => gameState.value.particles.map((_, index) => String(index + 1)));
+const particleHotkeyKeys = computed(() => gameState.value.particles.map((p) => getParticleHotkey(p)));
 let particleDigitBuffer = '';
 let particleDigitResetHandle = null;
 const clearParticleDigitBuffer = () => {
@@ -704,7 +717,7 @@ const scheduleParticleDigitReset = () => {
     }, 650);
 };
 const handleParticleDigitInput = (digit) => {
-    const keys = particleHotkeyKeys.value;
+    const keys = particleHotkeyKeys.value.map(k => k.replace(/;/g, ''));
     if (keys.length === 0) {
         return false;
     }
@@ -737,7 +750,10 @@ const handleParticleDigitKeydown = (event) => {
     if (isEditableTarget(event.target)) {
         return;
     }
-    if (!event.key || event.key.length !== 1 || !/[0-9]/.test(event.key) || event.key === '0') {
+    if (!event.key || event.key.length !== 1 || !/[0-9]/.test(event.key)) {
+        return;
+    }
+    if (event.key === '0' && particleDigitBuffer === '') {
         return;
     }
     const consumed = handleParticleDigitInput(event.key);
@@ -1107,6 +1123,7 @@ useHotkeyBindings('level', {
                 'a-fade-in-raw': isStartingAnimation,
                 'a-delay-12': isStartingAnimation
             }" :id="particle.id" data-hotkey-target="level.focus-particle" data-hotkey-dynamic
+            :data-hotkey-hint="getParticleHotkey(particle)"
             data-hotkey-element-position="center"
         >
         </div>

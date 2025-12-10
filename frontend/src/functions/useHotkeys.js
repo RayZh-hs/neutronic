@@ -429,7 +429,7 @@ export const formatBindingSequence = (sequence = []) => {
     }
     return sequence
         .map((chord) => tokenizeChord(chord).map(formatTokenForDisplay).join(' + '))
-        .join(' › ');
+        .join('');
 };
 
 export const getPrimaryBindingLabel = (actionId) => {
