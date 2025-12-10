@@ -1,26 +1,22 @@
 <script setup>
 //: Vue Imports
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { hexaToRgba } from "../functions/colorUtils";
 import { assert, useElementBounding, useSessionStorage } from '@vueuse/core';
 import axios from 'axios';
-import { useGameStateQueries } from '@/functions/useGameStateQueries';
 const router = useRouter();
 
 //: Custom Data and Components
 import IonButton from '@/components/IonButton.vue';
 import { levelMapGridScalePx, SERVER_URL } from "@/data/constants"
-import { levelPortalCycleColor, levelMapPortalBackgroundAlpha, gameDefaultAnimationDuration, gameDropoutAnimationDuration } from "@/data/constants";
+import { gameDefaultAnimationDuration } from "@/data/constants";
 import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
-import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils';
-import { randomFloatFromInterval } from '@/functions/mathUtils';
 import { useRecordingsStore, addRecordingForLevel } from '@/functions/useRecordings';
 import { useHotkeyBindings, useDigitInput } from '@/functions/useHotkeys';
+import { useLevelGame } from '@/functions/useLevelGame';
 
 const levelViewConfig = useSessionStorage('level-view-config', {});
 const recordingsStore = useRecordingsStore();
-const baseLevelDefinition = ref(null);
 const fullLevelData = ref(null);
 const recordingSession = ref({
     active: false,
@@ -32,30 +28,57 @@ const playbackTimeoutHandle = ref(null);
 
 //: Map Setup
 const responseCode = ref(0);
-const name = ref('');
-const author = ref('');
-const stepsGoal = ref(0);
 const currentBest = ref(null);
 const currentRoute = router.currentRoute.value;
 const routePath = currentRoute.path || currentRoute.fullPath || '';
 const isCustomLevelRoute = routePath.startsWith('/custom/play');
 const levelId = isCustomLevelRoute ? currentRoute.params.uuid : currentRoute.params.levelId;
 const albumIndex = isCustomLevelRoute ? null : Number(currentRoute.params.id);
-const gameState = ref({ containers: [], particles: [] });
-const mapSize = ref({ rows: 0, columns: 0 });
-
-const selected = ref(null);
-const stepsCounter = ref(0);
 
 const refViewPort = ref(null);
-
-const isLevelLoaded = ref(false);
-const isPanning = ref(false);
-const isCustomAnimating = ref(false);
 const isStartingAnimation = ref(false);
-// const isEndingAnimation     = ref(false);
-const disableInteraction = ref(false);
-const hasWon = ref(false);
+
+//: Panning and Centering
+import { usePanning } from "@/functions/usePanning";
+const { panningOffset, onPanStart, onPanEnd } = usePanning(refViewPort);
+
+const { width, height } = useElementBounding(refViewPort);
+const additionalCenteringOffset = computed(() => {
+    return {
+        x: (width.value - levelMapGridScalePx.value * (mapSize.value.columns)) / 2,
+        y: (height.value - levelMapGridScalePx.value * (mapSize.value.rows)) / 2
+    };
+});
+
+const {
+    gameState,
+    mapSize,
+    stepsCounter,
+    stepsGoal,
+    isLevelLoaded,
+    isPanning,
+    isCustomAnimating,
+    disableInteraction,
+    hasWon,
+    selected,
+    baseLevelDefinition,
+    name,
+    author,
+    canInteract,
+    doSmoothAnimate,
+    loadLevelFromString,
+    initializeRuntimeState,
+    restoreBaseLevelState,
+    moveParticle,
+    containersWithAttr,
+    getPositionForParticles,
+    changeObscurityForAll,
+    focusPreviousParticle,
+    focusNextParticle,
+    toggleParticleFocus,
+    focusParticleAtIndex,
+    getParticleHotkey
+} = useLevelGame(refViewPort, panningOffset, additionalCenteringOffset);
 
 const levelRecordings = computed(() => {
     const entries = recordingsStore.value[levelId];
@@ -74,32 +97,9 @@ const playbackDropdownOptions = computed(() => levelRecordings.value.map((entry)
     key: entry.id
 })));
 
-const canInteract = computed(() => isLevelLoaded.value && !isPanning.value && !isPlaybackActive.value);
-const doSmoothAnimate = computed(() => isLevelLoaded.value && !isPanning.value);
-
-const loadLevelFromString = (levelString) => {
+const loadLevelFromStringWrapper = (levelString) => {
     fullLevelData.value = levelString;
-    name.value = levelString.meta.name;
-    author.value = levelString.meta.author;
-    mapSize.value = {
-        rows: levelString.meta.rows,
-        columns: levelString.meta.columns
-    }
-    console.log("map size:", mapSize);
-    console.log("level config:", levelString);
-    const containers = JSON.parse(JSON.stringify(levelString.content.containers));
-    const particles = JSON.parse(JSON.stringify(levelString.content.particles));
-    particles.forEach((p, i) => {
-        if (!p.id) p.id = `particle-${i}`;
-    });
-    baseLevelDefinition.value = {
-        containers,
-        particles
-    };
-    gameState.value.containers = JSON.parse(JSON.stringify(baseLevelDefinition.value.containers));
-    gameState.value.particles = JSON.parse(JSON.stringify(baseLevelDefinition.value.particles));
-    stepsGoal.value = levelString.content.goal;
-    isLevelLoaded.value = true;
+    loadLevelFromString(levelString);
 }
 
 const ensureContext = () => {
@@ -118,7 +118,7 @@ const loadLevelConfig = async () => {
     console.log({ levelViewConfig })
     const context = ensureContext();
     if (context === 'editor') {
-        loadLevelFromString(levelViewConfig.value.levelData);
+        loadLevelFromStringWrapper(levelViewConfig.value.levelData);
         responseCode.value = 200;
         return;
     }
@@ -130,7 +130,7 @@ const loadLevelConfig = async () => {
             return;
         }
         levelViewConfig.value.customLevelId = levelId;
-        loadLevelFromString(customLevel.level);
+        loadLevelFromStringWrapper(customLevel.level);
         currentBest.value = customLevel.bestMoves;
         responseCode.value = 200;
         return;
@@ -143,7 +143,7 @@ const loadLevelConfig = async () => {
             responseCode.value = res.status;
             if (res.status == 200) {
                 const levelConfig = res.data;
-                loadLevelFromString(levelConfig);
+                loadLevelFromStringWrapper(levelConfig);
             }
             return res;
         })
@@ -154,47 +154,12 @@ const loadLevelConfig = async () => {
         });
 };
 
-const initializeRuntimeState = (shouldObscure = true) => {
-    gameState.value.particles.forEach((particle, index) => {
-        if (!particle.id) particle.id = `particle-${index}`;
-        particle.obscure = shouldObscure;
-        particle.colliding = false;
-        particle.transporting = false;
-        particle.skipTransition = false;
-    });
-    gameState.value.containers.forEach((container, index) => {
-        container.id = `container-${index}`;
-        container.obscure = shouldObscure;
-        container.classes = [];
-    });
-};
-
-const getParticleHotkey = (particle) => {
-    if (!particle || !particle.id) return '';
-    const parts = particle.id.split('-');
-    if (parts.length < 2) return '';
-    const index = parseInt(parts[1], 10);
-    if (isNaN(index)) return '';
-    const num = index + 1;
-    return num >= 10 ? String(num).split('').join(';') : String(num);
-};
-
-const restoreBaseLevelState = ({ obscure = false, resetRecording = true } = {}) => {
-    if (!baseLevelDefinition.value) {
-        return false;
-    }
-    gameState.value.containers = JSON.parse(JSON.stringify(baseLevelDefinition.value.containers));
-    gameState.value.particles = JSON.parse(JSON.stringify(baseLevelDefinition.value.particles));
-    initializeRuntimeState(obscure);
-    selected.value = null;
-    disableInteraction.value = false;
-    isCustomAnimating.value = false;
-    hasWon.value = false;
-    stepsCounter.value = 0;
-    if (resetRecording) {
+const restoreBaseLevelStateWrapper = ({ obscure = false, resetRecording = true } = {}) => {
+    const result = restoreBaseLevelState({ obscure, resetRecording });
+    if (result && resetRecording) {
         recording.value = [];
     }
-    return true;
+    return result;
 };
 
 const flattenRecordingEntries = (recordingData = []) => {
@@ -220,13 +185,6 @@ const countRecordingSteps = (recordingData = []) => recordingData.reduce((total,
     return total + segment.direction.length;
 }, 0);
 
-//: Panning and Centering
-
-// - tracking the panning offset
-import { usePanning } from "@/functions/usePanning";
-import { gameTransportAnimationDuration } from '../data/constants';
-const { panningOffset, onPanStart, onPanEnd } = usePanning(refViewPort);
-
 const onPanStartWrapper = (event) => {
     isPanning.value = true;
     onPanStart(event);
@@ -236,105 +194,6 @@ const onPanEndWrapper = () => {
     onPanEnd();
     isPanning.value = false;
 };
-
-//: Game Logic
-// - auxiliary functions
-const {
-    hasBoardAt,
-    hasPortalAt,
-    hasContainerAt,
-    hasParticleWithColorAt,
-    getOtherPortal,
-    getParticlesAt,
-    getParticleAt,
-    getContainerAt,
-    negateColor,
-} = useGameStateQueries(gameState);
-
-const isMoveValid = (currentColor, currentId, newPos) => {
-    if (!hasContainerAt(newPos.row, newPos.column)) return false;
-    if (hasParticleWithColorAt(newPos.row, newPos.column, currentColor)) return false;
-    if (hasPortalAt(newPos.row, newPos.column)) {
-        const otherPortal = getOtherPortal(newPos.row, newPos.column);
-        // console.log(otherPortal);
-        // console.log("current id: ", currentId);
-        // console.log("getParticleAt: ", getParticleAt(otherPortal.row, otherPortal.column));
-        if (hasParticleWithColorAt(otherPortal.row, otherPortal.column, currentColor) && getParticleAt(otherPortal.row, otherPortal.column).id != currentId) return false;
-    }
-    return true;
-}
-
-const updateMapAfterCollision = (r, c) => {
-
-    if (hasPortalAt(r, c)) {
-        // Turn the other portal into a board
-        const otherPortal = getOtherPortal(r, c);
-        otherPortal.type = 'board';
-    }
-
-    gameState.value.containers = gameState.value.containers.filter(item => item.row !== r || item.column !== c);
-    gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
-
-    if (selected.value && selected.value.row === r && selected.value.column === c) {
-        selected.value = null;
-    }
-    updateHasWon();
-};
-
-const animateInvalidMove = (particleId, direction) => {
-    let onFinishCallback = () => { };
-    const refOffset = ref({ x: 0, y: 0 });
-    const shakeOffset = levelMapGridScalePx.value;
-    const selectedParticleDOM = document.getElementById(particleId);
-    console.log({ particleId })
-    console.log({ selectedParticleDOM });
-    refAnimateToObject(
-        refOffset,
-        {
-            'up': { x: 0, y: -shakeOffset },
-            'down': { x: 0, y: shakeOffset },
-            'left': { x: -shakeOffset, y: 0 },
-            'right': { x: shakeOffset, y: 0 },
-            default: { x: 0, y: 0 }
-        }[direction],
-        gameDefaultAnimationDuration,
-        easeNopeGenerator(0.1),
-        { x: 0, y: 0 }  // final snap to starting point
-    ).onUpdate(() => {
-        selectedParticleDOM.style.translate = `${refOffset.value.x}px ${refOffset.value.y}px`;
-    }).onFinish(() => {
-        onFinishCallback();
-    });
-
-    return {
-        onFinish(callback) {
-            onFinishCallback = callback;
-        }
-    }
-}
-const createShadowParticleFrom = (source) => {
-    var shadowParticleNode = source.cloneNode(true);
-    shadowParticleNode.id = `shadow-${source.id}`;
-    shadowParticleNode.classList.add('shadow-particle');
-    // console.log(shadowParticleNode);
-    refViewPort.value.appendChild(shadowParticleNode);
-}
-const collapseContainerAt = (r, c) => {
-    const container = getContainerAt(r, c);
-    // console.log(container);
-    if (container) {
-        const containerNode = document.getElementById(container.id);
-        containerNode.classList.add('container--collapse');
-        // console.log(containerNode);
-    }
-}
-const makeBoardFrom = (r, c) => {
-    const container = getContainerAt(r, c);
-    if (container) {
-        const containerNode = document.getElementById(container.id);
-        containerNode.classList.add('container--becoming-board');
-    }
-}
 
 import { isAccessibleToPrebuiltLevel, hasFinishedAlbum } from '@/functions/useAccount';
 const updateHasWon = () => {
@@ -355,6 +214,13 @@ const updateHasWon = () => {
         handleRecordingCompletion();
     }
 }
+
+watch(() => gameState.value.particles.length, (newLength) => {
+    if (newLength === 0 && !hasWon.value) {
+        updateHasWon();
+    }
+});
+
 const triggerEndingAnimation = () => {
     changeObscurityForAll(true, gameEntranceFocusAnimationRange);
 }
@@ -444,7 +310,7 @@ const handleRecordingCompletion = () => {
 };
 
 const startRecordingSession = () => {
-    if (!restoreBaseLevelState({ obscure: false, resetRecording: true })) {
+    if (!restoreBaseLevelStateWrapper({ obscure: false, resetRecording: true })) {
         return;
     }
     recordingSession.value.active = true;
@@ -509,7 +375,7 @@ const startPlayback = (entry) => {
     }
     stopPlayback();
     recordingSession.value.active = false;
-    if (!restoreBaseLevelState({ obscure: false, resetRecording: true })) {
+    if (!restoreBaseLevelStateWrapper({ obscure: false, resetRecording: true })) {
         return;
     }
     const flattened = flattenRecordingEntries(entry.recording);
@@ -528,177 +394,11 @@ const handlePlaybackSelect = (key) => {
     });
 };
 
-const moveParticle = (direction, options = {}) => {
-    const { allowWhilePlayback = false } = options;
-    if (!selected.value) {
-        return;
-    }
-    if (!allowWhilePlayback && !canInteract.value) {
-        return;
-    }
-    const currentIndex = gameState.value.particles.findIndex(p => p === selected.value);    // Not to be confused with ID
-    console.log(currentIndex)
-    const currentParticle = gameState.value.particles[currentIndex];
-    let currentColor = currentParticle.color;
-    let currentRow = currentParticle.row;
-    let currentColumn = currentParticle.column;
-    let currentId = currentParticle.id;
-    let currentNode = document.getElementById(currentId);
-    if (currentIndex !== -1) {  // -1 means that an error occurred
-        switch (direction) {
-            case 'up':
-                currentRow -= 1;
-                break;
-            case 'down':
-                currentRow += 1;
-                break;
-            case 'left':
-                currentColumn -= 1;
-                break;
-            case 'right':
-                currentColumn += 1;
-                break;
-        }
-    }
-    // After this line, (currentRow, currentColumn) is the new position of the particle
-    // const valid = gameState.value.containers.some(item => item.row === currentRow && item.column === currentColumn) && !gameState.value.particles.some(item => item.color === currentColor && item.row === currentRow && item.column === currentColumn);
-    const isValid = isMoveValid(currentColor, currentId, { row: currentRow, column: currentColumn });
-    if (isValid) {
-        // Increment the steps counter
-        stepsCounter.value++;
-        // Record the move
-        recordMove(currentId, direction);
-        // This drives the animation of the move
-        currentParticle.row = currentRow;
-        currentParticle.column = currentColumn;
-        // Check for collision and/or portal
-        if (getParticlesAt(currentRow, currentColumn).length >= 2) {
-            // Since the move is valid, this must be a particle of a different color here
-            selected.value = null;
-
-            const collidingParticles = getParticlesAt(currentRow, currentColumn);
-            collidingParticles.forEach(particle => particle.colliding = true);
-            collapseContainerAt(currentRow, currentColumn);
-            if (hasPortalAt(currentRow, currentColumn)) {
-                const otherPortalCoord = getOtherPortal(currentRow, currentColumn);
-                makeBoardFrom(otherPortalCoord.row, otherPortalCoord.column);
-            }
-
-            setTimeout(() => {
-
-                updateMapAfterCollision(currentRow, currentColumn);
-
-            }, gameDropoutAnimationDuration);
-        }
-        else if (hasPortalAt(currentRow, currentColumn)) {
-            setTimeout(() => {
-                isCustomAnimating.value = true;
-                // Two cases: either the other portal is empty, or the other one has a particle of a different color
-                const otherPortalCoord = getOtherPortal(currentRow, currentColumn);
-                // Create a shadow element here, and move the particle to the other portal
-                createShadowParticleFrom(currentNode);
-                // Move the current particle to the other portal
-                currentParticle.skipTransition = true;
-                currentParticle.row = otherPortalCoord.row;
-                currentParticle.column = otherPortalCoord.column;
-                setTimeout(() => { currentParticle.skipTransition = false; }, 50);
-
-                if (hasParticleWithColorAt(otherPortalCoord.row, otherPortalCoord.column, negateColor(currentColor))) {
-                    // First clear the selection for correct visuals
-                    selected.value = null;
-                    // If the other portal has a particle of a different color, give the two particles a colliding effect
-                    // All the animations are handled here
-                    const collidingParticles = getParticlesAt(otherPortalCoord.row, otherPortalCoord.column);
-                    collidingParticles.forEach(particle => particle.colliding = true);
-                    collapseContainerAt(otherPortalCoord.row, otherPortalCoord.column);
-                    // console.log("currentBoard: ", currentRow, currentColumn);
-                    makeBoardFrom(currentRow, currentColumn);
-
-                    setTimeout(() => {
-                        // After the move, the smooth animation can be turned on
-                        isCustomAnimating.value = false;
-                        // Update the map after the collision
-                        updateMapAfterCollision(otherPortalCoord.row, otherPortalCoord.column);
-                    }, gameDropoutAnimationDuration);
-                }
-                else {
-                    // If the other portal is empty, give the current particle a popping animation
-                    currentNode.classList.add('particle--transported');
-                    currentParticle.transporting = true;
-
-                    setTimeout(() => {
-                        // After the move, the smooth animation can be turned on
-                        isCustomAnimating.value = false;
-                        currentNode.classList.remove('particle--transported');
-                        currentParticle.transporting = false;
-                    }, gameTransportAnimationDuration);
-                }
-            }, gameDefaultAnimationDuration);   // This is the time for the particle to reach the portal
-        }
-    }
-    else {
-        // Create an animation for invalid move
-        disableInteraction.value = true;
-        isCustomAnimating.value = true;
-        animateInvalidMove(currentId, direction)
-            .onFinish(() => {
-                isCustomAnimating.value = false;
-                disableInteraction.value = false;
-            });
-    }
-};
 const handleSelectParticle = (particle) => {
     if (particle === selected.value) selected.value = null;
     else if (canInteract.value && !disableInteraction.value && !particle.colliding && !particle.transporting) { selected.value = particle; }
 };
-const isEditableTarget = (target) => {
-    if (!target) {
-        return false;
-    }
-    if (target.isContentEditable) {
-        return true;
-    }
-    const tagName = target.tagName ? target.tagName.toLowerCase() : '';
-    return ['input', 'textarea', 'select'].includes(tagName);
-};
-const focusParticleByOffset = (offset) => {
-    const particles = gameState.value.particles;
-    if (!particles || particles.length === 0) {
-        return;
-    }
-    const currentIndex = particles.findIndex((particle) => particle === selected.value);
-    if (currentIndex === -1) {
-        selected.value = offset > 0 ? particles[0] : particles[particles.length - 1];
-        return;
-    }
-    const nextIndex = (currentIndex + offset + particles.length) % particles.length;
-    selected.value = particles[nextIndex];
-};
-const focusPreviousParticle = () => focusParticleByOffset(-1);
-const focusNextParticle = () => focusParticleByOffset(1);
-const toggleParticleFocus = () => {
-    if (selected.value) {
-        selected.value = null;
-        return;
-    }
-    if (gameState.value.particles.length > 0) {
-        selected.value = gameState.value.particles[0];
-    }
-};
-const focusParticleAtIndex = (index) => {
-    const particle = gameState.value.particles[index];
-    if (!particle) {
-        return false;
-    }
-    if (!canInteract.value || disableInteraction.value) {
-        return false;
-    }
-    if (particle.colliding || particle.transporting) {
-        return false;
-    }
-    selected.value = particle;
-    return true;
-};
+
 const particleHotkeyKeys = computed(() => gameState.value.particles.map((p) => getParticleHotkey(p)));
 
 useDigitInput({
@@ -715,93 +415,9 @@ const playLatestRecordingEntry = () => {
 };
 const handleDirectionalHotkey = (direction, { event }) => {
     event.preventDefault();
-    moveParticle(direction);
-};
-const containersWithAttr = computed(() => {
-    return gameState.value.containers.map(item => {
-        const position = getPositionForContainers(item);
-        return {
-            ...item,
-            style: position.style,
-            className: position.className
-        };
-    });
-});
-
-const { width, height } = useElementBounding(refViewPort);
-const additionalCenteringOffset = computed(() => {
-    // console.log(width.value, height.value, levelMapGridScalePx.value * (mapSize.value.rows));
-    return {
-        x: (width.value - levelMapGridScalePx.value * (mapSize.value.columns)) / 2,
-        y: (height.value - levelMapGridScalePx.value * (mapSize.value.rows)) / 2
-    };
-})
-
-const getPositionForContainers = (item) => {
-    item.classes = [];
-    item.classes.push(item.type);
-    if (hasBoardAt(item.row - 1, item.column)) item.classes.push('board--occupied-top');
-    if (hasBoardAt(item.row + 1, item.column)) item.classes.push('board--occupied-bottom');
-    if (hasBoardAt(item.row, item.column - 1)) item.classes.push('board--occupied-left');
-    if (hasBoardAt(item.row, item.column + 1)) item.classes.push('board--occupied-right');
-    const left = (item.column) * levelMapGridScalePx.value;
-    const top = (item.row) * levelMapGridScalePx.value;
-    return {
-        style:
-        {
-            position: 'absolute',
-            left: `${left + panningOffset.value.x + additionalCenteringOffset.value.x}px`,
-            top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`,
-            ...(item.type === 'portal' ? {
-                background: hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha),
-                border: `1px solid ${hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha * 3)}`,
-                borderRadius: `0.625rem`
-            } : {}),
-            transition: doSmoothAnimate.value ? `all ${gameDefaultAnimationDuration}ms ease-out` : 'none'
-        },
-        className: item.classes.join(' ')
-    };
-};
-const getPositionForParticles = (item) => {
-    const left = (item.column) * levelMapGridScalePx.value;
-    const top = (item.row) * levelMapGridScalePx.value;
-    return {
-        position: 'absolute',
-        left: `${left + panningOffset.value.x + additionalCenteringOffset.value.x}px`,
-        top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`,
-        transition: (doSmoothAnimate.value && !item.skipTransition) ? `all ${gameDefaultAnimationDuration}ms ease-out` : 'none'
-    };
+    moveParticle(direction, { onMoveRecorded: recordMove });
 };
 
-const getRandomSequenceWithinRange = ({min, max}, length) => {
-    assert(length > 0);
-    const sequence = [];
-    for (let i = 0; i < length; i++) {
-        sequence.push(randomFloatFromInterval(min, max));
-    }
-    // Ensure that the sequence is scaled to precisely [min, max]
-    const curMin = Math.min(...sequence);
-    const curMax = Math.max(...sequence);
-    sequence.forEach((item, index) => {
-        sequence[index] = min + (item - curMin) / (curMax - curMin) * (max - min);
-    });
-    console.log(sequence);
-    return sequence;
-} 
-
-const changeObscurityForAll = (value, delayRange) => {
-    const length = gameState.value.particles.length + gameState.value.containers.length;
-    const randomDelaySequence = getRandomSequenceWithinRange(delayRange, length);
-    // Give a random time offset before removing the blur
-    [gameState.value.particles, gameState.value.containers].flat()
-        .forEach((obj, index) => {
-            setTimeout(() => {
-                // const particleNode = document.getElementById(`p-${index}`);
-                // particleNode.classList.remove('obscure');
-                obj.obscure = value;
-            }, randomDelaySequence[index]);
-        });
-}
 const getGameRank = () => {
     return stepsCounter.value <= stepsGoal.value ? 'Perfect' : 'Pass';
 }

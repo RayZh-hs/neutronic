@@ -2,80 +2,76 @@
 //: Vue Imports
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
-import { hexaToRgba } from "../functions/colorUtils";
-import { assert, useElementBounding, useSessionStorage } from '@vueuse/core';
+import { assert, useElementBounding } from '@vueuse/core';
 import axios from 'axios';
-import { useGameStateQueries } from '@/functions/useGameStateQueries';
 const router = useRouter();
 
 //: Custom Data and Components
 import IonButton from '@/components/IonButton.vue';
 import { levelMapGridScalePx, SERVER_URL } from "@/data/constants"
-import { levelPortalCycleColor, levelMapPortalBackgroundAlpha, gameDefaultAnimationDuration, gameDropoutAnimationDuration, gameTransportAnimationDuration } from "@/data/constants";
-import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
-import { refAnimateToObject, easeNopeGenerator } from '@/functions/animateUtils';
-import { randomFloatFromInterval } from '@/functions/mathUtils';
+import { gameDefaultAnimationDuration } from "@/data/constants";
+import { gameEntranceFocusAnimationRange } from "@/data/constants";
 import { useRecordingsStore } from '@/functions/useRecordings';
 import { getCustomLevelById } from '@/functions/useAccount';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
 import { overrideHotkeyOverlayConfig } from '@/data/hotkeyOverlayConfig';
+import { useLevelGame } from '@/functions/useLevelGame';
 
 const recordingsStore = useRecordingsStore();
-const baseLevelDefinition = ref(null);
 const isPlaybackActive = ref(false);
 const playbackQueue = ref([]);
 const playbackTimeoutHandle = ref(null);
 const currentStepIndex = ref(0);
-const hasWon = ref(false);
 
 //: Map Setup
 const responseCode = ref(0);
-const name = ref('');
-const author = ref('');
-const stepsGoal = ref(0);
 const currentRoute = router.currentRoute.value;
-const routePath = currentRoute.path || currentRoute.fullPath || '';
-const isCustomLevelRoute = routePath.startsWith('/custom/play'); // Might need adjustment for playback route
 const levelId = currentRoute.params.levelId || currentRoute.params.uuid; // Handle both
-const gameState = ref({ containers: [], particles: [] });
-const mapSize = ref({ rows: 0, columns: 0 });
-
-const selected = ref(null);
-const stepsCounter = ref(0);
 
 const refViewPort = ref(null);
-
-const isLevelLoaded = ref(false);
-const isPanning = ref(false);
-const isCustomAnimating = ref(false);
 const isStartingAnimation = ref(false);
-const disableInteraction = ref(false);
+
+//: Panning and Centering
+import { usePanning } from "@/functions/usePanning";
+const { panningOffset, onPanStart, onPanEnd } = usePanning(refViewPort);
+
+const { width, height } = useElementBounding(refViewPort);
+const additionalCenteringOffset = computed(() => {
+    return {
+        x: (width.value - levelMapGridScalePx.value * (mapSize.value.columns)) / 2,
+        y: (height.value - levelMapGridScalePx.value * (mapSize.value.rows)) / 2
+    };
+});
+
+const {
+    gameState,
+    mapSize,
+    stepsCounter,
+    stepsGoal,
+    isLevelLoaded,
+    isPanning,
+    isCustomAnimating,
+    disableInteraction,
+    hasWon,
+    selected,
+    baseLevelDefinition,
+    name,
+    author,
+    canInteract,
+    doSmoothAnimate,
+    loadLevelFromString,
+    initializeRuntimeState,
+    restoreBaseLevelState,
+    moveParticle,
+    containersWithAttr,
+    getPositionForParticles,
+    changeObscurityForAll,
+} = useLevelGame(refViewPort, panningOffset, additionalCenteringOffset);
 
 const levelRecordings = computed(() => {
     const entries = recordingsStore.value[levelId];
     return Array.isArray(entries) ? entries : [];
 });
-
-const doSmoothAnimate = computed(() => isLevelLoaded.value && !isPanning.value && !isCustomAnimating.value);
-
-const loadLevelFromString = (levelString) => {
-    name.value = levelString.meta.name;
-    author.value = levelString.meta.author;
-    mapSize.value = {
-        rows: levelString.meta.rows,
-        columns: levelString.meta.columns
-    }
-    const containers = JSON.parse(JSON.stringify(levelString.content.containers));
-    const particles = JSON.parse(JSON.stringify(levelString.content.particles));
-    baseLevelDefinition.value = {
-        containers,
-        particles
-    };
-    gameState.value.containers = JSON.parse(JSON.stringify(baseLevelDefinition.value.containers));
-    gameState.value.particles = JSON.parse(JSON.stringify(baseLevelDefinition.value.particles));
-    stepsGoal.value = levelString.content.goal;
-    isLevelLoaded.value = true;
-}
 
 const loadLevelConfig = async (recordingEntry) => {
     if (recordingEntry && recordingEntry.map) {
@@ -110,34 +106,6 @@ const loadLevelConfig = async (recordingEntry) => {
         });
 };
 
-const initializeRuntimeState = (shouldObscure = true) => {
-    gameState.value.particles.forEach((particle, index) => {
-        particle.id = `particle-${index}`;
-        particle.obscure = shouldObscure;
-        particle.colliding = false;
-    });
-    gameState.value.containers.forEach((container, index) => {
-        container.id = `container-${index}`;
-        container.obscure = shouldObscure;
-        container.classes = [];
-    });
-};
-
-const restoreBaseLevelState = ({ obscure = false } = {}) => {
-    if (!baseLevelDefinition.value) {
-        return false;
-    }
-    gameState.value.containers = JSON.parse(JSON.stringify(baseLevelDefinition.value.containers));
-    gameState.value.particles = JSON.parse(JSON.stringify(baseLevelDefinition.value.particles));
-    initializeRuntimeState(obscure);
-    selected.value = null;
-    disableInteraction.value = false;
-    isCustomAnimating.value = false;
-    stepsCounter.value = 0;
-    hasWon.value = false;
-    return true;
-};
-
 const flattenRecordingEntries = (recordingData = []) => {
     const steps = [];
     recordingData.forEach((segment) => {
@@ -154,10 +122,6 @@ const flattenRecordingEntries = (recordingData = []) => {
     return steps;
 };
 
-//: Panning and Centering
-import { usePanning } from "@/functions/usePanning";
-const { panningOffset, onPanStart, onPanEnd } = usePanning(refViewPort);
-
 const onPanStartWrapper = (event) => {
     isPanning.value = true;
     onPanStart(event);
@@ -167,89 +131,6 @@ const onPanEndWrapper = () => {
     onPanEnd();
     isPanning.value = false;
 };
-
-//: Game Logic
-const {
-    hasBoardAt,
-    hasPortalAt,
-    hasContainerAt,
-    hasParticleWithColorAt,
-    getOtherPortal,
-    getParticlesAt,
-    getParticleAt,
-    getContainerAt,
-    negateColor,
-} = useGameStateQueries(gameState);
-
-const isMoveValid = (currentColor, currentId, newPos) => {
-    if (!hasContainerAt(newPos.row, newPos.column)) return false;
-    if (hasParticleWithColorAt(newPos.row, newPos.column, currentColor)) return false;
-    if (hasPortalAt(newPos.row, newPos.column)) {
-        const otherPortal = getOtherPortal(newPos.row, newPos.column);
-        if (hasParticleWithColorAt(otherPortal.row, otherPortal.column, currentColor) && getParticleAt(otherPortal.row, otherPortal.column).id != currentId) return false;
-    }
-    return true;
-}
-
-const updateMapAfterCollision = (r, c) => {
-    if (hasPortalAt(r, c)) {
-        const otherPortal = getOtherPortal(r, c);
-        otherPortal.type = 'board';
-    }
-    gameState.value.containers = gameState.value.containers.filter(item => item.row !== r || item.column !== c);
-    gameState.value.particles = gameState.value.particles.filter(particle => particle.row !== r || particle.column !== c);
-    selected.value = null;
-};
-
-const animateInvalidMove = (particleId, direction) => {
-    let onFinishCallback = () => { };
-    const refOffset = ref({ x: 0, y: 0 });
-    const shakeOffset = levelMapGridScalePx.value;
-    const selectedParticleDOM = document.getElementById(particleId);
-    refAnimateToObject(
-        refOffset,
-        {
-            'up': { x: 0, y: -shakeOffset },
-            'down': { x: 0, y: shakeOffset },
-            'left': { x: -shakeOffset, y: 0 },
-            'right': { x: shakeOffset, y: 0 },
-            default: { x: 0, y: 0 }
-        }[direction],
-        gameDefaultAnimationDuration,
-        easeNopeGenerator(0.1),
-        { x: 0, y: 0 }
-    ).onUpdate(() => {
-        selectedParticleDOM.style.translate = `${refOffset.value.x}px ${refOffset.value.y}px`;
-    }).onFinish(() => {
-        onFinishCallback();
-    });
-
-    return {
-        onFinish(callback) {
-            onFinishCallback = callback;
-        }
-    }
-}
-const createShadowParticleFrom = (source) => {
-    var shadowParticleNode = source.cloneNode(true);
-    shadowParticleNode.id = `shadow-${source.id}`;
-    shadowParticleNode.classList.add('shadow-particle');
-    refViewPort.value.appendChild(shadowParticleNode);
-}
-const collapseContainerAt = (r, c) => {
-    const container = getContainerAt(r, c);
-    if (container) {
-        const containerNode = document.getElementById(container.id);
-        containerNode.classList.add('container--collapse');
-    }
-}
-const makeBoardFrom = (r, c) => {
-    const container = getContainerAt(r, c);
-    if (container) {
-        const containerNode = document.getElementById(container.id);
-        containerNode.classList.add('container--becoming-board');
-    }
-}
 
 const stopPlayback = () => {
     isPlaybackActive.value = false;
@@ -380,215 +261,6 @@ const checkWinCondition = () => {
         changeObscurityForAll(true, gameEntranceFocusAnimationRange);
     }
 };
-
-const moveParticle = (direction, options = {}) => {
-    const { allowWhilePlayback = false, instant = false } = options;
-    if (!selected.value) {
-        return;
-    }
-    if (!allowWhilePlayback && !canInteract.value) {
-        return;
-    }
-    const currentIndex = gameState.value.particles.findIndex(p => p === selected.value);
-    let currentColor = gameState.value.particles[currentIndex].color;
-    let currentRow = gameState.value.particles[currentIndex].row;
-    let currentColumn = gameState.value.particles[currentIndex].column;
-    let currentId = gameState.value.particles[currentIndex].id;
-    let currentNode = document.getElementById(currentId);
-    if (currentIndex !== -1) {
-        switch (direction) {
-            case 'up':
-                currentRow -= 1;
-                break;
-            case 'down':
-                currentRow += 1;
-                break;
-            case 'left':
-                currentColumn -= 1;
-                break;
-            case 'right':
-                currentColumn += 1;
-                break;
-        }
-    }
-    const isValid = isMoveValid(currentColor, currentId, { row: currentRow, column: currentColumn });
-    if (isValid) {
-        stepsCounter.value++;
-        gameState.value.particles[currentIndex].row = currentRow;
-        gameState.value.particles[currentIndex].column = currentColumn;
-        
-        // If instant, we skip animations and timeouts
-        const duration = instant ? 0 : gameDropoutAnimationDuration;
-        const transportDuration = instant ? 0 : gameTransportAnimationDuration;
-        const defaultDuration = instant ? 0 : gameDefaultAnimationDuration;
-
-        if (getParticlesAt(currentRow, currentColumn).length >= 2) {
-            disableInteraction.value = !instant;
-            selected.value = null;
-
-            const collidingParticles = getParticlesAt(currentRow, currentColumn);
-            if (!instant) collidingParticles.forEach(particle => particle.colliding = true);
-            if (!instant) collapseContainerAt(currentRow, currentColumn);
-            if (hasPortalAt(currentRow, currentColumn)) {
-                const otherPortalCoord = getOtherPortal(currentRow, currentColumn);
-                if (!instant) makeBoardFrom(otherPortalCoord.row, otherPortalCoord.column);
-            }
-
-            if (instant) {
-                 updateMapAfterCollision(currentRow, currentColumn);
-            } else {
-                setTimeout(() => {
-                    try {
-                        updateMapAfterCollision(currentRow, currentColumn);
-                    } finally {
-                        disableInteraction.value = false;
-                    }
-                }, duration);
-            }
-        }
-        else if (hasPortalAt(currentRow, currentColumn)) {
-            disableInteraction.value = !instant;
-            
-            const handlePortalLogic = () => {
-                if (!instant) isCustomAnimating.value = true;
-                const otherPortalCoord = getOtherPortal(currentRow, currentColumn);
-                if (!instant) createShadowParticleFrom(currentNode);
-                gameState.value.particles[currentIndex].row = otherPortalCoord.row;
-                gameState.value.particles[currentIndex].column = otherPortalCoord.column;
-
-                if (hasParticleWithColorAt(otherPortalCoord.row, otherPortalCoord.column, negateColor(currentColor))) {
-                    selected.value = null;
-                    const collidingParticles = getParticlesAt(otherPortalCoord.row, otherPortalCoord.column);
-                    if (!instant) collidingParticles.forEach(particle => particle.colliding = true);
-                    if (!instant) collapseContainerAt(otherPortalCoord.row, otherPortalCoord.column);
-                    if (!instant) makeBoardFrom(currentRow, currentColumn);
-
-                    if (instant) {
-                        updateMapAfterCollision(otherPortalCoord.row, otherPortalCoord.column);
-                    } else {
-                        setTimeout(() => {
-                            try {
-                                isCustomAnimating.value = false;
-                                updateMapAfterCollision(otherPortalCoord.row, otherPortalCoord.column);
-                            } finally {
-                                disableInteraction.value = false;
-                            }
-                        }, duration);
-                    }
-                }
-                else {
-                    if (!instant) currentNode.classList.add('particle--transported');
-                    if (instant) {
-                         // No op
-                    } else {
-                        setTimeout(() => {
-                            isCustomAnimating.value = false;
-                            currentNode.classList.remove('particle--transported');
-                            disableInteraction.value = false;
-                        }, transportDuration);
-                    }
-                }
-            };
-
-            if (instant) {
-                handlePortalLogic();
-            } else {
-                setTimeout(handlePortalLogic, defaultDuration);
-            }
-        }
-    }
-    else {
-        if (!instant) {
-            disableInteraction.value = true;
-            isCustomAnimating.value = true;
-            animateInvalidMove(currentId, direction)
-                .onFinish(() => {
-                    isCustomAnimating.value = false;
-                    disableInteraction.value = false;
-                });
-        }
-    }
-};
-
-const containersWithAttr = computed(() => {
-    return gameState.value.containers.map(item => {
-        const position = getPositionForContainers(item);
-        return {
-            ...item,
-            style: position.style,
-            className: position.className
-        };
-    });
-});
-
-const { width, height } = useElementBounding(refViewPort);
-const additionalCenteringOffset = computed(() => {
-    return {
-        x: (width.value - levelMapGridScalePx.value * (mapSize.value.columns)) / 2,
-        y: (height.value - levelMapGridScalePx.value * (mapSize.value.rows)) / 2
-    };
-})
-
-const getPositionForContainers = (item) => {
-    item.classes = [];
-    item.classes.push(item.type);
-    if (hasBoardAt(item.row - 1, item.column)) item.classes.push('board--occupied-top');
-    if (hasBoardAt(item.row + 1, item.column)) item.classes.push('board--occupied-bottom');
-    if (hasBoardAt(item.row, item.column - 1)) item.classes.push('board--occupied-left');
-    if (hasBoardAt(item.row, item.column + 1)) item.classes.push('board--occupied-right');
-    const left = (item.column) * levelMapGridScalePx.value;
-    const top = (item.row) * levelMapGridScalePx.value;
-    return {
-        style:
-        {
-            position: 'absolute',
-            left: `${left + panningOffset.value.x + additionalCenteringOffset.value.x}px`,
-            top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`,
-            ...(item.type === 'portal' ? {
-                background: hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha),
-                border: `1px solid ${hexaToRgba(levelPortalCycleColor[item.index], levelMapPortalBackgroundAlpha * 3)}`,
-                borderRadius: `0.625rem`
-            } : {}),
-            transition: doSmoothAnimate.value ? `all ${gameDefaultAnimationDuration}ms ease-out` : 'none'
-        },
-        className: item.classes.join(' ')
-    };
-};
-const getPositionForParticles = (item) => {
-    const left = (item.column) * levelMapGridScalePx.value;
-    const top = (item.row) * levelMapGridScalePx.value;
-    return {
-        position: 'absolute',
-        left: `${left + panningOffset.value.x + additionalCenteringOffset.value.x}px`,
-        top: `${top + panningOffset.value.y + additionalCenteringOffset.value.y}px`,
-        transition: doSmoothAnimate.value ? `all ${gameDefaultAnimationDuration}ms ease-out` : 'none'
-    };
-};
-
-const getRandomSequenceWithinRange = ({min, max}, length) => {
-    assert(length > 0);
-    const sequence = [];
-    for (let i = 0; i < length; i++) {
-        sequence.push(randomFloatFromInterval(min, max));
-    }
-    const curMin = Math.min(...sequence);
-    const curMax = Math.max(...sequence);
-    sequence.forEach((item, index) => {
-        sequence[index] = min + (item - curMin) / (curMax - curMin) * (max - min);
-    });
-    return sequence;
-} 
-
-const changeObscurityForAll = (value, delayRange) => {
-    const length = gameState.value.particles.length + gameState.value.containers.length;
-    const randomDelaySequence = getRandomSequenceWithinRange(delayRange, length);
-    [gameState.value.particles, gameState.value.containers].flat()
-        .forEach((obj, index) => {
-            setTimeout(() => {
-                obj.obscure = value;
-            }, randomDelaySequence[index]);
-        });
-}
 
 onMounted(async () => {
     isStartingAnimation.value = false;
