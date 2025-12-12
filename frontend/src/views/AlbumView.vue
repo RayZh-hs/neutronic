@@ -1,6 +1,6 @@
 <script setup>
 
-import { useLocalStorage } from '@vueuse/core';
+import { useLocalStorage, useTimeoutFn } from '@vueuse/core';
 
 //: Swiper-specific setup
 
@@ -49,6 +49,7 @@ import { router } from '@/router';
 import { getAccountProgress } from '@/functions/useAccount';
 import { album, isAlbumLoaded } from '@/functions/useAlbum';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
+import { watch } from 'vue';
 // let album = ref(null);
 // const { data: album, isFinished: isAlbumLoaded } = useAxiosWithStore('neutronic-album', SERVER_URL + "/albums", 'GET');
 const player = getAccountProgress();
@@ -98,6 +99,23 @@ useHotkeyBindings('album', {
 
 onMounted(() => {
     console.log("AlbumView mounted");
+});
+
+const {timeoutStart, timeoutStop} = useTimeoutFn(
+    () => {
+        if (!isAlbumLoaded.value) cannotConnectToBackend.value = true;
+    },
+    3000,
+    { immediate: false }
+)
+const cannotConnectToBackend = ref(true);
+watch(isAlbumLoaded, (newVal) => {
+    if (newVal) {
+        timeoutStop();
+        cannotConnectToBackend.value = false;
+    } else {
+        timeoutStart();
+    }
 });
 
 </script>
@@ -161,6 +179,14 @@ onMounted(() => {
             data-hotkey-label-position="right"
         ></ion-icon>
     </div>
+    <!-- Backend server is not responding -->
+    <div v-if="cannotConnectToBackend" class="timeout-message-box">
+        <div class="timeout-message-box-top a-fade-in">
+            <ion-icon name="cloud-offline-outline"></ion-icon>
+            <p class="timeout-message timeout-message--primary">The Neutronic server is taking a nap.</p>
+        </div>
+        <p class="timeout-message timeout-message--secondary a-fade-in a-delay-4">Come back later, will you?</p>
+    </div>
 </template>
 
 <style lang="scss" scoped>
@@ -204,6 +230,36 @@ onMounted(() => {
         width: 60vw;
         height: 60vh;
         // outline: 1px solid rgb(255, 255, 255);   
+    }
+}
+
+.timeout-message-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    .timeout-message-box-top {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        ion-icon {
+            font-size: 2.6rem;
+        }
+
+        .timeout-message--primary {
+            font-size: 1.5rem;
+            font-weight: 400;
+        }
+    }
+
+    .timeout-message--secondary {
+        color: #ccc;
+        margin-top: 0.2rem;
+        letter-spacing: 0.5pt;
+        font-size: 1.2rem;
+        font-weight: 200;
     }
 }
 
