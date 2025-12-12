@@ -11,7 +11,7 @@
  */
 
 //: API
-export const SERVER_URL = "http://localhost:9721/api";
+export const SERVER_URL = import.meta.env.API_SERVER_URL || "http://localhost:9721/api";
 
 //: Custom Selection
 export const customSelectionWindowSize = 5;

@@ -16,7 +16,7 @@
 [+] Refactor: Merge common functions between Level View and Playback View
 [+] Refactor: Cut down on file length for Level View
 [+] Deployment: Remove debugging info in production build
-[ ] Deployment: Server URL should be a config variable, specified at build-time
+[+] Deployment: Server URL should be a config variable, specified at build-time
 [ ] More levels need to be injected into the album
 [ ] Publishing custom levels has not been implemented, including editing metadata (not planned for public beta)
 [ ] Online section has not been implemented (not planned for public beta)
