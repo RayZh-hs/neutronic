@@ -11,25 +11,17 @@ import IonButton from '@/components/IonButton.vue';
 import { levelMapGridScalePx, SERVER_URL } from "@/data/constants"
 import { gameDefaultAnimationDuration } from "@/data/constants";
 import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
-import { useRecordingsStore, addRecordingForLevel } from '@/functions/useRecordings';
 import { useHotkeyBindings, useDigitInput } from '@/functions/useHotkeys';
 import { useLevelGame } from '@/functions/useLevelGame';
 import { useTutorial } from '@/functions/useTutorial';
+import { useLevelLoader } from '@/functions/useLevelLoader';
+import { useLevelRecording } from '@/functions/useLevelRecording';
+import { useLevelProgress } from '@/functions/useLevelProgress';
 
 const levelViewConfig = useSessionStorage('level-view-config', {});
-const recordingsStore = useRecordingsStore();
 const fullLevelData = ref(null);
-const recordingSession = ref({
-    active: false,
-    startedAt: null,
-});
-const isPlaybackActive = ref(false);
-const playbackQueue = ref([]);
-const playbackTimeoutHandle = ref(null);
 
 //: Map Setup
-const responseCode = ref(0);
-const currentBest = ref(null);
 const currentRoute = router.currentRoute.value;
 const routePath = currentRoute.path || currentRoute.fullPath || '';
 const isCustomLevelRoute = routePath.startsWith('/custom/play');
@@ -80,6 +72,73 @@ const {
     focusParticleAtIndex,
     getParticleHotkey
 } = useLevelGame(refViewPort, panningOffset, additionalCenteringOffset);
+
+const {
+    responseCode,
+    currentBest,
+    ensureContext,
+    loadLevelConfig
+} = useLevelLoader({
+    levelViewConfig,
+    levelId,
+    isCustomLevelRoute,
+    loadLevelFromString,
+    fullLevelData
+});
+
+const {
+    recordingSession,
+    isPlaybackActive,
+    playbackQueue,
+    recording,
+    levelRecordings,
+    hasLocalPlayback,
+    isRecordingActive,
+    recordingButtonDisabled,
+    playbackDropdownOptions,
+    recordMove,
+    clearRecordingSession,
+    handleRecordingCompletion,
+    startRecordingSession,
+    handleRecordButtonClick,
+    stopPlayback,
+    startPlayback,
+    playLatestRecordingEntry
+} = useLevelRecording({
+    levelId,
+    name,
+    author,
+    fullLevelData,
+    gameState,
+    selected,
+    moveParticle,
+    restoreBaseLevelState,
+    disableInteraction,
+    isCustomAnimating,
+    isLevelLoaded
+});
+
+const triggerEndingAnimation = () => {
+    changeObscurityForAll(true, gameEntranceFocusAnimationRange);
+}
+
+const {
+    getGameRank,
+    updateHasWon
+} = useLevelProgress({
+    gameState,
+    hasWon,
+    stepsCounter,
+    stepsGoal,
+    levelId,
+    albumIndex,
+    levelViewConfig,
+    currentBest,
+    triggerEndingAnimation,
+    handleRecordingCompletion,
+    ensureContext
+});
+
 const usingTutorial = useTutorial();
 const context = usingTutorial.tutorialContext;
 context.currentLevelTutorialState.value = usingTutorial.tutorialState(levelId);
@@ -100,111 +159,7 @@ watch(hasWon, (newVal) => {
     context.hasWon.value = newVal;
 });
 
-const levelRecordings = computed(() => {
-    const entries = recordingsStore.value[levelId];
-    return Array.isArray(entries) ? entries : [];
-});
-const hasLocalPlayback = computed(() => levelRecordings.value.length > 0);
-const isRecordingActive = computed(() => recordingSession.value.active);
-const recordingButtonDisabled = computed(() => !isLevelLoaded.value || isPlaybackActive.value);
-const formatRecordingLabel = (entry) => {
-    const date = entry.recordedAt ? new Date(entry.recordedAt) : null;
-    const formattedDate = date ? date.toLocaleString() : 'Unknown date';
-    return `${formattedDate} • ${entry.steps} steps`;
-};
-const playbackDropdownOptions = computed(() => levelRecordings.value.map((entry) => ({
-    label: formatRecordingLabel(entry),
-    key: entry.id
-})));
 
-const loadLevelFromStringWrapper = (levelString) => {
-    fullLevelData.value = levelString;
-    loadLevelFromString(levelString);
-}
-
-const ensureContext = () => {
-    if (isCustomLevelRoute) {
-        if (levelViewConfig.value.context !== 'editor') {
-            levelViewConfig.value.context = 'custom';
-        }
-    }
-    else if (!isCustomLevelRoute && levelViewConfig.value.context !== 'editor') {
-        levelViewConfig.value.context = 'album';
-    }
-    return levelViewConfig.value.context;
-};
-
-const loadLevelConfig = async () => {
-    console.log({ levelViewConfig })
-    const context = ensureContext();
-    console.log("context: ", context)
-    if (context === 'editor') {
-        loadLevelFromStringWrapper(levelViewConfig.value.levelData);
-        responseCode.value = 200;
-        return;
-    }
-    if (context === 'custom') {
-        const customLevel = getCustomLevelById(levelId);
-        if (!customLevel) {
-            responseCode.value = 404;
-            console.warn('Custom level not found for id', levelId);
-            return;
-        }
-        levelViewConfig.value.customLevelId = levelId;
-        loadLevelFromStringWrapper(customLevel.level);
-        currentBest.value = customLevel.bestMoves;
-        responseCode.value = 200;
-        return;
-    }
-    console.log(SERVER_URL + '/level?levelId=' + String(levelId));
-    await axios
-        .get(SERVER_URL + '/level?levelId=' + String(levelId))
-        .then((res) => {
-            console.log(res);
-            responseCode.value = res.status;
-            if (res.status == 200) {
-                const levelConfig = res.data;
-                loadLevelFromStringWrapper(levelConfig);
-            }
-            return res;
-        })
-        .catch((err) => {
-            responseCode.value = err.status;
-            console.log(err);
-            return err;
-        });
-};
-
-const restoreBaseLevelStateWrapper = ({ obscure = false, resetRecording = true } = {}) => {
-    const result = restoreBaseLevelState({ obscure, resetRecording });
-    if (result && resetRecording) {
-        recording.value = [];
-    }
-    return result;
-};
-
-const flattenRecordingEntries = (recordingData = []) => {
-    const steps = [];
-    recordingData.forEach((segment) => {
-        if (!segment || typeof segment.id === 'undefined' || !Array.isArray(segment.direction)) {
-            return;
-        }
-        segment.direction.forEach((dir) => {
-            steps.push({
-                id: segment.id,
-                direction: dir
-            });
-        });
-    });
-    return steps;
-};
-
-const countRecordingSteps = (recordingData = []) => recordingData.reduce((total, segment) => {
-    if (!segment || !Array.isArray(segment.direction)) {
-        return total;
-    }
-    return total + segment.direction.length;
-}, 0);
 
 const onPanStartWrapper = (event) => {
     isPanning.value = true;
@@ -216,197 +171,11 @@ const onPanEndWrapper = () => {
     isPanning.value = false;
 };
 
-import { isAccessibleToPrebuiltLevel, hasFinishedAlbum } from '@/functions/useAccount';
-const updateHasWon = () => {
-    console.log("particles: ", gameState.value.particles.length);
-    if (gameState.value.particles.length === 0) {
-        hasWon.value = true;
-        const context = ensureContext();
-        if (context === 'album' && isAccessibleToPrebuiltLevel(levelId)) {
-            accountInsertHasWon();
-        }
-        else if (context === 'custom' || context === 'editor') {
-            accountInsertHasWon();
-        }
-        currentBest.value = currentBest.value == null
-            ? stepsCounter.value
-            : Math.min(currentBest.value, stepsCounter.value);
-        triggerEndingAnimation();
-        handleRecordingCompletion();
-    }
-}
-
 watch(() => gameState.value.particles.length, (newLength) => {
     if (newLength === 0 && !hasWon.value) {
         updateHasWon();
     }
 });
-
-const triggerEndingAnimation = () => {
-    changeObscurityForAll(true, gameEntranceFocusAnimationRange);
-}
-
-import { getAccountProgress, setAndPushAccountProgress, getCustomLevelById, recordCustomLevelResult } from '@/functions/useAccount';
-import { getAlbumIndex } from '@/functions/useAlbum';
-const accountInsertHasWon = () => {
-    const context = ensureContext();
-    if (context === 'custom' || context === 'editor') {
-        recordCustomLevelResult(levelId, {
-            bestMoves: stepsCounter.value,
-            rank: getGameRank(),
-        });
-        return;
-    }
-    if (context !== 'album' || albumIndex === null || Number.isNaN(albumIndex)) {
-        return;
-    }
-    let hasPerfected = false;
-    const account = getAccountProgress();
-    const rank = getGameRank();
-    if (rank === 'Perfect' && !account.perfected.includes(levelId)) {
-        account.perfected.push(levelId);
-        account.lookup[levelViewConfig.value.albumName].perfected += 1;
-        if (account.passed.includes(levelId)) {
-            account.passed = account.passed.filter(item => item !== levelId);
-            account.lookup[levelViewConfig.value.albumName].passed -= 1;
-        }
-    }
-    else if (rank === 'Pass' && !account.passed.includes(levelId) && !account.perfected.includes(levelId)) {
-        account.passed.push(levelId);
-        account.lookup[levelViewConfig.value.albumName].passed += 1;
-    }
-    else {
-        hasPerfected = true;
-    }
-    if (hasFinishedAlbum(albumIndex)) {
-        if (albumIndex < album.value.length - 1 && !account.lookup[album.value[albumIndex + 1].meta.name]) {
-            account.lookup[album.value[albumIndex + 1].meta.name] = {
-                perfected: 0,
-                passed: 0
-            }
-        }
-    }
-    if (!hasPerfected) {
-        setAndPushAccountProgress(account);
-    }
-}
-
-const recording = ref([]);
-const recordMove = (particleId, direction) => {
-    if (!recordingSession.value.active) {
-        return;
-    }
-    const particleIdRaw = Number(particleId.split('-')[1]);
-    if (recording.value.length === 0 || recording.value.at(-1).id !== particleIdRaw) {
-        recording.value.push({
-            id: particleIdRaw,
-            direction: [direction]
-        });
-    }
-    else {
-        recording.value.at(-1).direction.push(direction);
-    }
-}
-
-const clearRecordingSession = () => {
-    recordingSession.value.active = false;
-    recordingSession.value.startedAt = null;
-};
-
-const handleRecordingCompletion = () => {
-    if (!recordingSession.value.active || recording.value.length === 0) {
-        clearRecordingSession();
-        return;
-    }
-    const steps = countRecordingSteps(recording.value);
-    addRecordingForLevel(levelId, {
-        levelId,
-        levelName: name.value,
-        author: author.value,
-        steps,
-        recording: JSON.parse(JSON.stringify(recording.value)),
-        map: JSON.parse(JSON.stringify(fullLevelData.value))
-    });
-    clearRecordingSession();
-};
-
-const startRecordingSession = () => {
-    if (!restoreBaseLevelStateWrapper({ obscure: false, resetRecording: true })) {
-        return;
-    }
-    recordingSession.value.active = true;
-    recordingSession.value.startedAt = new Date().toISOString();
-};
-
-const handleRecordButtonClick = () => {
-    if (recordingButtonDisabled.value) {
-        return;
-    }
-    stopPlayback();
-    if (recordingSession.value.active) {
-        clearRecordingSession();
-        recording.value = [];
-        return;
-    }
-    startRecordingSession();
-};
-
-const stopPlayback = () => {
-    isPlaybackActive.value = false;
-    playbackQueue.value = [];
-    if (playbackTimeoutHandle.value) {
-        clearTimeout(playbackTimeoutHandle.value);
-        playbackTimeoutHandle.value = null;
-    }
-};
-
-const queueNextPlaybackStep = () => {
-    if (!isPlaybackActive.value) {
-        return;
-    }
-    if (disableInteraction.value || isCustomAnimating.value) {
-        playbackTimeoutHandle.value = setTimeout(queueNextPlaybackStep, 100);
-        return;
-    }
-    playbackTimeoutHandle.value = setTimeout(stepPlaybackQueue, gameDefaultAnimationDuration + 50);
-};
-
-const stepPlaybackQueue = () => {
-    if (!isPlaybackActive.value) {
-        return;
-    }
-    if (playbackQueue.value.length === 0) {
-        stopPlayback();
-        return;
-    }
-    const nextStep = playbackQueue.value.shift();
-    const particle = gameState.value.particles.find((p) => Number(p.id.split('-')[1]) === nextStep.id);
-    if (!particle) {
-        stopPlayback();
-        return;
-    }
-    selected.value = particle;
-    moveParticle(nextStep.direction, { allowWhilePlayback: true });
-    queueNextPlaybackStep();
-};
-
-const startPlayback = (entry) => {
-    if (!entry) {
-        return;
-    }
-    stopPlayback();
-    recordingSession.value.active = false;
-    if (!restoreBaseLevelStateWrapper({ obscure: false, resetRecording: true })) {
-        return;
-    }
-    const flattened = flattenRecordingEntries(entry.recording);
-    if (flattened.length === 0) {
-        return;
-    }
-    isPlaybackActive.value = true;
-    playbackQueue.value = flattened;
-    stepPlaybackQueue();
-};
 
 const handlePlaybackSelect = (key) => {
     router.push({
@@ -427,21 +196,10 @@ useDigitInput({
     onMatch: (index) => focusParticleAtIndex(index)
 });
 
-const playLatestRecordingEntry = () => {
-    const latest = levelRecordings.value.at(-1);
-    if (!latest) {
-        return;
-    }
-    startPlayback(latest);
-};
 const handleDirectionalHotkey = (direction, { event }) => {
     event.preventDefault();
     moveParticle(direction, { onMoveRecorded: recordMove });
 };
-
-const getGameRank = () => {
-    return stepsCounter.value <= stepsGoal.value ? 'Perfect' : 'Pass';
-}
 
 const restartGame = () => {
     router.go(0)
