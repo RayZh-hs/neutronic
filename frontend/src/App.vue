@@ -92,6 +92,23 @@ const showGeneralHotkeys = computed(() => {
   </n-config-provider>
 </template>
 
+<style lang="scss">
+.v-enter-active,
+.v-leave-active {
+    transition: all 0.5s ease;
+}
+
+.v-enter-from {
+    opacity: 0;
+    transform: translateY(-0.3rem);
+}
+
+.v-leave-to {
+    opacity: 0;
+    transform: translateY(0.3rem);
+}
+</style>
+
 <style scoped lang="scss">
 .footer {
   position: fixed;

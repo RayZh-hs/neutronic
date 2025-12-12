@@ -14,6 +14,7 @@ import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } f
 import { useRecordingsStore, addRecordingForLevel } from '@/functions/useRecordings';
 import { useHotkeyBindings, useDigitInput } from '@/functions/useHotkeys';
 import { useLevelGame } from '@/functions/useLevelGame';
+import { useTutorial } from '@/functions/useTutorial';
 
 const levelViewConfig = useSessionStorage('level-view-config', {});
 const recordingsStore = useRecordingsStore();
@@ -79,6 +80,25 @@ const {
     focusParticleAtIndex,
     getParticleHotkey
 } = useLevelGame(refViewPort, panningOffset, additionalCenteringOffset);
+const usingTutorial = useTutorial();
+const context = usingTutorial.tutorialContext;
+context.currentLevelTutorialState.value = usingTutorial.tutorialState(levelId);
+
+watch(selected, (newVal) => {
+    context.userSelection.value = newVal;
+});
+
+watch(stepsCounter, (newVal) => {
+    context.steps.value = newVal;
+});
+
+watch(() => gameState.value.particles.length, (newVal) => {
+    context.particleCount.value = newVal;
+});
+
+watch(hasWon, (newVal) => {
+    context.hasWon.value = newVal;
+});
 
 const levelRecordings = computed(() => {
     const entries = recordingsStore.value[levelId];
@@ -117,6 +137,7 @@ const ensureContext = () => {
 const loadLevelConfig = async () => {
     console.log({ levelViewConfig })
     const context = ensureContext();
+    console.log("context: ", context)
     if (context === 'editor') {
         loadLevelFromStringWrapper(levelViewConfig.value.levelData);
         responseCode.value = 200;
@@ -433,6 +454,7 @@ const gotoLevelSelect = () => {
     router.push(`/album/${albumIndex}`);
 }
 import { album } from '@/functions/useAlbum';
+import TutorialHandler from '@/components/TutorialHandler.vue';
 const gotoNextLevel = () => {
     assert(levelViewConfig.value.context === 'album');
     router.replace(levelViewConfig.value.next)
@@ -457,6 +479,7 @@ const gotoNextLevel = () => {
 
 onMounted(async () => {
     hasWon.value = false;
+    context.isStartingAnimation.value = true;
     isStartingAnimation.value = true;
     disableInteraction.value = true;    // Wait for entrance animation to finish
     setTimeout(() => {
@@ -477,6 +500,7 @@ onMounted(async () => {
         setTimeout(() => {
             // This value, used in determining the v-show for the level name, is set to false last
             isStartingAnimation.value = false;
+            context.isStartingAnimation.value = false;
         }, gameEntranceFocusAnimationRange.max);
     }, gameEntranceTitleAnimationDuration);
     await loadLevelConfig();
@@ -587,7 +611,6 @@ useHotkeyBindings('level', {
 }, {
     ignore: ['general.view-hotkeys']
 });
-
 </script>
 
 <template>
@@ -599,6 +622,7 @@ useHotkeyBindings('level', {
     ></ion-icon>
     <div class="viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
         @mouseleave="onPanEndWrapper" ref="refViewPort">
+        <tutorial-handler v-if="context.currentLevelTutorialState.value !== 'none'"/>
         <div class="steps-complex a-fade-in" v-show="!isStartingAnimation && !hasWon">
             <div class="steps-wrapper u-rel">
                 <span class="steps-complex__steps-count">{{ stepsCounter }}</span>

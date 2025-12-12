@@ -5,3 +5,7 @@ export function randomIntFromInterval(min, max) {
 export function randomFloatFromInterval(min, max) {
     return Math.random() * (max - min) + min;
 }
+
+export function contract(min, max, factor) {
+    return [min + factor * (max - min), max - factor * (max - min)]
+}
