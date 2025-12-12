@@ -76,7 +76,7 @@ const showGeneralHotkeys = computed(() => {
             </div>
             <router-view v-slot="{ Component }">
               <!-- <transition name="zoom" mode="out-in"> -->
-              <component :is="Component" />
+              <component :is="Component" :key="route.fullPath" />
               <!-- </transition> -->
             </router-view>
             <div class="footer">

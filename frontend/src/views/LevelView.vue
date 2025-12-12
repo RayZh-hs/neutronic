@@ -200,7 +200,8 @@ const handleDirectionalHotkey = (direction, { event }) => {
 };
 
 const restartGame = () => {
-    router.go(0)
+    restoreBaseLevelState();
+    clearRecordingSession();
 }
 const gotoLevelSelect = () => {
     if (albumIndex === null || Number.isNaN(albumIndex)) {
@@ -227,10 +228,6 @@ const gotoNextLevel = () => {
             return `/album/${albumIndex}/${album.value[albumIndex].content[levelIndex + 2].levelId}`;
         }
     })()
-    // refresh for the replacement to take effect
-    setTimeout(() => {
-        router.go(0);
-    }, 100);
 }
 
 onMounted(async () => {
@@ -394,7 +391,7 @@ useHotkeyBindings('level', {
                     data-hotkey-group="level-controls"
                     data-hotkey-group-side="bottom right"
                     data-hotkey-label-position="inline"
-                    @click="router.go(router.currentRoute.value)"
+                    @click="restartGame"
                 ></ion-button>
                 <div class="u-rel u-gap-8"></div>
                 <div class="recording-controls">
@@ -481,7 +478,7 @@ useHotkeyBindings('level', {
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)">
                     <template #trigger>
                         <ion-button name="refresh-outline" class="a-fade-in a-delay-12"
-                            @click="router.go(0)"
+                            @click="restartGame"
                             data-hotkey-target="level.on-finish.restart"
                             data-hotkey-label="Restart"
                             data-hotkey-group="level-finish"

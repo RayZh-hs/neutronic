@@ -324,7 +324,7 @@ useHotkeyBindings('playback', {
     },
     'playback.reset': ({ event }) => {
         event.preventDefault();
-        router.go(0);
+        goToStart();
     },
     'playback.back': ({ event }) => {
         event.preventDefault();
@@ -350,7 +350,7 @@ useHotkeyBindings('playback', {
                 <span class="steps-complex__steps-aim" v-if="stepsGoal">{{ stepsGoal }}</span>
                 <div class="u-rel u-gap-14"></div>
                 <ion-button name="refresh-outline" size="1.6rem" class="reset-btn"
-                    @click="router.go(0)"
+                    @click="goToStart()"
                     data-hotkey-target="playback.reset"
                     data-hotkey-label="Reset"
                 ></ion-button>
@@ -444,7 +444,7 @@ useHotkeyBindings('playback', {
                 </span></h2>
             <div class="end-info__button-group">
                 <ion-button name="refresh-outline" class="a-fade-in a-delay-12"
-                    @click="router.go(0)"></ion-button>
+                    @click="goToStart()"></ion-button>
                 <ion-button name="chevron-back-outline" class="a-fade-in a-delay-16"
                     @click="handleGoBack"></ion-button>
             </div>
