@@ -1,5 +1,5 @@
 <script setup>
-import { ref, Transition, watch, onUnmounted } from 'vue';
+import { ref, Transition, watch, onUnmounted, onMounted } from 'vue';
 import { useTutorial } from '@/functions/useTutorial';
 import { contract } from '@/functions/mathUtils';
 import { useElementBounding } from '@vueuse/core';
@@ -32,21 +32,19 @@ const handleResize = () => {
 };
 window.addEventListener('resize', handleResize);
 
+const handleKeydown = (e) => {
+    if (e.code === 'Space' && stageId.value === 'advanced:space') {
+        invokeAnimationFunction('advanced:select');
+    }
+}
+window.addEventListener('keydown', handleKeydown);
+
 onUnmounted(() => {
     window.removeEventListener('resize', handleResize);
+    window.removeEventListener('keydown', handleKeydown);
+    context.tutorialStageId.value = 'none:none';
+    clearOverlay();
 });
-
-// Internal aux reactive elements
-const internal = {
-    particle3Rect: (() => {
-        const el = document.getElementById('particle-3');
-        if (el) {
-            return useElementBounding(el);
-        } else {
-            return null;
-        }
-    })()
-}
 
 let currentAnimFrame = null;
 
@@ -240,6 +238,22 @@ const animationFunctionMapping = {
             arrowFromElToEl('container-2', 'particle-2', '#fff', true);
         }, 800);
     },
+    'advanced:space': () => {
+        // No specific animation
+    },
+    'advanced:select': () => {
+        setTimeout(() => {
+            addPulseToElement('particle-0', '#1581f4');
+        }, 800);
+    },
+    'advanced:cycle': () => {
+        setTimeout(() => {
+            arrowFromElToEl('particle-0', 'particle-1', '#fff');
+        }, 800);
+    },
+    'advanced:configure': () => {
+        // No specific animation
+    }
 }
 
 /**
@@ -284,11 +298,20 @@ watch(context.userSelection, (newVal) => {
     if (newVal && stageId.value === 'simple:click') {
         invokeAnimationFunction('simple:move');
     }
+    if (newVal && stageId.value === 'advanced:select') {
+        invokeAnimationFunction('advanced:cycle');
+    }
+    if (newVal && stageId.value === 'advanced:cycle') {
+        invokeAnimationFunction('advanced:configure');
+    }
 });
 
 watch(context.steps, (newVal) => {
     if (newVal > 0 && stageId.value === 'simple:move') {
         invokeAnimationFunction('simple:meet');
+    }
+    else if (stageId.value === 'advanced:configure') {
+        invokeAnimationFunction('none:none');
     }
 });
 
@@ -308,8 +331,10 @@ watch(context.hasWon, (newVal) => {
 
 <template>
     <div class="tutorial-container">
-        <!-- <span style="position: absolute;">{{ stageId }}</span> -->
-        <div class="tooltip-section">
+        <!-- <span style="position: absolute;">{{ context.isStartingAnimation }}</span> -->
+        <div class="tooltip-section" :style="{
+            visibility: context.isStartingAnimation.value ? 'hidden' : 'visible'
+        }">
             <transition name="tooltip">
                 <div v-show="stageId == 'simple:click'" class="tooltip-block simple-click">
                     <!-- Mouse Left Click -->
@@ -339,6 +364,37 @@ watch(context.hasWon, (newVal) => {
                     <span>Your goal: <span class="text-green">Cancel out</span> all particles</span>
                 </div>
             </transition>
+            <transition name="tooltip">
+                <div v-show="stageId == 'advanced:space'" class="tooltip-block advanced-space">
+                    <!-- Space Key -->
+                    <ion-icon name="phone-landscape-outline"></ion-icon>
+                    <span>Press <span class="text-green">Space</span> to view controls.</span>
+                </div>
+            </transition>
+            <transition name="tooltip">
+                <div v-show="stageId == 'advanced:select'" class="tooltip-block advanced-select">
+                    <!-- Number Keys -->
+                    <div class="first-line">
+                        <ion-icon name="keypad-outline"></ion-icon>
+                        <span>Press <span class="text-green">1-9</span> to select particles.</span>
+                    </div>
+                    <p>To dial in concentrates like 12, hold space while typing. Use <span class="text-code">Esc</span> to reset.</p>
+                </div>
+            </transition>
+            <transition name="tooltip">
+                <div v-show="stageId == 'advanced:cycle'" class="tooltip-block advanced-cycle">
+                    <!-- Cycle Keys -->
+                    <ion-icon name="swap-horizontal-outline"></ion-icon>
+                    <span>Use <span class="text-green">J</span> and <span class="text-green">L</span> to cycle selection.</span>
+                </div>
+            </transition>
+            <transition name="tooltip">
+                <div v-show="stageId == 'advanced:configure'" class="tooltip-block advanced-configure">
+                    <!-- Settings -->
+                    <ion-icon name="settings-outline"></ion-icon>
+                    <span>Hotkeys can be configured in <span class="text-green">Settings</span>.</span>
+                </div>
+            </transition>
         </div>
     </div>
 </template>
@@ -348,6 +404,13 @@ watch(context.hasWon, (newVal) => {
 
 .text-green {
     color: $n-primary;
+}
+.text-code {
+    font-family: monospace !important;
+    letter-spacing: 0 !important;
+    background-color: #2d2d2d;
+    padding: 2px 4px;
+    border-radius: 4px;
 }
 
 .tooltip-enter-active, .tooltip-leave-active {
@@ -385,6 +448,15 @@ watch(context.hasWon, (newVal) => {
             transform: translate(-50%, 0);
             display: flex;
             align-content: center;
+
+            &.advanced-select {
+                flex-direction: column;
+                p {
+                    color: #aaa;
+                    margin-top: 6px;
+                    font-size: 0.9rem;
+                }
+            }
 
             ion-icon {
                 color: #ffffff;
