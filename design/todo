@@ -10,9 +10,9 @@
 [+] Level Editor: Play has not been bound
 [+] General: Github/Account has not been bound (group, mode: bottom left)
 [+] Settings system has not been implemented
-[ ] Tutorial levels have not been implemented
-    [ ] Level 1: Basic Movement (mouse click, WASD/arrow keys)
-    [ ] Level 2: Keyboard Controls (space bar to show all hotkeys)
+[+] Tutorial levels have not been implemented
+    [+] Level 1: Basic Movement (mouse click, WASD/arrow keys)
+    [+] Level 2: Keyboard Controls (space bar to show all hotkeys)
 [ ] More levels need to be injected into the album
 [+] Refactor: Merge common functions between Level View and Playback View
 [ ] Refactor: Cut down on file length for Level View
