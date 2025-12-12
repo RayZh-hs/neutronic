@@ -33,6 +33,13 @@ const respondWithJsonFile = async (res, filePath, onSuccessLog) => {
 initDatabases();
 loadPremadeLevels();
 
+if (process.env.NODE_ENV === 'production') {
+    const noop = () => {};
+    console.log = noop;
+    console.info = noop;
+    console.debug = noop;
+}
+
 // The main express app
 const app = express();
 app.use(cors());

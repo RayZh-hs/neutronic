@@ -1,6 +1,5 @@
 <script setup>
 import { router } from '../router';
-import { ref } from 'vue';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
 import { overrideHotkeyOverlayConfig } from '@/data/hotkeyOverlayConfig';
 

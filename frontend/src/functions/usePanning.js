@@ -1,4 +1,3 @@
-import { ref } from 'vue';
 import { useMouse } from '@vueuse/core';
 import { gameRefreshFrequency } from '../data/constants';
 

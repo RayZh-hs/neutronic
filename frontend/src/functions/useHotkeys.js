@@ -1,4 +1,3 @@
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { defaultHotkeyMap } from '@/data/hotkeys';
 
 const HOTKEY_STORAGE_KEY = 'neutronic.hotkeys';

@@ -1,6 +1,5 @@
 <script setup>
 import StatusBar from './StatusBar.vue';
-import { ref } from 'vue';
 
 const props = defineProps({
     name: String,

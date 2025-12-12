@@ -1,4 +1,3 @@
-import { ref, computed } from 'vue';
 import { useRecordingsStore, addRecordingForLevel } from '@/functions/useRecordings';
 import { gameDefaultAnimationDuration } from "@/data/constants";
 

@@ -1,9 +1,7 @@
 <script setup>
 //: Vue-specific imports
-import { onMounted, onBeforeUnmount, ref, computed, watch } from "vue";
 import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog, get, assert } from "@vueuse/core";
 import { useRouter } from "vue-router";
-import { useDialog, useMessage } from "naive-ui";
 import { overrideHotkeyOverlayConfig } from "@/data/hotkeyOverlayConfig";
 
 //: Custom Components

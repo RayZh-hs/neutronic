@@ -1,4 +1,3 @@
-import { ref, computed } from 'vue';
 import { assert } from '@vueuse/core';
 import { useGameStateQueries } from '@/functions/useGameStateQueries';
 import { 
@@ -462,16 +461,7 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
         focusNextParticle,
         toggleParticleFocus,
         focusParticleAtIndex,
-        getParticleHotkey,
-        updateMapAfterCollision,
-        getParticlesAt,
-        getOtherPortal,
-        hasPortalAt,
-        makeBoardFrom,
-        collapseContainerAt,
-        createShadowParticleFrom,
-        animateInvalidMove,
-        negateColor,
-        hasParticleWithColorAt
+        getParticleHotkey
     };
 }
+

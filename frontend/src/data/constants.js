@@ -1,5 +1,3 @@
-import { readonly, ref } from 'vue';
-
 /**
  * This file contains all the constants used in the application that have logical implementations.
  * That is, everything exported here is used in other .vue(script) or .js files, as opposed to the constants.scss files which defines scss variables.

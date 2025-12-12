@@ -1,6 +1,5 @@
 import { useStorage } from "@vueuse/core"
 import { useAxios } from "@vueuse/integrations/useAxios"
-import { ref, computed, watchEffect } from "vue"
 
 export const useAxiosWithStore = (
     keyName, url, method = 'GET', storageType = sessionStorage

@@ -21,7 +21,3 @@ export const getPrebuiltLevelInfo = (levelId) => {
     }
     return null;
 }
-
-export const getLevelInfo = (levelId) => {
-    return getPrebuiltLevelInfo(levelId);
-}

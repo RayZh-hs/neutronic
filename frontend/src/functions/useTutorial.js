@@ -1,5 +1,3 @@
-import { ref } from "vue";
-
 const tutorialContext = {
     // The context acts like a singleton, relaying data from the level view to the tutorial handler.
     currentLevelTutorialState: ref('none'),

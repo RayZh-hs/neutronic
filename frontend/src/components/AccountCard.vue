@@ -1,6 +1,4 @@
 <script setup>
-import { ref, watch } from 'vue';
-import { useMessage, useDialog } from 'naive-ui';
 import { useFileDialog } from '@vueuse/core';
 import {
     useAccountStore,

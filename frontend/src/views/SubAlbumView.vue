@@ -1,7 +1,6 @@
 <script setup>
 
 import { useRouter } from 'vue-router';
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useSessionStorage } from '@vueuse/core';
 
 const router = useRouter();

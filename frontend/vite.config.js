@@ -11,7 +11,7 @@ export default defineConfig({
       template: {
         compilerOptions: {
           // isCustomElement: (tag) => tag.startsWith('ion-') // All tags starting with "ion-"
-          isCustomElement: (tag) => tag === 'ion-icon'        // Note: ion-button is NOT a web component but user-defined!
+          isCustomElement: (tag) => tag === 'ion-icon'
         }
       }
     }),

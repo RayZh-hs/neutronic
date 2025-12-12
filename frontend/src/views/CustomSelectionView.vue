@@ -1,9 +1,7 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSessionStorage } from '@vueuse/core';
 import { v4 as uuidV4Generator } from 'uuid';
-import { useMessage, useDialog } from 'naive-ui';
 import LevelCard from '@/components/LevelCard.vue';
 import IonButton from '@/components/IonButton.vue';
 import { customSelectionWindowSize } from '@/data/constants';

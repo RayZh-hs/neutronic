@@ -1,5 +1,3 @@
-import { reactive } from 'vue';
-
 const DEFAULT_GROUP_CONFIG = {
     columnOffset: 110,
     rowOffset: 20,

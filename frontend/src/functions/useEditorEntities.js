@@ -1,4 +1,3 @@
-import { computed, ref } from 'vue';
 import { levelPortalCycleColorCount } from '@/data/constants';
 
 const cloneCoord = (coord) => ({ x: coord.x, y: coord.y });
@@ -88,14 +87,12 @@ export const useEditorEntities = () => {
         activePortalMode,
         canPlaceMorePortals,
         hasBoardAt,
-        hasPortalAt,
         hasContainerAt,
         hasPositronAt,
         hasElectronAt,
         addBoardAt,
         addPortalAt,
         removeBoardAt,
-        removePortalAt,
         removeParticlesAt,
         cleanupPortals,
         removePlacementAt,

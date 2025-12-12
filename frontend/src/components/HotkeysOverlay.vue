@@ -1,5 +1,4 @@
 <script setup>
-import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { useHotkeyBindings, getPrimaryBindingLabel, getBindingsForAction, hotkeyUtils } from '@/functions/useHotkeys';
 import { getHotkeyGroupConfig } from '@/data/hotkeyOverlayConfig';
 

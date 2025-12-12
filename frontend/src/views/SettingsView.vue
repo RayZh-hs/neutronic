@@ -1,5 +1,4 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSettings } from '@/functions/useSettings';
 import { 
@@ -19,7 +18,6 @@ import {
     formatBindingSequence,
     useHotkeyBindings
 } from '@/functions/useHotkeys';
-import { useMessage, useDialog } from 'naive-ui';
 
 const router = useRouter();
 const message = useMessage();

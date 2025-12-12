@@ -1,4 +1,3 @@
-import { computed } from 'vue';
 import { useAccountStore } from './useAccount';
 
 export const useSettings = () => {

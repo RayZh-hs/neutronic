@@ -1,5 +1,4 @@
 <script setup>
-import { computed } from 'vue';
 import IonButton from "@/components/IonButton.vue";
 
 const props = defineProps({

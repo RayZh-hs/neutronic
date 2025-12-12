@@ -5,7 +5,6 @@ import AccountCard from './components/AccountCard.vue';
 import HotkeysOverlay from './components/HotkeysOverlay.vue';
 import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
-import { computed } from 'vue';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
 
 const openGitHub = () => {

@@ -1,6 +1,5 @@
 <script setup>
 //: Vue Imports
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { assert, useElementBounding } from '@vueuse/core';
 import axios from 'axios';

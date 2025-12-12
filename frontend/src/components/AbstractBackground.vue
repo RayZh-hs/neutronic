@@ -1,6 +1,5 @@
 <script setup>
 import { useSettings } from '@/functions/useSettings';
-import { computed } from 'vue';
 
 const settings = useSettings();
 const animationState = computed(() => settings.value.disableAnimations ? 'paused' : 'running');

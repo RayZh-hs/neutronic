@@ -1,6 +1,5 @@
 <script setup>
 
-import { computed, onBeforeMount, onMounted, ref } from 'vue';
 import { useLocalStorage } from '@vueuse/core';
 
 //: Swiper-specific setup
@@ -44,10 +43,9 @@ import { router } from '@/router';
 
 //: Custom json setup
 
-// import { SERVER_URL } from '@/data/constants';
 // import album from "../data/album.json";
 // import player from "../data/player.json";
-// import { useAxiosWithStore } from '@/functions/useAxiosWithStore';
+
 import { getAccountProgress } from '@/functions/useAccount';
 import { album, isAlbumLoaded } from '@/functions/useAlbum';
 import { useHotkeyBindings } from '@/functions/useHotkeys';

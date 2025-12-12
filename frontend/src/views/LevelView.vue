@@ -1,9 +1,7 @@
 <script setup>
 //: Vue Imports
-import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { assert, useElementBounding, useSessionStorage } from '@vueuse/core';
-import axios from 'axios';
 const router = useRouter();
 
 //: Custom Data and Components

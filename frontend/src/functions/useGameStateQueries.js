@@ -11,9 +11,6 @@ export const useGameStateQueries = (gameState) => {
     const hasContainerAt = (row, column) =>
         containers().some(item => item.row === row && item.column === column);
 
-    const hasParticleAt = (row, column) =>
-        particles().some(item => item.row === row && item.column === column);
-
     const hasParticleWithColorAt = (row, column, color) =>
         particles().some(item => item.row === row && item.column === column && item.color === color);
 
@@ -45,9 +42,7 @@ export const useGameStateQueries = (gameState) => {
         hasBoardAt,
         hasPortalAt,
         hasContainerAt,
-        hasParticleAt,
         hasParticleWithColorAt,
-        getPortalIndexAt,
         getOtherPortal,
         getParticlesAt,
         getParticleAt,

@@ -1,7 +1,5 @@
 <script setup>
-import { ref, Transition, watch, onUnmounted, onMounted } from 'vue';
 import { useTutorial } from '@/functions/useTutorial';
-import { contract } from '@/functions/mathUtils';
 import { useElementBounding } from '@vueuse/core';
 
 const usingTutorial = useTutorial()
