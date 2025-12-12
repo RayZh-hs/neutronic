@@ -1,4 +1,4 @@
-const SERVER_LISTEN_PORT = 9721;
+const SERVER_LISTEN_PORT = process.env.PORT || 9721;
 const reservedUsernames = [
     "Neutronic",
     "Admin",

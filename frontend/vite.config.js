@@ -6,6 +6,8 @@ import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // The base path for the deployed application, configure if you wish to deploy this game under another
+  base: '/neutronic/',
   plugins: [
     vue({
       template: {
