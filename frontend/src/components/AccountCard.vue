@@ -1,5 +1,5 @@
 <script setup>
-import { useFileDialog } from '@vueuse/core';
+import { useFileDialog, useWindowSize } from '@vueuse/core';
 import {
     useAccountStore,
     renameAccount,
@@ -16,6 +16,7 @@ const account = useAccountStore();
 const message = useMessage();
 const dialog = useDialog();
 const editableName = ref(account.value.profile.username);
+const windowSize = useWindowSize();
 
 watch(
     () => account.value.profile.username,
@@ -109,7 +110,7 @@ const handleResetAccount = () => {
             <span class="status-pill" :class="{ 'status-pill--saved': account.profile.saved }">
                 {{ account.profile.saved ? 'SAVED' : 'UNSAVED' }}
             </span>
-            <small v-if="account.profile.lastExportedAt" class="status-meta">
+            <small v-if="account.profile.lastExportedAt && windowSize.width.value > 1300" class="status-meta">
                 Last export {{ new Date(account.profile.lastExportedAt).toLocaleString() }}
             </small>
         </div>
