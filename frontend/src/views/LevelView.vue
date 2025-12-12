@@ -1,7 +1,7 @@
 <script setup>
 //: Vue Imports
 import { useRouter } from 'vue-router';
-import { assert, useElementBounding, useSessionStorage } from '@vueuse/core';
+import { assert, useElementBounding, useMediaQuery, usePointerSwipe, useSessionStorage } from '@vueuse/core';
 const router = useRouter();
 
 //: Custom Data and Components
@@ -183,6 +183,7 @@ const handlePlaybackSelect = (key) => {
 };
 
 const handleSelectParticle = (particle) => {
+    if (isTouchInteractionMode.value) return;
     if (particle === selected.value) selected.value = null;
     else if (canInteract.value && !disableInteraction.value && !particle.colliding && !particle.transporting) { selected.value = particle; }
 };
@@ -192,6 +193,40 @@ const particleHotkeyKeys = computed(() => gameState.value.particles.map((p) => g
 useDigitInput({
     validKeys: particleHotkeyKeys,
     onMatch: (index) => focusParticleAtIndex(index)
+});
+
+const isCoarsePointer = useMediaQuery('(pointer: coarse)');
+const isTouchInteractionMode = computed(() => {
+    if (isCoarsePointer.value) return true;
+    return typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
+});
+
+const swipeStartParticleId = ref(null);
+usePointerSwipe(refViewPort, {
+    threshold: 24,
+    pointerTypes: ['touch'],
+    disableTextSelect: true,
+    onSwipeStart: (event) => {
+        if (!isTouchInteractionMode.value) return;
+        const target = event.target;
+        const particleNode = target?.closest?.('.particle');
+        swipeStartParticleId.value = particleNode?.id ?? null;
+    },
+    onSwipeEnd: (_event, direction) => {
+        if (!isTouchInteractionMode.value) return;
+        const particleId = swipeStartParticleId.value;
+        swipeStartParticleId.value = null;
+
+        if (!particleId || direction === 'none') return;
+        if (!canInteract.value || disableInteraction.value || hasWon.value) return;
+
+        const particle = gameState.value.particles.find((p) => p.id === particleId);
+        if (!particle || particle.colliding || particle.transporting) return;
+
+        selected.value = particle;
+        moveParticle(direction, { onMoveRecorded: recordMove });
+        if (selected.value?.id === particleId) selected.value = null;
+    },
 });
 
 const handleDirectionalHotkey = (direction, { event }) => {

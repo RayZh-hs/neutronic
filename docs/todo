@@ -21,7 +21,7 @@
     [+] Warn on vertical screens
     [+] Last save date on account card should be hidden on small screens
 [ ] Mobile: Support for touch screens
-    [ ] Full touch & swipe Support
+    [+] Full touch & swipe support to operate on particles in Level View
     [ ] Mobile version for level editor
     [ ] Mobile version for tutorial levels
     [ ] Mobile version for settings (hotkeys need to be removed)
