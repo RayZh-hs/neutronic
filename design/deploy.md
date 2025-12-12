@@ -17,7 +17,7 @@ The frontend uses environment variables for configuration. You can set these in 
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |
-| `VITE_SERVER_URL` | The full URL of the backend API (e.g., `https://api.neutronic.com/api`) | `http://localhost:9721/api` |
+| `API_SERVER_URL` | The full URL of the backend API (e.g., `https://api.neutronic.com/api`) | `http://localhost:9721/api` |
 
 ### Build Steps
 
@@ -106,12 +106,12 @@ The workflow is defined in `.github/workflows/deploy.yml`. It triggers on pushes
 
 1.  Installs dependencies using `yarn`.
 2.  Builds the frontend with `VITE_SERVER_URL` set to `https://service.norb.space/neutronic/api`.
-3.  Deploys the `frontend/dist` folder to the `gh-pages` branch.
+3.  Uploads the build artifact (`frontend/dist`) using `actions/upload-pages-artifact`.
+4.  Deploys the artifact to GitHub Pages using `actions/deploy-pages`.
 
 ### Setup
 
 1.  Go to the repository settings on GitHub.
 2.  Navigate to **Pages**.
-3.  Under **Build and deployment**, select **Deploy from a branch**.
-4.  Select `gh-pages` as the branch and `/ (root)` as the folder.
-5.  Save.
+3.  Under **Build and deployment**, select **GitHub Actions** as the source.
+4.  No further configuration is needed for the branch/folder as the workflow handles it.
