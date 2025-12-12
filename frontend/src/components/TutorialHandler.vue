@@ -1,9 +1,11 @@
 <script setup>
 import { useTutorial } from '@/functions/useTutorial';
+import { useDevice } from '@/functions/useDevice';
 import { useElementBounding } from '@vueuse/core';
 
 const usingTutorial = useTutorial()
 const context = usingTutorial.tutorialContext;
+const { isTouchDevice } = useDevice();
 
 const initTutorialCanvas = () => {
     // This gives us an SVG overlay to draw stuff, if needed.
@@ -226,6 +228,11 @@ const animationFunctionMapping = {
             addPulseToElement('particle-3', '#eb4b36');
         }, 800);
     },
+    'simple:swipe': () => {
+        setTimeout(() => {
+            addPulseToElement('particle-3', '#eb4b36');
+        }, 800);
+    },
     'simple:move': () => {
         setTimeout(() => {
             arrowFromElToEl('particle-3', 'container-4', '#fff', true);
@@ -265,6 +272,7 @@ const animationFunctionMapping = {
  * 
  * - `none:none`    No tutorial. Used as a placeholder.
  * - `simple:click` Prompt the user to click a particle.
+ * - `simple:swipe` Prompt the user to swipe a particle.
  * - `simple:move`  Prompt the user to move a particle.
  * - `simple:meet`  Prompt the user about what happens when two particles meet.
  * - `simple:goal`  Prompt the user about the goal of the game.
@@ -279,7 +287,7 @@ watch(context.isStartingAnimation, (newVal) => {
     if (!newVal) {
         switch(context.currentLevelTutorialState.value) {
             case 'simple':
-                invokeAnimationFunction('simple:click')
+                invokeAnimationFunction(isTouchDevice.value ? 'simple:swipe' : 'simple:click')
                 break;
             case 'advanced':
                 invokeAnimationFunction('advanced:space')
@@ -305,6 +313,9 @@ watch(context.userSelection, (newVal) => {
 });
 
 watch(context.steps, (newVal) => {
+    if (newVal > 0 && stageId.value === 'simple:swipe') {
+        invokeAnimationFunction('simple:meet');
+    }
     if (newVal > 0 && stageId.value === 'simple:move') {
         invokeAnimationFunction('simple:meet');
     }
@@ -339,6 +350,12 @@ watch(context.hasWon, (newVal) => {
                     <ion-icon name="locate-outline"></ion-icon>
                     <span><span class="text-green">Click</span> on a particle to select it.
                     </span>
+                </div>
+            </transition>
+            <transition name="tooltip">
+                <div v-show="stageId == 'simple:swipe'" class="tooltip-block simple-swipe">
+                    <ion-icon name="move-outline"></ion-icon>
+                    <span><span class="text-green">Swipe</span> on a particle to move it.</span>
                 </div>
             </transition>
             <transition name="tooltip">

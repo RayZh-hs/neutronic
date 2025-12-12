@@ -23,7 +23,7 @@
 [ ] Mobile: Support for touch screens
     [+] Full touch & swipe support to operate on particles in Level View
     [ ] Mobile version for level editor
-    [ ] Mobile version for tutorial levels
+    [+] Mobile version for tutorial levels
     [ ] Mobile version for settings (hotkeys need to be removed)
 [ ] More levels need to be injected into the album
 [ ] Publishing custom levels has not been implemented, including editing metadata (not planned for public beta)

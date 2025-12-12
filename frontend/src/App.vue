@@ -6,6 +6,7 @@ import HotkeysOverlay from './components/HotkeysOverlay.vue';
 import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
+import { useDevice } from './functions/useDevice';
 
 const openGitHub = () => {
   window.open("https://github.com/RayZh-hs/neutronic", "_blank");
@@ -13,6 +14,7 @@ const openGitHub = () => {
 
 const toggleAccountCard = ref(false);
 const hoverAccountButton = ref(false);
+const device = useDevice();
 
 useHotkeyBindings('general', {
     'general.github': ({ event }) => {
@@ -96,7 +98,7 @@ const dismissWarning = ref(false);
               <component :is="Component" :key="route.fullPath" />
               <!-- </transition> -->
             </router-view>
-            <div class="footer">
+            <div class="footer" v-if="device.isDesktopDevice == true">
               <p>Made with ♥️ by Norb @ 2025</p>
             </div>
             <abstract-background />

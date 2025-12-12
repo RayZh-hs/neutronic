@@ -1,7 +1,7 @@
 <script setup>
 //: Vue Imports
 import { useRouter } from 'vue-router';
-import { assert, useElementBounding, useMediaQuery, usePointerSwipe, useSessionStorage } from '@vueuse/core';
+import { assert, useElementBounding, usePointerSwipe, useSessionStorage } from '@vueuse/core';
 const router = useRouter();
 
 //: Custom Data and Components
@@ -10,6 +10,7 @@ import { levelMapGridScalePx, SERVER_URL } from "@/data/constants"
 import { gameDefaultAnimationDuration } from "@/data/constants";
 import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
 import { useHotkeyBindings, useDigitInput } from '@/functions/useHotkeys';
+import { useDevice } from '@/functions/useDevice';
 import { useLevelGame } from '@/functions/useLevelGame';
 import { useTutorial } from '@/functions/useTutorial';
 import { useLevelLoader } from '@/functions/useLevelLoader';
@@ -139,7 +140,6 @@ const {
 
 const usingTutorial = useTutorial();
 const context = usingTutorial.tutorialContext;
-context.currentLevelTutorialState.value = usingTutorial.tutorialState(levelId);
 
 watch(selected, (newVal) => {
     context.userSelection.value = newVal;
@@ -183,7 +183,7 @@ const handlePlaybackSelect = (key) => {
 };
 
 const handleSelectParticle = (particle) => {
-    if (isTouchInteractionMode.value) return;
+    if (isTouchDevice.value) return;
     if (particle === selected.value) selected.value = null;
     else if (canInteract.value && !disableInteraction.value && !particle.colliding && !particle.transporting) { selected.value = particle; }
 };
@@ -195,10 +195,14 @@ useDigitInput({
     onMatch: (index) => focusParticleAtIndex(index)
 });
 
-const isCoarsePointer = useMediaQuery('(pointer: coarse)');
-const isTouchInteractionMode = computed(() => {
-    if (isCoarsePointer.value) return true;
-    return typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
+const { isTouchDevice } = useDevice();
+
+watchEffect(() => {
+    const tutorialState = usingTutorial.tutorialState(levelId);
+    context.currentLevelTutorialState.value =
+        isTouchDevice.value && tutorialState === 'advanced'
+            ? 'none'
+            : tutorialState;
 });
 
 const swipeStartParticleId = ref(null);
@@ -207,13 +211,13 @@ usePointerSwipe(refViewPort, {
     pointerTypes: ['touch'],
     disableTextSelect: true,
     onSwipeStart: (event) => {
-        if (!isTouchInteractionMode.value) return;
+        if (!isTouchDevice.value) return;
         const target = event.target;
         const particleNode = target?.closest?.('.particle');
         swipeStartParticleId.value = particleNode?.id ?? null;
     },
     onSwipeEnd: (_event, direction) => {
-        if (!isTouchInteractionMode.value) return;
+        if (!isTouchDevice.value) return;
         const particleId = swipeStartParticleId.value;
         swipeStartParticleId.value = null;
 
