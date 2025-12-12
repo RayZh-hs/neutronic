@@ -108,7 +108,7 @@ const {timeoutStart, timeoutStop} = useTimeoutFn(
     3000,
     { immediate: false }
 )
-const cannotConnectToBackend = ref(true);
+const cannotConnectToBackend = ref(!isAlbumLoaded.value);
 watch(isAlbumLoaded, (newVal) => {
     if (newVal) {
         timeoutStop();

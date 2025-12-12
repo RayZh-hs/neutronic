@@ -18,7 +18,7 @@
 [+] Deployment: Remove debugging info in production build
 [+] Deployment: Server URL should be a config variable, specified at build-time
 [ ] Reactivity: Better support for reactive sizing
-    [ ] Warn on vertical screens
+    [+] Warn on vertical screens
     [ ] Last save date on account card should be hidden on small screens
 [ ] Mobile: Support for touch screens
     [ ] Full touch & swipe Support

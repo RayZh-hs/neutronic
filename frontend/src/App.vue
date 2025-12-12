@@ -38,6 +38,8 @@ const showGeneralHotkeys = computed(() => {
   return !route.path.includes('/custom/edit');
 });
 
+const dismissWarning = ref(false);
+
 </script>
 
 <template>
@@ -48,6 +50,21 @@ const showGeneralHotkeys = computed(() => {
         <n-modal-provider>
           <!-- main starts here -->
           <main>
+            <div class="warning-overlay" :class="{ 'warning-overlay--dismissed': dismissWarning }">
+              <div class="warning-box">
+                <div class="warning-title">
+                  <ion-icon name="phone-landscape-outline"></ion-icon>
+                  <span>Warning</span>
+                </div>
+                <p>This game is only designed for landscape orientation!</p>
+                <n-button type="error" @click="dismissWarning = true" class="dismissal-button">
+                  <template #icon>
+                    <ion-icon name="close-outline" class="dismissal-icon"></ion-icon>
+                  </template>
+                  Dismiss
+                </n-button>
+              </div>
+            </div>
             <div class="header">
               <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccountButton">
                 <template #trigger>
@@ -144,6 +161,76 @@ const showGeneralHotkeys = computed(() => {
 
   .header__user-button-wrapper {
     margin-right: 1rem;
+  }
+}
+
+.warning-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba($n-black, 0.9),
+    rgba($n-black, 0.9) 10px,
+    rgba($n-dark-grey, 0.9) 10px,
+    rgba($n-dark-grey, 0.9) 20px
+  );
+  backdrop-filter: blur(5px);
+  z-index: 10000;
+  display: none;
+  justify-content: center;
+  align-items: center;
+
+  @media (orientation: portrait) {
+    display: flex;
+  }
+
+  &--dismissed {
+    display: none;
+  }
+
+  .warning-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: $n-black;
+    border: 2px solid $n-red;
+    padding: 2rem;
+    border-radius: 1rem;
+    text-align: center;
+    color: $n-white;
+    width: 80vw;
+    min-height: 20vh;
+
+    .warning-title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      font-size: 5vh;
+      margin-bottom: 1rem;
+      font-family: 'Electrolize', sans-serif;
+      color: $n-red;
+
+      ion-icon {
+        font-size: 5vh;
+        margin-right: 3.6vw;
+      }
+    }
+
+    p {
+      font-size: 2.5vh;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .dismissal-button {
+      font-size: 2vh;
+      min-height: 3.6vh;
+      margin-top: 1rem;
+      --n-icon-size: 3vh !important;
+    }
   }
 }
 </style>
