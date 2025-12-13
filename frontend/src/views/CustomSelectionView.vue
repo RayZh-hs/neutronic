@@ -347,7 +347,7 @@ const playRecording = (rec) => {
             data-hotkey-label="Back"
             data-hotkey-element-position="right"
         ></ion-icon>
-        <n-flex align="baseline" class="header-container">
+        <n-flex align="center" class="header-container">
             <h1 class="a-fade-in title-text">
                 <template v-if="!isTouchDevice">
                     My 
