@@ -476,13 +476,16 @@ watch(context.hasWon, (newVal) => {
             ion-icon {
                 color: #ffffff;
                 font-size: 1.6rem;
-                margin-right: 10px;
+                margin-right: 1.5rem;
                 align-self: center;
+                justify-self: center;
             }
 
             span {
                 font-family: "Electrolize", serif;
                 align-self: center;
+                text-align: left;
+                max-width: 60vw;
                 letter-spacing: 0.5pt;
                 font-weight: 400;
                 font-size: 1.1rem;

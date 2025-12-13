@@ -39,7 +39,7 @@
     [+] Level Editor: Touch portrait changes toolbar tooltip to above icon
     [+] Level Editor: Touch portrait changes top container to flex column
     [+] Level View: Mobile version for tutorial levelsA
-    [+] Level View: Long tutorial text need to be wrapped
+    [+] Level View: Long tutorial text need to be wrapped properly on small widths
     [+] Settings: Touch hotkeys enable toggle (off by default) + hide editor UI when off
     [+] Settings: Touch portrait uses top icon tabs
     [+] Settings: Touch portrait requires new layout for settings box, which will not exceed screen width
