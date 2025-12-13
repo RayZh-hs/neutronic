@@ -230,7 +230,7 @@ const animationFunctionMapping = {
     },
     'simple:swipe': () => {
         setTimeout(() => {
-            addPulseToElement('particle-3', '#eb4b36');
+            arrowFromElToEl('particle-3', 'container-4', '#fff', true);
         }, 800);
     },
     'simple:move': () => {

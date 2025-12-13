@@ -25,6 +25,7 @@
     [ ] Mobile version for level editor
     [+] Mobile version for tutorial levels
     [ ] Mobile version for settings (hotkeys need to be removed)
+[ ] Tutorial robustness in handling rapid movement
 [ ] More levels need to be injected into the album
 [ ] Publishing custom levels has not been implemented, including editing metadata (not planned for public beta)
 [ ] Online section has not been implemented (not planned for public beta)

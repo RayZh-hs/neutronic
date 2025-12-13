@@ -239,8 +239,7 @@ const handleDirectionalHotkey = (direction, { event }) => {
 };
 
 const restartGame = () => {
-    restoreBaseLevelState();
-    clearRecordingSession();
+    router.go(0);
 }
 const gotoLevelSelect = () => {
     if (albumIndex === null || Number.isNaN(albumIndex)) {

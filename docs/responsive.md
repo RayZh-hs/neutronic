@@ -74,7 +74,7 @@ On all devices touch interaction is supported.
 
 For TPS devices, changing between custom levels and recordings require only clicking on the "My Levels/My Recordings" title, and the both are displayed as tabs at the top of the screen.
 
-For devices with small height, the number of levels per page is reduced to ensure that all fit inside the screen.
+For devices with small height, the number of levels per page is reduced to ensure that all fit inside the screen. (from 5 to 4 then to 3)
 
 For TPS devices that adopt a vertical layout, the paged system is replaced with a vertical scroll system.
 

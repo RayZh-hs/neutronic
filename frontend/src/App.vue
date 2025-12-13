@@ -40,8 +40,6 @@ const showGeneralHotkeys = computed(() => {
   return !route.path.includes('/custom/edit');
 });
 
-const dismissWarning = ref(false);
-
 </script>
 
 <template>
@@ -52,23 +50,8 @@ const dismissWarning = ref(false);
         <n-modal-provider>
           <!-- main starts here -->
           <main>
-            <div class="warning-overlay" :class="{ 'warning-overlay--dismissed': dismissWarning }">
-              <div class="warning-box">
-                <div class="warning-title">
-                  <ion-icon name="phone-landscape-outline"></ion-icon>
-                  <span>Warning</span>
-                </div>
-                <p>This game is only designed for landscape orientation!</p>
-                <n-button type="error" @click="dismissWarning = true" class="dismissal-button">
-                  <template #icon>
-                    <ion-icon name="close-outline" class="dismissal-icon"></ion-icon>
-                  </template>
-                  Dismiss
-                </n-button>
-              </div>
-            </div>
             <div class="header">
-              <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccountButton">
+              <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccountButton" :v-if="device.isDesktopDevice == true">
                 <template #trigger>
                   <div class="header__user-button-wrapper">
                     <IonButton name="person-circle-outline" size="2rem" class="header__user-button"
@@ -79,7 +62,7 @@ const dismissWarning = ref(false);
                       data-hotkey-group="general"
                       data-hotkey-group-side="bottom left"
                       data-hotkey-label-position="inline"
-                      v-if="showUserButton" />
+                      v-if="showUserButton && device.isDesktopDevice == true" />
                   </div>
                 </template>
                 <AccountCard />
