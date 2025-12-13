@@ -190,7 +190,7 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
         ></ion-icon>
     </div>
     <transition>
-        <div class="arrow-down" v-if="isTouchPortrait" v-show="activePage == 0">
+        <div class="arrow-down" v-show="activePage == 0 && isTouchPortrait">
             <ion-icon name="chevron-down-outline" class="arrow-down-icon"></ion-icon>
             <span class="arrow-down-text">Swipe to navigate</span>
         </div>
@@ -209,6 +209,9 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
 @use '@/styles/constants' as *;
 
 .arrow-down {
+    position: absolute;
+    left: 50%;
+    translate: -50%;
     display: flex;
     justify-content: center;
     align-items: center;
