@@ -57,10 +57,11 @@ const player = getAccountProgress();
 
 console.log(album);
 const albumLength = computed(() => album.value.length)
+const activePage = computed(() => swiperPage.value['swiper-page-memory']);
 
 //: Jump to referring page
 const jumpToReferent = () => {
-    const id = swiperPage.value['swiper-page-memory'];
+    const id = activePage.value;
     console.log("Jumping to ", id);
     if (id === albumLength.value) {
         router.push('/custom');
@@ -148,7 +149,7 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
             data-hotkey-label-position="right"
         ></ion-icon>
         <swiper ref="swiperRef"
-            :pagination="pagination"
+            :pagination="pagination && !isTouchPortrait"
             :modules="modules"
             class="swiper"
             :direction="isTouchPortrait ? 'vertical' : 'horizontal'"
@@ -192,6 +193,12 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
             data-hotkey-label-position="right"
         ></ion-icon>
     </div>
+    <transition>
+        <div class="arrow-down" v-if="isTouchPortrait" v-show="activePage == 0">
+            <ion-icon name="chevron-down-outline" class="arrow-down-icon"></ion-icon>
+            <span class="arrow-down-text">Swipe to navigate</span>
+        </div>
+    </transition>
     <!-- Backend server is not responding -->
     <div v-if="cannotConnectToBackend" class="timeout-message-box">
         <div class="timeout-message-box-top a-fade-in">
@@ -203,6 +210,47 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/constants' as *;
+
+.arrow-down {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    color: $n-light-grey;
+    font-size: 2rem;
+
+    .arrow-down-icon {
+        @keyframes infinite-scroll {
+            0%   { transform: translateY(-1rem); opacity: 0; }
+            20%  { transform: translateY(-0.5rem); opacity: 1; }
+            40%  { transform: translateY(-0.1rem);  opacity: 1; }
+            60%  { transform: translateY(0.1rem);  opacity: 1; }
+            80%  { transform: translateY(0.5rem); opacity: 1; }
+            100% { transform: translateY(1rem);  opacity: 0; }
+        }
+
+        animation: infinite-scroll 2s linear infinite;
+        will-change: transform, opacity;
+
+        &::after {
+            content: '';
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            animation: inherit;
+            animation-delay: 1s;
+        }
+    }
+
+    .arrow-down-text {
+        font-size: 1.2rem;
+        letter-spacing: 0.4pt;
+    }
+}
 
 .enter-capture {
     position: fixed;
