@@ -233,15 +233,15 @@ const handleKeyDown = (e) => {
 };
 
 useHotkeyBindings('settings', {
-    'settings.tab-1': ({ event }) => {
+    'settings.general-tab': ({ event }) => {
         event.preventDefault();
         activeTab.value = 'general';
     },
-    'settings.tab-2': ({ event }) => {
+    'settings.account-tab': ({ event }) => {
         event.preventDefault();
         activeTab.value = 'account';
     },
-    'settings.tab-3': ({ event }) => {
+    'settings.hotkeys-tab': ({ event }) => {
         event.preventDefault();
         activeTab.value = 'hotkeys';
     },
@@ -301,7 +301,7 @@ const formatActionName = (actionId) => {
     <div class="settings-layout a-fade-in" :class="{ 'settings-layout--touch-portrait': isTouchPortrait }">
         <div v-if="isTouchPortrait" class="settings-tabs">
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"
-                data-hotkey-target="settings.tab-1"
+                data-hotkey-target="settings.general-tab"
                 data-hotkey-label="General"
                 data-hotkey-element-position="center"
                 aria-label="General"
@@ -311,7 +311,7 @@ const formatActionName = (actionId) => {
                 </template>
             </n-button>
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'account' }" @click="activeTab = 'account'"
-                data-hotkey-target="settings.tab-2"
+                data-hotkey-target="settings.account-tab"
                 data-hotkey-label="Account"
                 data-hotkey-element-position="center"
                 aria-label="Account"
@@ -321,7 +321,7 @@ const formatActionName = (actionId) => {
                 </template>
             </n-button>
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'hotkeys' }" @click="activeTab = 'hotkeys'"
-                data-hotkey-target="settings.tab-3"
+                data-hotkey-target="settings.hotkeys-tab"
                 data-hotkey-label="Hotkeys"
                 data-hotkey-element-position="center"
                 aria-label="Hotkeys"
@@ -334,7 +334,7 @@ const formatActionName = (actionId) => {
 
         <div v-else class="settings-nav">
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"
-                data-hotkey-target="settings.tab-1"
+                data-hotkey-target="settings.general-tab"
                 data-hotkey-label="General"
                 data-hotkey-element-position="center"
             >
@@ -346,7 +346,7 @@ const formatActionName = (actionId) => {
                 </template>
             </n-button>
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'account' }" @click="activeTab = 'account'"
-                data-hotkey-target="settings.tab-2"
+                data-hotkey-target="settings.account-tab"
                 data-hotkey-label="Account"
                 data-hotkey-element-position="center"
             >
@@ -358,7 +358,7 @@ const formatActionName = (actionId) => {
                 </template>
             </n-button>
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'hotkeys' }" @click="activeTab = 'hotkeys'"
-                data-hotkey-target="settings.tab-3"
+                data-hotkey-target="settings.hotkeys-tab"
                 data-hotkey-label="Hotkeys"
                 data-hotkey-element-position="center"
             >
@@ -698,7 +698,7 @@ const formatActionName = (actionId) => {
 
         h2 {
             font-size: 1.9rem;
-            margin: 0.75rem 0 0.5rem 0;
+            margin: 2rem 0 2rem 0;
             height: auto;
             text-align: center;
         }

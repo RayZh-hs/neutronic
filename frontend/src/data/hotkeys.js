@@ -3,7 +3,7 @@ export const defaultHotkeyMap = {
         'general.view-hotkeys': ['space'],
         'general.github': ['='],
         'general.account-toggle': ['-'],
-        'general.back': ['backspace', '`'],
+        'general.back': ['`', 'backspace'],
     },
     landing: {
         'landing.info': ['j'],
@@ -11,9 +11,9 @@ export const defaultHotkeyMap = {
         'landing.settings': ['l'],
     },
     settings: {
-        'settings.tab-1': ['1'],
-        'settings.tab-2': ['2'],
-        'settings.tab-3': ['3'],
+        'settings.general-tab': ['1'],
+        'settings.account-tab': ['2'],
+        'settings.hotkeys-tab': ['3'],
         'settings.previous': ['j', 'up-arrow'],
         'settings.next': ['l', 'down-arrow'],
         'settings.select': ['k', 'enter'],
