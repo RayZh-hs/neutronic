@@ -331,7 +331,7 @@ watch(context.particleCount, (newVal, oldVal) => {
 });
 
 watch(context.hasWon, (newVal) => {
-    if (newVal && stageId.value === 'simple:goal') {
+    if (newVal) {
         invokeAnimationFunction('none:none');
     }
 });
