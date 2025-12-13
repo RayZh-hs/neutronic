@@ -9,6 +9,7 @@ import { useRecordingsStore, removeRecordingForLevel } from '@/functions/useReco
 import { getPrebuiltLevelInfo } from '@/functions/levelUtils';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
 import { useDevice } from '@/functions/useDevice';
+import { useBackHandler } from '@/functions/useBackNavigation';
 
 const router = useRouter();
 const account = useAccountStore();
@@ -185,10 +186,6 @@ useHotkeyBindings('custom-selection', {
             playRecording(item);
         }
     },
-    'custom-selection.back': ({ event }) => {
-        event.preventDefault();
-        router.push('/album');
-    },
     'custom-selection.delete': ({ event }) => {
         event.preventDefault();
         if (focusedIndex.value === -1) return;
@@ -199,6 +196,11 @@ useHotkeyBindings('custom-selection', {
             deleteRecording(item);
         }
     },
+});
+
+useBackHandler(() => {
+    router.push('/album');
+    return true;
 });
 
 const adjustWindowBounds = () => {
@@ -341,12 +343,6 @@ const playRecording = (rec) => {
 <template>
     <div class="wrapper" :class="{ 'wrapper--touch-portrait': isTouchPortrait }">
         <div class="overlay" :class="{ active: headerHover }"></div>
-        <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in"
-            @click="router.push('/album')"
-            data-hotkey-target="custom-selection.back"
-            data-hotkey-label="Back"
-            data-hotkey-element-position="right"
-        ></ion-icon>
         <n-flex align="center" class="header-container">
             <h1 class="a-fade-in title-text">
                 <template v-if="!isTouchDevice">

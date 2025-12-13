@@ -1,22 +1,14 @@
 <script setup>
-import { useHotkeyBindings } from '@/functions/useHotkeys';
 import { router } from '@/router';
+import { useBackHandler } from '@/functions/useBackNavigation';
 
-useHotkeyBindings('online', {
-    'online.back': ({ event }) => {
-        event.preventDefault();
-        router.push('/album');
-    },
-})
+useBackHandler(() => {
+    router.push('/album');
+    return true;
+});
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="router.push('/album')"
-        data-hotkey-target="online.back"
-        data-hotkey-label="Back"
-        data-hotkey-element-position="right"
-        data-hotkey-label-position="right"
-    ></ion-icon>
     <div class="online-view-container">
         <h1 class="coming-soon-title a-fade-in">Coming Soon</h1>
         <p class="coming-soon-description a-fade-in a-delay-4">Your portal to a world of puzzles and solutions, on the way.</p>

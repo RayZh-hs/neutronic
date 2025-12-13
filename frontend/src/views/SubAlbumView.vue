@@ -16,6 +16,7 @@ import SimpleLevelCard from '../components/SimpleLevelCard.vue';
 import { album, isAlbumLoaded } from '@/functions/useAlbum';
 import { getAccountProgress, isAccessibleToPrebuiltLevel } from '@/functions/useAccount';
 import { useHotkeyBindings, useDigitInput } from '@/functions/useHotkeys';
+import { useBackHandler } from '@/functions/useBackNavigation';
 
 const player = getAccountProgress();
 
@@ -109,10 +110,6 @@ useDigitInput({
 });
 
 useHotkeyBindings('sub-album', {
-    'sub-album.back': ({ event }) => {
-        event.preventDefault();
-        router.push('/album');
-    },
     'sub-album.previous': ({ event }) => {
         event.preventDefault();
         prevWindow();
@@ -121,6 +118,11 @@ useHotkeyBindings('sub-album', {
         event.preventDefault();
         nextWindow();
     },
+});
+
+useBackHandler(() => {
+    router.push('/album');
+    return true;
 });
 
 const device = useDevice();
@@ -144,13 +146,6 @@ const displayedLevels = computed(() => {
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in"
-        @click="router.push('/album')"
-        data-hotkey-target="sub-album.back"
-        data-hotkey-label="Back"
-        data-hotkey-element-position="right"
-        data-hotkey-label-position="right"
-    ></ion-icon>
     <div
         class="wrapper"
         :class="{

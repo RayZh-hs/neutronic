@@ -13,6 +13,7 @@ import { gameEntranceFocusAnimationRange } from "@/data/constants";
 import { useRecordingsStore } from '@/functions/useRecordings';
 import { getCustomLevelById } from '@/functions/useAccount';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
+import { triggerBack, useBackHandler } from '@/functions/useBackNavigation';
 import { overrideHotkeyOverlayConfig } from '@/data/hotkeyOverlayConfig';
 import { useLevelGame } from '@/functions/useLevelGame';
 
@@ -291,6 +292,11 @@ const handleGoBack = () => {
     router.go(-1);
 }
 
+useBackHandler(() => {
+    handleGoBack();
+    return true;
+});
+
 //: Hotkey Bindings
 
 overrideHotkeyOverlayConfig({
@@ -326,21 +332,11 @@ useHotkeyBindings('playback', {
         event.preventDefault();
         goToStart();
     },
-    'playback.back': ({ event }) => {
-        event.preventDefault();
-        handleGoBack();
-    },
 });
 
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="handleGoBack"
-        data-hotkey-target="playback.back"
-        data-hotkey-label="Back"
-        data-hotkey-element-position="right"
-        data-hotkey-label-position="inline"
-    ></ion-icon>
     <div class="viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
         @mouseleave="onPanEndWrapper" ref="refViewPort">
         <div class="steps-complex a-fade-in" v-show="!isStartingAnimation">
@@ -446,7 +442,7 @@ useHotkeyBindings('playback', {
                 <ion-button name="refresh-outline" class="a-fade-in a-delay-12"
                     @click="goToStart()"></ion-button>
                 <ion-button name="chevron-back-outline" class="a-fade-in a-delay-16"
-                    @click="handleGoBack"></ion-button>
+                    @click="triggerBack"></ion-button>
             </div>
         </div>
 

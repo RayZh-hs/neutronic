@@ -3,6 +3,7 @@ export const defaultHotkeyMap = {
         'general.view-hotkeys': ['space'],
         'general.github': ['='],
         'general.account-toggle': ['-'],
+        'general.back': ['backspace', '`'],
     },
     landing: {
         'landing.info': ['j'],
@@ -16,7 +17,6 @@ export const defaultHotkeyMap = {
         'settings.previous': ['j', 'up-arrow'],
         'settings.next': ['l', 'down-arrow'],
         'settings.select': ['k', 'enter'],
-        'settings.back': ['backspace', '`'],
         'settings.deselect': ['escape'],
     },
     'custom-selection': {
@@ -30,19 +30,16 @@ export const defaultHotkeyMap = {
         'custom-selection.edit-level': ['k', 'enter'],
         'custom-selection.delete': ['delete'],
         'custom-selection.play': ['ctrl+enter'],
-        'custom-selection.back': ['backspace', '`'],
     },
     album: {
         'album.previous': ['j', 'a', 'left-arrow'],
         'album.next': ['l', 'd', 'right-arrow'],
         'album.enter': ['k', 'enter'],
-        'album.back': ['backspace', '`'],
     },
     'sub-album': {
         'sub-album.previous': ['j', 'a', 'left-arrow'],
         'sub-album.next': ['l', 'd', 'right-arrow'],
         'sub-album.enter': ['k', 'enter'],
-        'sub-album.back': ['backspace', '`'],
     },
     level: {
         'level.up': ['w', 'up-arrow'],
@@ -55,7 +52,6 @@ export const defaultHotkeyMap = {
         'level.reset': ['r'],
         'level.toggle-record': ['q'],
         'level.play-recording': ['shift+q'],
-        'level.back': ['backspace', '`'],
         'level.on-finish.restart': ['j'],
         'level.on-finish.level-select': ['k', 'backspace', '`'],
         'level.on-finish.next': ['l'],
@@ -74,7 +70,6 @@ export const defaultHotkeyMap = {
         'editor.apply-tool': ['f'],
         'editor.cancel-selection': ['escape'],
         'editor.copy': ['ctrl+c'],
-        'editor.back': ['backspace', '`'],
         'editor.dev-tools': ['`'],
         'editor.play': ['enter'],
     },
@@ -85,9 +80,5 @@ export const defaultHotkeyMap = {
         'playback.step-backward': ['j'],
         'playback.step-forward': ['k'],
         'playback.reset': ['r'],
-        'playback.back': ['backspace', '`'],
     },
-    online: {
-        'online.back': ['backspace', '`'],
-    }
 };

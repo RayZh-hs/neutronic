@@ -20,6 +20,7 @@ import {
     useHotkeyBindings,
     useHotkeysEnabled
 } from '@/functions/useHotkeys';
+import { useBackHandler } from '@/functions/useBackNavigation';
 
 const router = useRouter();
 const message = useMessage();
@@ -265,14 +266,15 @@ useHotkeyBindings('settings', {
             currentActions.value[focusedIndex.value].action();
         }
     },
-    'settings.back': ({ event }) => {
-        event.preventDefault();
-        router.back();
-    },
     'settings.deselect': ({ event }) => {
         event.preventDefault();
         focusedIndex.value = -1;
     }
+});
+
+useBackHandler(() => {
+    router.push('/');
+    return true;
 });
 
 onMounted(() => {
@@ -296,12 +298,6 @@ const formatActionName = (actionId) => {
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="router.push('/')"
-        data-hotkey-target="settings.back"
-        data-hotkey-label="Back"
-        data-hotkey-element-position="right"
-        data-hotkey-label-position="right"
-    ></ion-icon>
     <div class="settings-layout a-fade-in" :class="{ 'settings-layout--touch-portrait': isTouchPortrait }">
         <div v-if="isTouchPortrait" class="settings-tabs">
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"

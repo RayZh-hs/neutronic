@@ -384,18 +384,23 @@ const ensureInitialized = () => {
         contexts.forEach((context) => {
             contextMatches[context] = findMatchForContext(context);
         });
-        hotkeyState.listeners.forEach((listener) => {
+        const listeners = Array.from(hotkeyState.listeners.values()).reverse();
+        for (let index = 0; index < listeners.length; index += 1) {
+            const listener = listeners[index];
+            if (event.defaultPrevented) {
+                break;
+            }
             const { context, options, handlers } = listener;
             const match = contextMatches[context];
             if (!match) {
-                return;
+                continue;
             }
             const handler = handlers[match.actionId];
             if (typeof handler !== 'function') {
-                return;
+                continue;
             }
             if (isEditableTarget(event.target) && !options.allowInInput) {
-                return;
+                continue;
             }
             handler({
                 event,
@@ -403,7 +408,7 @@ const ensureInitialized = () => {
                 action: match.actionId,
                 binding: match.sequence,
             });
-        });
+        }
     };
 
     hotkeyState.keydownHandler = handleKeydown;

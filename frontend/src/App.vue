@@ -4,8 +4,9 @@ import AbstractBackground from './components/AbstractBackground.vue';
 import AccountCard from './components/AccountCard.vue';
 import HotkeysOverlay from './components/HotkeysOverlay.vue';
 import IonButton from './components/IonButton.vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useHotkeyBindings, useHotkeysEnabled } from '@/functions/useHotkeys';
+import { triggerBack } from '@/functions/useBackNavigation';
 import { useDevice } from './functions/useDevice';
 import { useDeviceDecorators } from './functions/useDeviceDecorators';
 
@@ -13,12 +14,33 @@ const openGitHub = () => {
   window.open("https://github.com/RayZh-hs/neutronic", "_blank");
 };
 
+const router = useRouter();
 const toggleAccountCard = ref(false);
 const hoverAccountButton = ref(false);
 const device = useDevice();
 useDeviceDecorators();
 const hotkeysEnabled = useHotkeysEnabled();
 const headerIconSize = computed(() => (device.isTouchDevice.value ? '2.6rem' : '2rem'));
+
+const route = useRoute();
+
+const defaultGoBack = () => {
+  if (route.path === '/') {
+    return;
+  }
+  if (typeof window !== 'undefined' && window.history && window.history.length > 1) {
+    router.back();
+    return;
+  }
+  router.push('/');
+};
+
+const handleBack = (event) => {
+  const handled = triggerBack({ event, route, router });
+  if (handled === false) {
+    defaultGoBack();
+  }
+};
 
 useHotkeyBindings('general', {
     'general.github': ({ event }) => {
@@ -29,15 +51,25 @@ useHotkeyBindings('general', {
         event.preventDefault();
         toggleAccountCard.value = !toggleAccountCard.value;
     },
+    'general.back': ({ event }) => {
+        event.preventDefault();
+        handleBack(event);
+    },
 });
-
-const route = useRoute();
 
 const showUserButton = computed(() => {
   return ![
     '/',
     '/login',
+    '/settings'
   ].includes(route.path);
+});
+
+const showBackButton = computed(() => {
+  if (['/', '/login'].includes(route.path)) {
+    return false;
+  }
+  return !route.path.includes('/custom/edit');
 });
 
 const showGeneralHotkeys = computed(() => {
@@ -55,7 +87,21 @@ const showGeneralHotkeys = computed(() => {
           <!-- main starts here -->
           <main>
             <div class="header">
-              <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccountButton" v-if="device.isDesktopDevice === true">
+              <IonButton
+                v-if="showBackButton"
+                name="arrow-back-circle-outline"
+                :size="headerIconSize"
+                class="header__back-button"
+                aria-label="Back"
+                @click="handleBack"
+                data-hotkey-target="general.back"
+                data-hotkey-label="Back"
+                :data-hotkey-show="showGeneralHotkeys ? 'true' : 'false'"
+                data-hotkey-group="general"
+                data-hotkey-group-side="bottom left"
+                data-hotkey-label-position="inline"
+              />
+              <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccountButton" v-if="device.isDesktopDevice.value">
                 <template #trigger>
                   <div class="header__user-button-wrapper">
                     <IonButton name="person-circle-outline" :size="headerIconSize" class="header__user-button"
@@ -66,12 +112,13 @@ const showGeneralHotkeys = computed(() => {
                       data-hotkey-group="general"
                       data-hotkey-group-side="bottom left"
                       data-hotkey-label-position="inline"
-                      v-if="showUserButton && device.isDesktopDevice == true" />
+                      v-if="showUserButton && device.isDesktopDevice.value" />
                   </div>
                 </template>
                 <AccountCard />
               </n-popover>
               <IonButton name="logo-github" :size="headerIconSize" aria-label="github" @click="openGitHub"
+                class="header__github-button"
                 data-hotkey-target="general.github"
                 data-hotkey-label="GitHub"
                 :data-hotkey-show="showGeneralHotkeys ? 'true' : 'false'"
@@ -149,18 +196,35 @@ html, body {
   position: fixed;
   top: 2rem;
   left: 0;
-  width: calc(100vw - 2rem);
+  width: 100vw;
+  padding: 0 2rem;
+  box-sizing: border-box;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  pointer-events: none;
+
+  .header__back-button {
+    pointer-events: auto;
+  }
 
   .header__user-button-wrapper {
+    margin-left: auto;
     margin-right: 1rem;
+    pointer-events: auto;
+  }
+
+  .header__github-button {
+    align-self: flex-start;
+  }
+
+  :deep(.ion-icon) {
+    pointer-events: auto;
   }
 }
 
 :global(html.device--touch) .header {
   top: 1rem;
-  width: calc(100vw - 1rem);
+  padding: 0 1rem;
 }
 
 .warning-overlay {

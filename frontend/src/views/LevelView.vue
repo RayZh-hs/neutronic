@@ -10,6 +10,7 @@ import { levelMapGridScalePx, SERVER_URL } from "@/data/constants"
 import { gameDefaultAnimationDuration } from "@/data/constants";
 import { gameEntranceTitleAnimationDuration, gameEntranceFocusAnimationRange } from "@/data/constants";
 import { useHotkeyBindings, useDigitInput } from '@/functions/useHotkeys';
+import { triggerBack, useBackHandler } from '@/functions/useBackNavigation';
 import { useDevice } from '@/functions/useDevice';
 import { useLevelGame } from '@/functions/useLevelGame';
 import { useTutorial } from '@/functions/useTutorial';
@@ -340,6 +341,11 @@ const handleGoBack = () => {
     }
 }
 
+useBackHandler(() => {
+    handleGoBack();
+    return true;
+});
+
 useHotkeyBindings('level', {
     'level.up': (payload) => handleDirectionalHotkey('up', payload),
     'level.down': (payload) => handleDirectionalHotkey('down', payload),
@@ -377,10 +383,6 @@ useHotkeyBindings('level', {
         event.preventDefault();
         playLatestRecordingEntry();
     },
-    'level.back': ({ event }) => {
-        event.preventDefault();
-        handleGoBack();
-    },
     'level.on-finish.restart': ({ event }) => {
         if (hasWon.value) {
             event.preventDefault();
@@ -405,12 +407,6 @@ useHotkeyBindings('level', {
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="handleGoBack"
-        data-hotkey-target="level.back"
-        data-hotkey-label="Back"
-        data-hotkey-element-position="right"
-        data-hotkey-label-position="right"
-    ></ion-icon>
     <div class="viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
         @mouseleave="onPanEndWrapper" ref="refViewPort">
         <tutorial-handler v-if="context.currentLevelTutorialState.value !== 'none'"/>
@@ -555,8 +551,8 @@ useHotkeyBindings('level', {
                 <n-tooltip placement="bottom" raw style="color: var(--n-primary)" v-else>
                     <template #trigger>
                         <ion-button name="chevron-back-outline" class="a-fade-in a-delay-20"
-                            @click="handleGoBack"
-                            data-hotkey-target="level.back"
+                            @click="triggerBack"
+                            data-hotkey-target="general.back"
                             data-hotkey-label="Back"
                             data-hotkey-group="level-finish"
                             data-hotkey-label-position="inline"

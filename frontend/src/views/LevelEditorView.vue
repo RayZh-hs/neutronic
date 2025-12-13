@@ -14,6 +14,7 @@ import { easeOutCubic, easeOutSine, refAnimateToObject } from "../functions/anim
 import { useEditorEntities } from "@/functions/useEditorEntities";
 import { useAccountStore, getCustomLevelById, upsertCustomLevel } from "@/functions/useAccount";
 import { useHotkeyBindings } from "@/functions/useHotkeys";
+import { triggerBack, useBackHandler } from "@/functions/useBackNavigation";
 
 overrideHotkeyOverlayConfig({
     groups: {
@@ -28,6 +29,11 @@ const message = useMessage();
 const dialog = useDialog();
 const device = useDevice();
 const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orientation.value === 'portrait');
+
+useBackHandler(() => {
+    router.push('/custom');
+    return true;
+});
 
 /**
  * This function is called to center the map on the screen.
@@ -1010,10 +1016,6 @@ useHotkeyBindings('editor', {
         event.preventDefault();
         copyLevelToClipboard();
     },
-    'editor.back': ({ event }) => {
-        event.preventDefault();
-        router.push('/custom');
-    },
     'editor.dev-tools': ({ event }) => {
         event.preventDefault();
         if (isTouchDevice.value) return;
@@ -1132,8 +1134,8 @@ const handleGlobalKeydown = (e) => {
     <div class="top-container" :class="{ 'top-container--touch-portrait': isTouchPortrait }">
         <template v-if="isTouchPortrait">
             <div class="top-container__row top-container__row--primary">
-                <ion-button name="arrow-back-circle-outline" :size="topButtonSize" @click="router.push('/custom')" class="a-fade-in"
-                    data-hotkey-target="editor.back"
+                <ion-button name="arrow-back-circle-outline" :size="topButtonSize" @click="triggerBack" class="a-fade-in"
+                    data-hotkey-target="general.back"
                     data-hotkey-label="Back"
                     data-hotkey-group="top-left"
                     data-hotkey-group-side="bottom right"
@@ -1184,8 +1186,8 @@ const handleGlobalKeydown = (e) => {
         <template v-else>
             <!-- The left side of the top section -->
             <div class="u-gap-16"></div>
-            <ion-button name="arrow-back-circle-outline" :size="topButtonSize" @click="router.push('/custom')" class="a-fade-in"
-                data-hotkey-target="editor.back"
+            <ion-button name="arrow-back-circle-outline" :size="topButtonSize" @click="triggerBack" class="a-fade-in"
+                data-hotkey-target="general.back"
                 data-hotkey-label="Back"
                 data-hotkey-group="top-left"
                 data-hotkey-group-side="bottom right"

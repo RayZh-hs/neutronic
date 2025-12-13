@@ -50,6 +50,7 @@ import { router } from '@/router';
 import { getAccountProgress } from '@/functions/useAccount';
 import { album, isAlbumLoaded } from '@/functions/useAlbum';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
+import { useBackHandler } from '@/functions/useBackNavigation';
 import { watch } from 'vue';
 // let album = ref(null);
 // const { data: album, isFinished: isAlbumLoaded } = useAxiosWithStore('neutronic-album', SERVER_URL + "/albums", 'GET');
@@ -93,10 +94,11 @@ useHotkeyBindings('album', {
         event.preventDefault();
         jumpToReferent();
     },
-    'album.back': ({ event }) => {
-        event.preventDefault();
-        router.push('/');
-    },
+});
+
+useBackHandler(() => {
+    router.push('/');
+    return true;
 });
 
 onMounted(() => {
@@ -126,12 +128,6 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
 </script>
 
 <template>
-    <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in" @click="router.push('/')"
-        data-hotkey-target="album.back"
-        data-hotkey-label="Back"
-        data-hotkey-element-position="right"
-        data-hotkey-label-position="right"
-    ></ion-icon>
     <div
         class="enter-capture"
         data-hotkey-target="album.enter"
