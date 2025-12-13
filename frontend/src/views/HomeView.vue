@@ -58,8 +58,9 @@ useHotkeyBindings('landing', {
             >
                 <ion-icon name="play-outline" class="form-button" size="large"></ion-icon>
             </div>
-            <div class="r-divider-bg clickable a-fade-in a-delay-4" @mouseover="curAtButton = 'settings'"
-                @mouseleave="curAtButton = 'none'"
+            <div class="r-divider-bg clickable a-fade-in a-delay-4"
+                @click="router.push('/settings')"
+                @mouseover="curAtButton = 'settings'" @mouseleave="curAtButton = 'none'"
                 data-hotkey-target="landing.settings"
                 data-hotkey-label="Settings"
                 data-hotkey-group="landing"
