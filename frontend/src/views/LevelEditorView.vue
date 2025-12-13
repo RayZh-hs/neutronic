@@ -61,7 +61,9 @@ const account = computed(() => accountStore.value.profile);
 
 const currentLevelId = computed(() => router.currentRoute.value.params.uuid);
 
-const showDevTools = ref(true);
+const showDevTools = computed(
+    () => device.viewportWidth.value >= 1280
+)
 const isTouchDevice = computed(() => device.isTouchDevice.value);
 const topButtonSize = computed(() => (isTouchDevice.value ? '2.4rem' : '1.6rem'));
 
@@ -91,6 +93,11 @@ watch(levelNameElement, (el) => {
 });
 
 const startLevelNameEdit = () => {
+    if (isTouchDevice.value) {
+        openMetaEditPrompt('name');
+        levelNameElement.value?.blur?.();
+        return;
+    }
     if (levelNameEditing.value) { return; }
     levelNameBeforeEdit.value = levelName.value;
     levelNameEditing.value = true;
@@ -168,6 +175,11 @@ watch(stepsGoalElement, (el) => {
 });
 
 const startStepsGoalEdit = () => {
+    if (isTouchDevice.value) {
+        openMetaEditPrompt('stepsGoal');
+        stepsGoalElement.value?.blur?.();
+        return;
+    }
     if (stepsGoalEditing.value) { return; }
     stepsGoalBeforeEdit.value = stepsGoal.value;
     stepsGoalEditing.value = true;
@@ -219,6 +231,77 @@ const handleStepsGoalKeydown = (event) => {
     }
 };
 
+// - touch meta editor prompt
+const showMetaEditPrompt = ref(false);
+const metaEditField = ref(null); // 'name' | 'stepsGoal' | null
+const metaEditInput = ref('');
+
+const metaEditTitle = computed(() => {
+    if (metaEditField.value === 'name') return 'Edit level name';
+    if (metaEditField.value === 'stepsGoal') return 'Edit steps goal';
+    return 'Edit';
+});
+
+const openMetaEditPrompt = (field) => {
+    metaEditField.value = field;
+    if (field === 'name') {
+        metaEditInput.value = levelName.value ?? '';
+    } else if (field === 'stepsGoal') {
+        metaEditInput.value = stepsGoal.value === null || stepsGoal.value === undefined ? 'NA' : `${stepsGoal.value}`;
+    } else {
+        metaEditInput.value = '';
+    }
+    showMetaEditPrompt.value = true;
+};
+
+const closeMetaEditPrompt = () => {
+    showMetaEditPrompt.value = false;
+    metaEditField.value = null;
+};
+
+const confirmMetaEditPrompt = () => {
+    if (metaEditField.value === 'name') {
+        const trimmed = metaEditInput.value.trim();
+        if (!trimmed) {
+            message.warning('Level name cannot be empty');
+            return false;
+        }
+        levelName.value = trimmed;
+        setLevelNameElementText(levelName.value);
+        closeMetaEditPrompt();
+        return true;
+    }
+
+    if (metaEditField.value === 'stepsGoal') {
+        const rawValue = metaEditInput.value.trim();
+        if (rawValue === '' || rawValue.toLowerCase() === 'na') {
+            stepsGoal.value = null;
+            setStepsGoalElementText(stepsGoal.value);
+            closeMetaEditPrompt();
+            return true;
+        }
+        const parsed = parseInt(rawValue, 10);
+        if (isNaN(parsed)) {
+            message.warning("Steps goal must be a number or 'NA'");
+            return false;
+        }
+        stepsGoal.value = parsed;
+        setStepsGoalElementText(stepsGoal.value);
+        closeMetaEditPrompt();
+        return true;
+    }
+
+    closeMetaEditPrompt();
+    return true;
+};
+
+const onMetaFieldClick = (field, event) => {
+    if (!isTouchDevice.value) return;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    openMetaEditPrompt(field);
+};
+
 // - tracking the panning offset
 const { x: mouseX, y: mouseY } = useMouse();
 
@@ -233,6 +316,22 @@ const globalModeContext = ref('place'); // ['place', 'edit'] refers to the mode 
 
 const refToolbar = ref(null);
 const activeTool = ref("board");
+
+const isFocusToolbarActive = ref(false);
+const onFocusMouseEnter = () => {
+    isFocusToolbarActive.value = true;
+};
+const onFocusMouseLeave = () => {
+    isFocusToolbarActive.value = false;
+};
+const onFocusClick = () => {
+    callCenterMap();
+    if (isTouchDevice.value) {
+        setTimeout(() => {
+            isFocusToolbarActive.value = false;
+        }, 1000);
+    }
+};
 
 // - tool sprite positioning
 
@@ -681,6 +780,7 @@ const playLevel = () => {
 //: Custom Event Handlers
 
 import { levelEditorPlaceFrequency } from "../data/constants";
+import { ref } from "vue";
 
 let placementTracker = null;
 let leftClickCooldown = false;
@@ -1046,32 +1146,6 @@ const handleGlobalKeydown = (e) => {
                     data-hotkey-group-side="bottom right"
                     data-hotkey-label-position="inline"
                 />
-                <div class="u-gap-3"></div>
-                <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
-                <p class="slash-separator a-fade-in a-delay-2">/</p>
-                <span
-                    class="level-name a-fade-in a-delay-3"
-                    contenteditable=""
-                    ref="levelNameElement"
-                    @focus="startLevelNameEdit"
-                    @blur="finishLevelNameEdit()"
-                    @keydown="handleLevelNameKeydown"
-                ></span>
-            </div>
-            <div class="top-container__row top-container__row--secondary">
-                <span class="steps-goal-label a-fade-in a-delay-5">Steps Goal</span>
-                <span
-                    class="steps-goal a-fade-in a-delay-5 score"
-                    contenteditable=""
-                    ref="stepsGoalElement"
-                    @focus="startStepsGoalEdit"
-                    @blur="finishStepsGoalEdit()"
-                    @keydown="handleStepsGoalKeydown"
-                ></span>
-                <div class="u-gap-1"></div>
-                <span class="a-fade-in a-delay-5">Best</span>
-                <span class="score a-fade-in a-delay-6" :class="{ 'score--na': !currentBest }">{{ currentBest || 'NA' }}</span>
-                <div class="u-mla"></div>
                 <ion-button name="play-outline" class="a-fade-in a-delay-7" :size="topButtonSize" @click="playLevel"
                     data-hotkey-target="editor.play"
                     data-hotkey-label="Play"
@@ -1079,6 +1153,32 @@ const handleGlobalKeydown = (e) => {
                     data-hotkey-group-side="bottom right"
                     data-hotkey-label-position="inline"
                 />
+            </div>
+            <div class="top-container__row top-container__row--secondary">
+                <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
+                <p class="slash-separator a-fade-in a-delay-2">/</p>
+                <span
+                    class="level-name a-fade-in a-delay-3"
+                    :contenteditable="isTouchDevice ? 'false' : 'true'"
+                    ref="levelNameElement"
+                    @focus="startLevelNameEdit"
+                    @blur="finishLevelNameEdit()"
+                    @keydown="handleLevelNameKeydown"
+                    @click="onMetaFieldClick('name', $event)"
+                ></span>
+                <span class="steps-goal-label a-fade-in a-delay-5">Steps Goal</span>
+                <span
+                    class="steps-goal a-fade-in a-delay-5 score"
+                    :contenteditable="isTouchDevice ? 'false' : 'true'"
+                    ref="stepsGoalElement"
+                    @focus="startStepsGoalEdit"
+                    @blur="finishStepsGoalEdit()"
+                    @keydown="handleStepsGoalKeydown"
+                    @click="onMetaFieldClick('stepsGoal', $event)"
+                ></span>
+                <div class="u-gap-1"></div>
+                <span class="a-fade-in a-delay-5">Best</span>
+                <span class="score a-fade-in a-delay-6" :class="{ 'score--na': !currentBest }">{{ currentBest || 'NA' }}</span>
             </div>
         </template>
         <template v-else>
@@ -1103,11 +1203,12 @@ const handleGlobalKeydown = (e) => {
             <p class="slash-separator a-fade-in a-delay-2">/</p>
             <span
                 class="level-name a-fade-in a-delay-3"
-                contenteditable=""
+                :contenteditable="isTouchDevice ? 'false' : 'true'"
                 ref="levelNameElement"
                 @focus="startLevelNameEdit"
                 @blur="finishLevelNameEdit()"
                 @keydown="handleLevelNameKeydown"
+                @click="onMetaFieldClick('name', $event)"
             ></span>
 
             <!-- The right side of the top section -->
@@ -1141,11 +1242,12 @@ const handleGlobalKeydown = (e) => {
             <span class="steps-goal-label a-fade-in a-delay-5">Steps Goal</span>
             <span
                 class="steps-goal a-fade-in a-delay-5 score"
-                contenteditable=""
+                :contenteditable="isTouchDevice ? 'false' : 'true'"
                 ref="stepsGoalElement"
                 @focus="startStepsGoalEdit"
                 @blur="finishStepsGoalEdit()"
                 @keydown="handleStepsGoalKeydown"
+                @click="onMetaFieldClick('stepsGoal', $event)"
             ></span>
             <div class="u-gap-1"></div>
             <span class="a-fade-in a-delay-5">Current best</span>
@@ -1192,7 +1294,7 @@ const handleGlobalKeydown = (e) => {
         }"
         ref="refToolbar"
     >
-        <n-tooltip trigger="hover" placement="left">
+        <n-tooltip trigger="hover" :placement="device.orientation.value == 'portrait' ? 'top' :'left'">
             <template #trigger>
                 <div class="tool-container tool-container--board"
                     :class="{ 'tool-container--active': activeTool === 'board' }" @click="activeTool = 'board'"
@@ -1202,13 +1304,12 @@ const handleGlobalKeydown = (e) => {
                     data-hotkey-label-position="right"
                 >
                     <ion-icon name="square-outline"></ion-icon>
-                    <span class="tool-container__tooltip">Board</span>
                 </div>
             </template>
             Board
             <code>(B)</code>
         </n-tooltip>
-        <n-tooltip trigger="hover" placement="left">
+        <n-tooltip trigger="hover"  :placement="device.orientation.value == 'portrait' ? 'top' :'left'">
             <template #trigger>
                 <div class="tool-container tool-container--portal"
                     :class="{ 'tool-container--active': activeTool === 'portal' }" @click="activeTool = 'portal'"
@@ -1218,13 +1319,12 @@ const handleGlobalKeydown = (e) => {
                     data-hotkey-label-position="right"
                 >
                     <ion-icon name="albums-outline"></ion-icon>
-                    <span class="tool-container__tooltip">Portal</span>
                 </div>
             </template>
             Portal
             <code>(P)</code>
         </n-tooltip>
-        <n-tooltip trigger="hover" placement="left">
+        <n-tooltip trigger="hover" :placement="device.orientation.value == 'portrait' ? 'top' :'left'">
             <template #trigger>
                 <div class="tool-container tool-container--positron"
                     :class="{ 'tool-container--active': activeTool === 'positron' }" @click="activeTool = 'positron'"
@@ -1234,13 +1334,12 @@ const handleGlobalKeydown = (e) => {
                     data-hotkey-label-position="right"
                 >
                     <ion-icon name="radio-button-off-outline"></ion-icon>
-                    <span class="tool-container__tooltip">Positron</span>
                 </div>
             </template>
             Positron
             <code>(+)</code>
         </n-tooltip>
-        <n-tooltip trigger="hover" placement="left">
+        <n-tooltip trigger="hover" :placement="device.orientation.value == 'portrait' ? 'top' :'left'">
             <template #trigger>
                 <div class="tool-container tool-container--electron"
                     :class="{ 'tool-container--active': activeTool === 'electron' }" @click="activeTool = 'electron'"
@@ -1250,13 +1349,12 @@ const handleGlobalKeydown = (e) => {
                     data-hotkey-label-position="right"
                 >
                     <ion-icon name="radio-button-off-outline"></ion-icon>
-                    <span class="tool-container__tooltip">Electron</span>
                 </div>
             </template>
             Electron
             <code>(-)</code>
         </n-tooltip>
-        <n-tooltip trigger="hover" placement="left">
+        <n-tooltip trigger="hover" :placement="device.orientation.value == 'portrait' ? 'top' :'left'">
             <template #trigger>
                 <div class="tool-container tool-container--remover"
                     :class="{ 'tool-container--active': activeTool === 'remover' }" @click="activeTool = 'remover'"
@@ -1266,14 +1364,13 @@ const handleGlobalKeydown = (e) => {
                     data-hotkey-label-position="right"
                 >
                     <ion-icon name="remove-circle-outline"></ion-icon>
-                    <span class="tool-container__tooltip">Remover</span>
                 </div>
             </template>
             Remover
             <code>(R)</code>
         </n-tooltip>
         <n-divider class="divider"></n-divider>
-        <n-tooltip trigger="hover" placement="left">
+        <n-tooltip trigger="hover" :placement="device.orientation.value == 'portrait' ? 'top' :'left'">
             <template #trigger>
                 <div class="tool-container tool-container--clear-all" @click="showConfirmDeletionModal = true"
                     data-hotkey-target="editor.clear-all"
@@ -1282,21 +1379,22 @@ const handleGlobalKeydown = (e) => {
                     data-hotkey-label-position="right"
                 >
                     <ion-icon name="trash-outline"></ion-icon>
-                    <span class="tool-container__tooltip">Clear All</span>
                 </div>
             </template>
             Clear All
         </n-tooltip>
-        <n-tooltip trigger="hover" placement="left">
+        <n-tooltip trigger="manual" :placement="device.orientation.value == 'portrait' ? 'top' :'left'" :show="isFocusToolbarActive">
             <template #trigger>
-                <div class="tool-container tool-container--focus" @click="callCenterMap"
+                <div class="tool-container tool-container--focus"
+                    @mouseenter="onFocusMouseEnter"
+                    @mouseleave="onFocusMouseLeave"
+                    @click="onFocusClick"
                     data-hotkey-target="editor.focus"
                     data-hotkey-label="Focus"
                     data-hotkey-element-position="center"
                     data-hotkey-label-position="right"
                 >
                     <ion-icon name="locate-outline"></ion-icon>
-                    <span class="tool-container__tooltip">Focus</span>
                 </div>
             </template>
             Focus
@@ -1392,6 +1490,35 @@ const handleGlobalKeydown = (e) => {
     </div>
 
     <!-- Modals and popups -->
+    <n-modal
+        v-model:show="showMetaEditPrompt"
+        preset="dialog"
+        :title="metaEditTitle"
+        positive-text="Confirm"
+        negative-text="Cancel"
+        data-hotkey-popup="true"
+        @positive-click="confirmMetaEditPrompt"
+        @negative-click="closeMetaEditPrompt"
+    >
+        <p v-if="metaEditField === 'name'">Enter a new level name.</p>
+        <p v-else-if="metaEditField === 'stepsGoal'">Enter a number, or <code>NA</code> to clear the goal.</p>
+        <n-input
+            v-if="metaEditField === 'name'"
+            class="u-mt-2"
+            v-model:value="metaEditInput"
+            placeholder="Level name"
+            maxlength="64"
+            autofocus
+        />
+        <n-input
+            v-else-if="metaEditField === 'stepsGoal'"
+            class="u-mt-2"
+            v-model:value="metaEditInput"
+            placeholder="Steps goal (e.g. 42 or NA)"
+            :input-props="{ inputmode: 'numeric' }"
+            autofocus
+        />
+    </n-modal>
     <n-modal v-model:show="showConfirmDeletionModal" data-hotkey-popup="true">
         <n-card class="confirm-deletion__card">
             <h2 class="confirm-deletion__title">Confirm Deletion?</h2>
@@ -1433,6 +1560,7 @@ $map-editor-map-bottom-reserve-touch-portrait: 7rem;
         margin: 5pt;
     }
 
+    
     .username {
         color: $map-editor-username-color;
     }
@@ -1440,6 +1568,7 @@ $map-editor-map-bottom-reserve-touch-portrait: 7rem;
     .level-name {
         padding: 4pt;
         size: 1.6rem;
+        text-align: left;
 
         &:hover {
             color: $n-light-grey;
@@ -1566,18 +1695,6 @@ $map-editor-map-bottom-reserve-touch-portrait: 7rem;
         display: flex;
         align-items: center;
         height: $map-editor-toolbar-button-height;
-
-        .tool-container__tooltip {
-            position: absolute;
-            white-space: nowrap; // This is important for the "Clear All" line because it is too long to fit in BEFORE the transform.
-            left: calc(($map-editor-toolbar-width-expanded + $map-editor-toolbar-width) / 2);
-            transform: translateX(-50%) translateY(-44%);
-            top: calc($map-editor-toolbar-button-height / 2);
-
-            font-size: 1rem;
-            font-weight: 100;
-            letter-spacing: .6pt;
-        }
 
         &:hover {
             background-color: $map-editor-toolbar-active-backdrop-color;
