@@ -339,7 +339,7 @@ const playRecording = (rec) => {
 </script>
 
 <template>
-    <div class="wrapper">
+    <div class="wrapper" :class="{ 'wrapper--touch-portrait': isTouchPortrait }">
         <div class="overlay" :class="{ active: headerHover }"></div>
         <ion-icon name="arrow-back-circle-outline" class="back-to-home-btn a-fade-in"
             @click="router.push('/album')"
@@ -512,16 +512,14 @@ const playRecording = (rec) => {
     }
 }
 
-@media (pointer: coarse) and (orientation: portrait), (hover: none) and (orientation: portrait) {
-    .wrapper {
-        width: 94vw;
+.wrapper--touch-portrait {
+    width: 94vw;
 
-        .level-container {
-            max-height: 72vh;
-            overflow-y: auto;
-            padding-bottom: 1rem;
-            -webkit-overflow-scrolling: touch;
-        }
+    .level-container {
+        max-height: 72vh;
+        overflow-y: auto;
+        padding-bottom: 1rem;
+        -webkit-overflow-scrolling: touch;
     }
 }
 

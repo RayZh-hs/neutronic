@@ -18,29 +18,16 @@
 }
 
 /* Touch devices: base rem scales by min(viewport width,height). */
-@media (pointer: coarse) and (max-width: 479.98px),
-  (pointer: coarse) and (max-height: 479.98px),
-  (hover: none) and (max-width: 479.98px),
-  (hover: none) and (max-height: 479.98px) {
-  :root {
-    font-size: 12px;
-  }
+html.device--touch.device--touch-vp-sm {
+  font-size: 12px;
 }
 
-@media (pointer: coarse) and (min-width: 480px) and (min-height: 480px) and (max-width: 758px),
-  (pointer: coarse) and (min-width: 480px) and (min-height: 480px) and (max-height: 758px),
-  (hover: none) and (min-width: 480px) and (min-height: 480px) and (max-width: 758px),
-  (hover: none) and (min-width: 480px) and (min-height: 480px) and (max-height: 758px) {
-  :root {
-    font-size: 16px;
-  }
+html.device--touch.device--touch-vp-md {
+  font-size: 16px;
 }
 
-@media (pointer: coarse) and (min-width: 759px) and (min-height: 759px),
-  (hover: none) and (min-width: 759px) and (min-height: 759px) {
-  :root {
-    font-size: 18px;
-  }
+html.device--touch.device--touch-vp-lg {
+  font-size: 18px;
 }
 
 body {
@@ -103,9 +90,7 @@ button:focus-visible {
   background-color: #262626 !important;
 }
 
-@media (pointer: coarse), (hover: none) {
-  .back-to-home-btn {
-    font-size: 2.8rem !important;
-    margin: 1.25rem !important;
-  }
+html.device--touch .back-to-home-btn {
+  font-size: 2.8rem !important;
+  margin: 1.25rem !important;
 }

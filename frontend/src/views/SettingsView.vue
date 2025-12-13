@@ -302,8 +302,8 @@ const formatActionName = (actionId) => {
         data-hotkey-element-position="right"
         data-hotkey-label-position="right"
     ></ion-icon>
-    <div class="settings-view-container a-fade-in">
-        <div v-if="isTouchPortrait" class="settings-top-tabs">
+    <div class="settings-layout a-fade-in" :class="{ 'settings-layout--touch-portrait': isTouchPortrait }">
+        <div v-if="isTouchPortrait" class="settings-tabs">
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"
                 data-hotkey-target="settings.tab-1"
                 data-hotkey-label="General"
@@ -336,7 +336,7 @@ const formatActionName = (actionId) => {
             </n-button>
         </div>
 
-        <div v-else class="settings-left-container">
+        <div v-else class="settings-nav">
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"
                 data-hotkey-target="settings.tab-1"
                 data-hotkey-label="General"
@@ -375,7 +375,7 @@ const formatActionName = (actionId) => {
             </n-button>
         </div>
         
-        <div class="settings-right-container">
+        <div class="settings-panel">
             <h2 class="settings-title">
                 <span class="settings-title-filled">
                     {{ settingsTitleFillIn }}
@@ -568,16 +568,12 @@ const formatActionName = (actionId) => {
     margin-right: 1rem;
 }
 
-.settings-top-tabs {
-    display: none;
-}
-
-.settings-view-container {
+.settings-layout {
     min-width: 80vw;
     height: 80vh;
     display: flex;
 
-        .settings-left-container {
+        .settings-nav {
             position: relative;
             top: 30%;
             width: calc(min(30%, 15rem) - 0.6rem);
@@ -620,7 +616,7 @@ const formatActionName = (actionId) => {
         }
     }
 
-    .settings-right-container {
+    .settings-panel {
         width: calc(100% - min(30%, 15rem));
         height: 100%;
         display: flex;
@@ -663,8 +659,14 @@ const formatActionName = (actionId) => {
     }
 }
 
-@media (pointer: coarse) and (orientation: portrait), (hover: none) and (orientation: portrait) {
-    .settings-top-tabs {
+.settings-layout--touch-portrait {
+    width: 92vw;
+    min-width: 92vw;
+    height: 82vh;
+    flex-direction: column;
+    align-items: stretch;
+
+    .settings-tabs {
         display: flex;
         width: 100%;
         justify-content: center;
@@ -691,22 +693,14 @@ const formatActionName = (actionId) => {
         }
     }
 
-    .settings-view-container {
-        width: 92vw;
-        min-width: 92vw;
-        height: 82vh;
-        flex-direction: column;
-        align-items: stretch;
+    .settings-panel {
+        width: 100%;
+        padding: 0 1rem;
 
-        .settings-right-container {
-            width: 100%;
-            padding: 0 1rem;
-
-            h2 {
-                font-size: 2rem;
-                margin-top: 1rem;
-                height: auto;
-            }
+        h2 {
+            font-size: 2rem;
+            margin-top: 1rem;
+            height: auto;
         }
     }
 }

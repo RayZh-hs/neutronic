@@ -7,6 +7,7 @@ import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
 import { useHotkeyBindings, useHotkeysEnabled } from '@/functions/useHotkeys';
 import { useDevice } from './functions/useDevice';
+import { useDeviceDecorators } from './functions/useDeviceDecorators';
 
 const openGitHub = () => {
   window.open("https://github.com/RayZh-hs/neutronic", "_blank");
@@ -15,6 +16,7 @@ const openGitHub = () => {
 const toggleAccountCard = ref(false);
 const hoverAccountButton = ref(false);
 const device = useDevice();
+useDeviceDecorators();
 const hotkeysEnabled = useHotkeysEnabled();
 const headerIconSize = computed(() => (device.isTouchDevice.value ? '2.6rem' : '2rem'));
 
@@ -156,11 +158,9 @@ html, body {
   }
 }
 
-@media (pointer: coarse), (hover: none) {
-  .header {
-    top: 1rem;
-    width: calc(100vw - 1rem);
-  }
+:global(html.device--touch) .header {
+  top: 1rem;
+  width: calc(100vw - 1rem);
 }
 
 .warning-overlay {
@@ -181,10 +181,6 @@ html, body {
   display: none;
   justify-content: center;
   align-items: center;
-
-  @media (orientation: portrait) {
-    display: flex;
-  }
 
   &--dismissed {
     display: none;
@@ -231,5 +227,9 @@ html, body {
       --n-icon-size: 3vh !important;
     }
   }
+}
+
+:global(html.device--orientation-portrait) .warning-overlay:not(.warning-overlay--dismissed) {
+  display: flex;
 }
 </style>

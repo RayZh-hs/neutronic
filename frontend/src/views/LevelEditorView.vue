@@ -1126,7 +1126,14 @@ const handleGlobalKeydown = (e) => {
             'background-position-y': `${panningOffset.y}px`
         }"></div>
     </div>
-    <div class="right-container" ref="refToolbar">
+    <div
+        class="editor-toolbar"
+        :class="{
+            'editor-toolbar--touch': device.isTouchDevice.value,
+            'editor-toolbar--touch-portrait': device.isTouchDevice.value && device.orientation.value === 'portrait',
+        }"
+        ref="refToolbar"
+    >
         <n-tooltip trigger="hover" placement="left">
             <template #trigger>
                 <div class="tool-container tool-container--board"
@@ -1421,7 +1428,7 @@ const handleGlobalKeydown = (e) => {
     }
 }
 
-.right-container {
+.editor-toolbar {
     position: fixed;
     width: $map-editor-toolbar-width;
     max-height: 80vh;
@@ -1520,53 +1527,49 @@ const handleGlobalKeydown = (e) => {
     // }
 }
 
-@media (pointer: coarse), (hover: none) {
-    .right-container {
-        width: 4rem;
-        right: 4vw;
-        border-radius: 2rem;
-        font-size: 2.4rem;
+.editor-toolbar--touch {
+    width: 4rem;
+    right: 4vw;
+    border-radius: 2rem;
+    font-size: 2.4rem;
 
-        .tool-container {
-            height: 4.2rem;
+    .tool-container {
+        height: 4.2rem;
 
-            .tool-container__tooltip {
-                display: none;
-            }
+        .tool-container__tooltip {
+            display: none;
         }
+    }
 
-        ion-icon {
-            margin-left: 0.8rem;
-        }
+    ion-icon {
+        margin-left: 0.8rem;
     }
 }
 
-@media (pointer: coarse) and (orientation: portrait), (hover: none) and (orientation: portrait) {
-    .right-container {
-        flex-direction: row;
-        width: 92vw;
-        height: 4.4rem;
-        top: auto;
-        bottom: 1.2rem;
-        left: 50%;
-        right: auto;
-        translate: -50% 0;
-        border-radius: 2.2rem;
-        justify-content: space-between;
+.editor-toolbar--touch-portrait {
+    flex-direction: row;
+    width: 92vw;
+    height: 4.4rem;
+    top: auto;
+    bottom: 1.2rem;
+    left: 50%;
+    right: auto;
+    translate: -50% 0;
+    border-radius: 2.2rem;
+    justify-content: space-between;
 
-        .tool-container {
-            flex: 1;
-            width: auto;
-            justify-content: center;
-        }
+    .tool-container {
+        flex: 1;
+        width: auto;
+        justify-content: center;
+    }
 
-        ion-icon {
-            margin-left: 0;
-        }
+    ion-icon {
+        margin-left: 0;
+    }
 
-        .divider {
-            display: none;
-        }
+    .divider {
+        display: none;
     }
 }
 

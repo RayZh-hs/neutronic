@@ -125,6 +125,7 @@ useHotkeyBindings('sub-album', {
 
 const device = useDevice();
 const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orientation.value === 'portrait');
+const isTouchLandscape = computed(() => device.isTouchDevice.value && device.orientation.value === 'landscape');
 
 const displayedLevels = computed(() => {
     if (!currentAlbum.value) return [];
@@ -150,7 +151,14 @@ const displayedLevels = computed(() => {
         data-hotkey-element-position="right"
         data-hotkey-label-position="right"
     ></ion-icon>
-    <div class="wrapper" v-if="isValidAlbum">
+    <div
+        class="wrapper"
+        :class="{
+            'wrapper--touch-portrait': isTouchPortrait,
+            'wrapper--touch-landscape': isTouchLandscape,
+        }"
+        v-if="isValidAlbum"
+    >
         <div class="header-container">
             <h1 class="album-title a-fade-in">{{ currentAlbum.meta.name }}</h1>
             <div class="header-container__right a-fade-in a-delay-1">
@@ -263,31 +271,27 @@ const displayedLevels = computed(() => {
     }
 }
 
-@media (pointer: coarse) and (orientation: portrait), (hover: none) and (orientation: portrait) {
-    .wrapper {
-        .main-container {
-            width: 92vw;
-            max-height: 72vh;
-            min-height: auto;
-            overflow-y: auto;
-            padding-bottom: 1rem;
-            grid-template-columns: repeat(3, $level-select-grid-scale);
-            grid-template-rows: auto;
-            justify-content: center;
-            -webkit-overflow-scrolling: touch;
-            scroll-snap-type: y proximity;
-        }
+.wrapper--touch-portrait {
+    .main-container {
+        width: 92vw;
+        max-height: 72vh;
+        min-height: auto;
+        overflow-y: auto;
+        padding-bottom: 1rem;
+        grid-template-columns: repeat(3, $level-select-grid-scale);
+        grid-template-rows: auto;
+        justify-content: center;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: y proximity;
     }
 }
 
-@media (pointer: coarse) and (orientation: landscape), (hover: none) and (orientation: landscape) {
-    .wrapper {
-        .main-container {
-            grid-template-columns: repeat(4, 4.8rem);
-            grid-template-rows: repeat(3, 4.8rem);
-            min-height: calc(0.7rem * 2 + 4.8rem * 3);
-            gap: 0.7rem;
-        }
+.wrapper--touch-landscape {
+    .main-container {
+        grid-template-columns: repeat(4, 4.8rem);
+        grid-template-rows: repeat(3, 4.8rem);
+        min-height: calc(0.7rem * 2 + 4.8rem * 3);
+        gap: 0.7rem;
     }
 
     :deep(.level-card) {

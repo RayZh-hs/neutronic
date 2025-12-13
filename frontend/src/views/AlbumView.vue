@@ -140,7 +140,7 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
         @click="jumpToReferent"
     />
     <!-- <p v-if="isAlbumLoaded">{{ album }}</p> -->
-    <div class="side-container" v-if="isAlbumLoaded">
+    <div class="side-container" :class="{ 'side-container--touch': device.isTouchDevice.value }" v-if="isAlbumLoaded">
         <ion-icon v-if="!isTouchPortrait" name="chevron-back-outline" class="backward-btn"
             data-hotkey-target="album.previous"
             data-hotkey-label="Previous"
@@ -246,12 +246,10 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
     }
 }
 
-@media (pointer: coarse), (hover: none) {
-    .side-container {
-        .swiper {
-            width: 86vw;
-            height: 70vh;
-        }
+.side-container--touch {
+    .swiper {
+        width: 86vw;
+        height: 70vh;
     }
 }
 
@@ -328,30 +326,23 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
     width: $pagination-dot-size * 5
 }
 
-@media (pointer: coarse), (hover: none) {
-    .swiper-pagination-bullet {
-        @media (orientation: portrait) {
-            width: $pagination-dot-size * 1.2;
-            height: $pagination-dot-size * 1.5;
-            border-radius: calc($pagination-dot-size / 2 * 1.2);
-        }
-        @media (orientation: landscape) {
-            width: $pagination-dot-size * 1.5;
-            height: $pagination-dot-size * 1.2;
-        }
-        border-radius: calc($pagination-dot-size / 2 * 1.2);
-    }
+html.device--touch.device--orientation-portrait .swiper-pagination-bullet {
+    width: $pagination-dot-size * 1.2;
+    height: $pagination-dot-size * 1.5;
+    border-radius: calc($pagination-dot-size / 2 * 1.2);
+}
 
-    @media (orientation: portrait) {
-        .swiper-pagination-bullet-active {
-            height: $pagination-dot-size * 5;
-        }
-    }
+html.device--touch.device--orientation-landscape .swiper-pagination-bullet {
+    width: $pagination-dot-size * 1.5;
+    height: $pagination-dot-size * 1.2;
+    border-radius: calc($pagination-dot-size / 2 * 1.2);
+}
 
-    @media (orientation: landscape) {
-        .swiper-pagination-bullet-active {
-            width: $pagination-dot-size * 5;
-        }
-    }
+html.device--touch.device--orientation-portrait .swiper-pagination-bullet-active {
+    height: $pagination-dot-size * 5;
+}
+
+html.device--touch.device--orientation-landscape .swiper-pagination-bullet-active {
+    width: $pagination-dot-size * 5;
 }
 </style>
