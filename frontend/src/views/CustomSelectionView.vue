@@ -1,19 +1,22 @@
 <script setup>
 import { useRouter } from 'vue-router';
-import { useSessionStorage } from '@vueuse/core';
+import { useSessionStorage, useWindowSize } from '@vueuse/core';
 import { v4 as uuidV4Generator } from 'uuid';
 import LevelCard from '@/components/LevelCard.vue';
 import IonButton from '@/components/IonButton.vue';
-import { customSelectionWindowSize } from '@/data/constants';
 import { useAccountStore, renameAccount, removeCustomLevel } from '@/functions/useAccount';
 import { useRecordingsStore, removeRecordingForLevel } from '@/functions/useRecordings';
 import { getPrebuiltLevelInfo } from '@/functions/levelUtils';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
+import { useDevice } from '@/functions/useDevice';
 
 const router = useRouter();
 const account = useAccountStore();
 const message = useMessage();
 const dialog = useDialog();
+const device = useDevice();
+const isTouchDevice = computed(() => device.isTouchDevice.value);
+const isTouchPortrait = computed(() => isTouchDevice.value && device.orientation.value === 'portrait');
 
 const headerHover = ref(false);
 const isCreateIconVisible = ref(false);
@@ -45,9 +48,23 @@ const selectOption = (opt) => {
     pendingView.value = opt;
 };
 
+const setCurrentView = (opt) => {
+    currentView.value = opt;
+    pendingView.value = opt;
+    headerHover.value = false;
+};
+
+const { height: viewportHeight } = useWindowSize();
+const pageSize = computed(() => {
+    const h = viewportHeight.value || 0;
+    if (h > 0 && h < 560) return 3;
+    if (h > 0 && h < 720) return 4;
+    return 5;
+});
+
 const sliceWindow = ref({
     begin: 0,
-    end: customSelectionWindowSize,
+    end: pageSize.value,
 });
 
 const sortedCustomLevels = computed(() => {
@@ -79,6 +96,13 @@ const pagedItems = computed(() => {
     const list = currentView.value === 'levels' ? sortedCustomLevels.value :
                  allRecordings.value;
     return list.slice(sliceWindow.value.begin, sliceWindow.value.end);
+});
+
+const visibleItems = computed(() => {
+    if (isTouchPortrait.value) {
+        return currentView.value === 'levels' ? sortedCustomLevels.value : allRecordings.value;
+    }
+    return pagedItems.value;
 });
 
 const levelEditorConfig = useSessionStorage('level-editor-config', {
@@ -179,32 +203,40 @@ useHotkeyBindings('custom-selection', {
 
 const adjustWindowBounds = () => {
     if (sliceWindow.value.begin >= total.value) {
-        sliceWindow.value.begin = Math.max(0, total.value - customSelectionWindowSize);
-        sliceWindow.value.end = sliceWindow.value.begin + customSelectionWindowSize;
+        sliceWindow.value.begin = Math.max(0, total.value - pageSize.value);
+        sliceWindow.value.end = sliceWindow.value.begin + pageSize.value;
     } else {
-        sliceWindow.value.end = sliceWindow.value.begin + customSelectionWindowSize;
+        sliceWindow.value.end = sliceWindow.value.begin + pageSize.value;
     }
 };
 
 watch([total, currentView], () => {
     sliceWindow.value.begin = 0;
-    sliceWindow.value.end = customSelectionWindowSize;
+    sliceWindow.value.end = pageSize.value;
     if (currentView.value === 'recordings') {
         isCreateIconVisible.value = false;
     }
 });
 
 const nextWindow = () => {
+    if (isTouchPortrait.value) return;
     if (sliceWindow.value.end >= total.value) { return; }
-    sliceWindow.value.begin += customSelectionWindowSize;
-    sliceWindow.value.end += customSelectionWindowSize;
+    sliceWindow.value.begin += pageSize.value;
+    sliceWindow.value.end += pageSize.value;
 };
 
 const prevWindow = () => {
+    if (isTouchPortrait.value) return;
     if (sliceWindow.value.begin <= 0) { return; }
-    sliceWindow.value.begin -= customSelectionWindowSize;
-    sliceWindow.value.end -= customSelectionWindowSize;
+    sliceWindow.value.begin -= pageSize.value;
+    sliceWindow.value.end -= pageSize.value;
 };
+
+watch(pageSize, () => {
+    if (isTouchPortrait.value) return;
+    sliceWindow.value.end = sliceWindow.value.begin + pageSize.value;
+    adjustWindowBounds();
+}, { immediate: false });
 
 const showNamePrompt = ref(false);
 const pendingAction = ref(null);
@@ -317,29 +349,49 @@ const playRecording = (rec) => {
         ></ion-icon>
         <n-flex align="baseline" class="header-container">
             <h1 class="a-fade-in title-text">
-                My 
-                <span class="view-selector" @mouseenter="headerHover = true" @mouseleave="headerHover = false" @wheel="handleWheel"
-                    data-hotkey-target="custom-selection.toggle-mode"
-                    data-hotkey-label="Toggle Mode"
-                    data-hotkey-element-position="below"
-                >
-                    <span class="current-text" :class="{ hidden: headerHover }">
-                        {{ currentView.charAt(0).toUpperCase() + currentView.slice(1) }}
-                    </span>
-                    <div class="view-menu" v-show="headerHover">
-                        <div class="view-list" :style="{ transform: `translateY(calc(-${options.indexOf(pendingView)} * 1.5em))` }">
-                            <div 
-                                v-for="opt in options" 
-                                :key="opt" 
-                                class="view-option" 
-                                :class="{ selected: opt === pendingView }"
-                                @click="selectOption(opt)"
-                            >
-                                {{ opt.charAt(0).toUpperCase() + opt.slice(1) }}
+                <template v-if="!isTouchDevice">
+                    My 
+                    <span class="view-selector" @mouseenter="headerHover = true" @mouseleave="headerHover = false" @wheel="handleWheel"
+                        data-hotkey-target="custom-selection.toggle-mode"
+                        data-hotkey-label="Toggle Mode"
+                        data-hotkey-element-position="below"
+                    >
+                        <span class="current-text" :class="{ hidden: headerHover }">
+                            {{ currentView.charAt(0).toUpperCase() + currentView.slice(1) }}
+                        </span>
+                        <div class="view-menu" v-show="headerHover">
+                            <div class="view-list" :style="{ transform: `translateY(calc(-${options.indexOf(pendingView)} * 1.5em))` }">
+                                <div 
+                                    v-for="opt in options" 
+                                    :key="opt" 
+                                    class="view-option" 
+                                    :class="{ selected: opt === pendingView }"
+                                    @click="selectOption(opt)"
+                                >
+                                    {{ opt.charAt(0).toUpperCase() + opt.slice(1) }}
+                                </div>
                             </div>
                         </div>
+                    </span>
+                </template>
+                <template v-else>
+                    <div class="touch-tabs">
+                        <n-button
+                            class="touch-tab"
+                            :type="currentView === 'levels' ? 'primary' : 'default'"
+                            @click="setCurrentView('levels')"
+                        >
+                            My Levels
+                        </n-button>
+                        <n-button
+                            class="touch-tab"
+                            :type="currentView === 'recordings' ? 'primary' : 'default'"
+                            @click="setCurrentView('recordings')"
+                        >
+                            My Recordings
+                        </n-button>
                     </div>
-                </span>
+                </template>
             </h1>
             <div class="gap-5" />
             <IonButton v-if="currentView !== 'recordings'" name="add-circle-outline" class="a-fade-in create-icon" :class="{'create-icon-hide': headerHover, 'a-fade-in--visible': isCreateIconVisible}" size="2.2rem"
@@ -372,7 +424,7 @@ const playRecording = (rec) => {
                 ></div>
             </div>
             <template v-if="currentView === 'levels'">
-                <level-card v-for="(level, index) in pagedItems" :name="level.level.meta.name" :uuid="level.id"
+                <level-card v-for="(level, index) in visibleItems" :name="level.level.meta.name" :uuid="level.id"
                     :best-moves="level.bestMoves" :updated-at="level.updatedAt" :key="level.id"
                     :published="level.level.meta.published"
                     class="a-fade-in"
@@ -383,7 +435,7 @@ const playRecording = (rec) => {
                 ></level-card>
             </template>
             <template v-else-if="currentView === 'recordings'">
-                <div v-for="(rec, index) in pagedItems" :key="rec.id" class="recording-card a-fade-in" :class="{ [`a-delay-${index + 1}`]: true, focused: index === focusedIndex }">
+                <div v-for="(rec, index) in visibleItems" :key="rec.id" class="recording-card a-fade-in" :class="{ [`a-delay-${index + 1}`]: true, focused: index === focusedIndex }">
                     <div class="rec-info">
                         <span class="rec-level">{{ rec.levelName || rec.levelId }}<span class="rec-steps">Steps: {{ rec.steps }}</span></span>
                         <span class="rec-date">{{ new Date(rec.recordedAt).toLocaleString() }}</span>
@@ -401,12 +453,12 @@ const playRecording = (rec) => {
             </p>
         </div>
     </div>
-    <ion-icon name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in" @click="prevWindow"
+    <ion-icon v-if="!isTouchPortrait" name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in" @click="prevWindow"
         :class="{ disabled: sliceWindow.begin <= 0 }"
         data-hotkey-target="custom-selection.previous-page"
         data-hotkey-label="Previous Page"
     ></ion-icon>
-    <ion-icon name="chevron-forward-outline" class="control-btn control-btn__forward a-fade-in" @click="nextWindow"
+    <ion-icon v-if="!isTouchPortrait" name="chevron-forward-outline" class="control-btn control-btn__forward a-fade-in" @click="nextWindow"
         :class="{ disabled: sliceWindow.end >= total }"
         data-hotkey-target="custom-selection.next-page"
         data-hotkey-label="Next Page"
@@ -456,6 +508,19 @@ const playRecording = (rec) => {
         p {
             font-weight: 400;
             letter-spacing: .25pt;
+        }
+    }
+}
+
+@media (pointer: coarse) and (orientation: portrait), (hover: none) and (orientation: portrait) {
+    .wrapper {
+        width: 94vw;
+
+        .level-container {
+            max-height: 72vh;
+            overflow-y: auto;
+            padding-bottom: 1rem;
+            -webkit-overflow-scrolling: touch;
         }
     }
 }
@@ -538,6 +603,16 @@ const playRecording = (rec) => {
             }
         }
     }
+}
+
+.touch-tabs {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.touch-tab {
+    font-size: 1rem;
 }
 
 .create-icon {

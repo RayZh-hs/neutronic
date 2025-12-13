@@ -5,7 +5,7 @@ import AccountCard from './components/AccountCard.vue';
 import HotkeysOverlay from './components/HotkeysOverlay.vue';
 import IonButton from './components/IonButton.vue';
 import { useRoute } from 'vue-router';
-import { useHotkeyBindings } from '@/functions/useHotkeys';
+import { useHotkeyBindings, useHotkeysEnabled } from '@/functions/useHotkeys';
 import { useDevice } from './functions/useDevice';
 
 const openGitHub = () => {
@@ -15,6 +15,8 @@ const openGitHub = () => {
 const toggleAccountCard = ref(false);
 const hoverAccountButton = ref(false);
 const device = useDevice();
+const hotkeysEnabled = useHotkeysEnabled();
+const headerIconSize = computed(() => (device.isTouchDevice.value ? '2.6rem' : '2rem'));
 
 useHotkeyBindings('general', {
     'general.github': ({ event }) => {
@@ -51,10 +53,10 @@ const showGeneralHotkeys = computed(() => {
           <!-- main starts here -->
           <main>
             <div class="header">
-              <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccountButton" :v-if="device.isDesktopDevice == true">
+              <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccountButton" v-if="device.isDesktopDevice === true">
                 <template #trigger>
                   <div class="header__user-button-wrapper">
-                    <IonButton name="person-circle-outline" size="2rem" class="header__user-button"
+                    <IonButton name="person-circle-outline" :size="headerIconSize" class="header__user-button"
                       @mouseenter="hoverAccountButton=true" @mouseleave="hoverAccountButton=false"
                       data-hotkey-target="general.account-toggle"
                       data-hotkey-label="Account"
@@ -67,7 +69,7 @@ const showGeneralHotkeys = computed(() => {
                 </template>
                 <AccountCard />
               </n-popover>
-              <IonButton name="logo-github" size="2rem" aria-label="github" @click="openGitHub"
+              <IonButton name="logo-github" :size="headerIconSize" aria-label="github" @click="openGitHub"
                 data-hotkey-target="general.github"
                 data-hotkey-label="GitHub"
                 :data-hotkey-show="showGeneralHotkeys ? 'true' : 'false'"
@@ -85,7 +87,7 @@ const showGeneralHotkeys = computed(() => {
               <p>Made with ♥️ by Norb @ 2025</p>
             </div>
             <abstract-background />
-            <hotkeys-overlay />
+            <hotkeys-overlay v-if="hotkeysEnabled" />
           </main>
         </n-modal-provider>
       </n-message-provider>
@@ -94,6 +96,11 @@ const showGeneralHotkeys = computed(() => {
 </template>
 
 <style lang="scss">
+html, body {
+  overflow: hidden; /* Hides any overflowing content and prevents scrolling */
+  height: 100%;    /* Ensures the body takes the full height of the viewport */
+}
+
 .v-enter-active,
 .v-leave-active {
     transition: all 0.5s ease;
@@ -146,6 +153,13 @@ const showGeneralHotkeys = computed(() => {
 
   .header__user-button-wrapper {
     margin-right: 1rem;
+  }
+}
+
+@media (pointer: coarse), (hover: none) {
+  .header {
+    top: 1rem;
+    width: calc(100vw - 1rem);
   }
 }
 

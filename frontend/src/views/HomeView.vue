@@ -2,10 +2,27 @@
 import { router } from '../router';
 import { useHotkeyBindings } from '@/functions/useHotkeys';
 import { overrideHotkeyOverlayConfig } from '@/data/hotkeyOverlayConfig';
+import { useDevice } from '@/functions/useDevice';
+import { useSessionStorage } from '@vueuse/core';
 
 const curAtButton = ref('none');
 
 const showInfo = ref(false);
+
+const device = useDevice();
+const showSmallScreenWarning = computed(() => device.viewportWidth.value > 0 && device.viewportWidth.value < 400);
+
+const dismissedOrientationHint = useSessionStorage('neutronic.dismissedMobileOrientationHint', false);
+const showOrientationHint = ref(false);
+watchEffect(() => {
+    const shouldSuggestPortrait = device.isMobileDevice.value && device.orientation.value === 'landscape';
+    showOrientationHint.value = shouldSuggestPortrait && !dismissedOrientationHint.value;
+});
+
+const dismissOrientationHint = () => {
+    dismissedOrientationHint.value = true;
+    showOrientationHint.value = false;
+};
 
 overrideHotkeyOverlayConfig({
     groups: {
@@ -37,6 +54,9 @@ useHotkeyBindings('landing', {
 
 <template>
     <div class="home-view-container">
+        <n-alert v-if="showSmallScreenWarning" class="small-screen-warning" type="warning" :bordered="false">
+            Screen width is under 400px; the game may be hard to play on this device.
+        </n-alert>
         <h1 class="home-main-title a-fade-in">Neutronic</h1>
         <div class="r-container">
             <div class="r-divider-bg clickable a-fade-in a-delay-2"
@@ -98,10 +118,24 @@ useHotkeyBindings('landing', {
             <p>The game is open-source at <a href="https://github.com/RayZh-hs/neutronic">Github</a></p>
         </n-card>
     </n-modal>
+    <n-modal v-model:show="showOrientationHint">
+        <n-card title="Rotate your device?" class="orientation-hint-card" :bordered="false">
+            <p>Neutronic works best in portrait mode on mobile devices.</p>
+            <n-flex justify="end" class="u-mt-2">
+                <n-button @click="dismissOrientationHint">Got it</n-button>
+            </n-flex>
+        </n-card>
+    </n-modal>
 </template>
 
 <style lang="scss" scoped>
 .home-view-container {
+    .small-screen-warning {
+        max-width: 32rem;
+        margin: 0 auto 1rem auto;
+        text-align: left;
+    }
+
     .home-main-title {
         text-transform: uppercase;
         font-size: 3.5rem;
@@ -167,6 +201,11 @@ useHotkeyBindings('landing', {
         // margin-right: 1rem;
         animation: spin 24s linear infinite;
     }
+}
+
+.orientation-hint-card {
+    max-width: 24rem;
+    text-align: left;
 }
 
 @keyframes spin {

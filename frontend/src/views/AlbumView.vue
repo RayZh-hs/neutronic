@@ -1,6 +1,7 @@
 <script setup>
 
 import { useLocalStorage, useTimeoutFn } from '@vueuse/core';
+import { useDevice } from '@/functions/useDevice';
 
 //: Swiper-specific setup
 
@@ -118,6 +119,9 @@ watch(isAlbumLoaded, (newVal) => {
     }
 });
 
+const device = useDevice();
+const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orientation.value === 'portrait');
+
 </script>
 
 <template>
@@ -137,16 +141,25 @@ watch(isAlbumLoaded, (newVal) => {
     />
     <!-- <p v-if="isAlbumLoaded">{{ album }}</p> -->
     <div class="side-container" v-if="isAlbumLoaded">
-        <ion-icon name="chevron-back-outline" class="backward-btn"
+        <ion-icon v-if="!isTouchPortrait" name="chevron-back-outline" class="backward-btn"
             data-hotkey-target="album.previous"
             data-hotkey-label="Previous"
             data-hotkey-element-position="below"
             data-hotkey-label-position="right"
         ></ion-icon>
-        <swiper ref="swiperRef" :pagination="pagination" :modules="modules" class="swiper" :navigation="{
+        <swiper ref="swiperRef"
+            :pagination="pagination"
+            :modules="modules"
+            class="swiper"
+            :direction="isTouchPortrait ? 'vertical' : 'horizontal'"
+            :navigation="isTouchPortrait ? false : {
             prevEl: '.backward-btn',
             nextEl: '.forward-btn'
-        }" :mousewheel="true" @swiper="initPage" @slideChange="updatePage">
+        }"
+            :mousewheel="!device.isTouchDevice.value"
+            @swiper="initPage"
+            @slideChange="updatePage"
+        >
             <swiper-slide v-for="(item, num) in album" :key="num">
                 <album-card :name="item.meta.name" :locked="player.lookup[item.meta.name] == undefined" :total="item.content.length" :passes="player.lookup[item.meta.name]?.passed" :perfects="player.lookup[item.meta.name]?.perfected" class="a-fade-in" 
                     @click="jumpToReferent"
@@ -172,7 +185,7 @@ watch(isAlbumLoaded, (newVal) => {
                 ></subtitled-album-card>
             </swiper-slide>
         </swiper>
-        <ion-icon name="chevron-forward-outline" class="forward-btn"
+        <ion-icon v-if="!isTouchPortrait" name="chevron-forward-outline" class="forward-btn"
             data-hotkey-target="album.next"
             data-hotkey-label="Next"
             data-hotkey-element-position="below"
@@ -230,6 +243,15 @@ watch(isAlbumLoaded, (newVal) => {
         width: 60vw;
         height: 60vh;
         // outline: 1px solid rgb(255, 255, 255);   
+    }
+}
+
+@media (pointer: coarse), (hover: none) {
+    .side-container {
+        .swiper {
+            width: 86vw;
+            height: 70vh;
+        }
     }
 }
 
@@ -304,5 +326,32 @@ watch(isAlbumLoaded, (newVal) => {
 .swiper-pagination-bullet-active {
     background: $pagination-bg-color--active;
     width: $pagination-dot-size * 5
+}
+
+@media (pointer: coarse), (hover: none) {
+    .swiper-pagination-bullet {
+        @media (orientation: portrait) {
+            width: $pagination-dot-size * 1.2;
+            height: $pagination-dot-size * 1.5;
+            border-radius: calc($pagination-dot-size / 2 * 1.2);
+        }
+        @media (orientation: landscape) {
+            width: $pagination-dot-size * 1.5;
+            height: $pagination-dot-size * 1.2;
+        }
+        border-radius: calc($pagination-dot-size / 2 * 1.2);
+    }
+
+    @media (orientation: portrait) {
+        .swiper-pagination-bullet-active {
+            height: $pagination-dot-size * 5;
+        }
+    }
+
+    @media (orientation: landscape) {
+        .swiper-pagination-bullet-active {
+            width: $pagination-dot-size * 5;
+        }
+    }
 }
 </style>

@@ -20,6 +20,7 @@ const createDefaultAccount = () => ({
         disableAnimations: false,
         musicVolume: 50,
         sfxVolume: 50,
+        hotkeysEnabled: null, // null => auto (disabled on touch, enabled on desktop)
     },
     hotkeys: {},
     recordings: {},

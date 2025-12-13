@@ -1,6 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { useSettings } from '@/functions/useSettings';
+import { useDevice } from '@/functions/useDevice';
 import { 
     useAccountStore, 
     renameAccount, 
@@ -16,7 +17,8 @@ import {
     resetHotkeyBindings, 
     hotkeyUtils,
     formatBindingSequence,
-    useHotkeyBindings
+    useHotkeyBindings,
+    useHotkeysEnabled
 } from '@/functions/useHotkeys';
 
 const router = useRouter();
@@ -24,6 +26,9 @@ const message = useMessage();
 const dialog = useDialog();
 const settings = useSettings();
 const accountStore = useAccountStore();
+const hotkeysEnabled = useHotkeysEnabled();
+const device = useDevice();
+const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orientation.value === 'portrait');
 
 const activeTab = ref('general');
 const settingsTitleFillIn = computed(() => {
@@ -298,7 +303,40 @@ const formatActionName = (actionId) => {
         data-hotkey-label-position="right"
     ></ion-icon>
     <div class="settings-view-container a-fade-in">
-        <div class="settings-left-container">
+        <div v-if="isTouchPortrait" class="settings-top-tabs">
+            <n-button text class="settings-section-button" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"
+                data-hotkey-target="settings.tab-1"
+                data-hotkey-label="General"
+                data-hotkey-element-position="center"
+                aria-label="General"
+            >
+                <template #icon>
+                    <ion-icon name="settings-outline" class="form-button"></ion-icon>
+                </template>
+            </n-button>
+            <n-button text class="settings-section-button" :class="{ active: activeTab === 'account' }" @click="activeTab = 'account'"
+                data-hotkey-target="settings.tab-2"
+                data-hotkey-label="Account"
+                data-hotkey-element-position="center"
+                aria-label="Account"
+            >
+                <template #icon>
+                    <ion-icon name="person-outline" class="form-button"></ion-icon>
+                </template>
+            </n-button>
+            <n-button text class="settings-section-button" :class="{ active: activeTab === 'hotkeys' }" @click="activeTab = 'hotkeys'"
+                data-hotkey-target="settings.tab-3"
+                data-hotkey-label="Hotkeys"
+                data-hotkey-element-position="center"
+                aria-label="Hotkeys"
+            >
+                <template #icon>
+                    <ion-icon name="keypad-outline" class="form-button"></ion-icon>
+                </template>
+            </n-button>
+        </div>
+
+        <div v-else class="settings-left-container">
             <n-button text class="settings-section-button" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"
                 data-hotkey-target="settings.tab-1"
                 data-hotkey-label="General"
@@ -444,7 +482,18 @@ const formatActionName = (actionId) => {
 
                     <!-- Hotkey Settings -->
                     <div v-else-if="activeTab === 'hotkeys'" class="settings-group hotkeys-list" key="hotkeys">
-                        <n-collapse class="hotkey-container">
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <h3>Enable Hotkeys</h3>
+                                <p>Keyboard shortcuts and the hotkey overlay (recommended on desktop).</p>
+                            </div>
+                            <n-switch v-model:value="hotkeysEnabled" />
+                        </div>
+                        <n-divider />
+                        <p v-if="!hotkeysEnabled" class="hotkeys-disabled-note">
+                            Hotkeys are disabled. Enable them to edit bindings.
+                        </p>
+                        <n-collapse v-else class="hotkey-container">
                             <n-collapse-item v-for="(actions, category) in defaultHotkeyMap" :key="category" :title="category.charAt(0).toUpperCase() + category.slice(1)" :name="category" class="hotkey-collapse-item" :class="{ 'keyboard-focused-background': isFocused(`cat-${category}`) }">
                                 <div class="hotkey-grid">
                                     <div v-for="([actionId, defaultBindings]) in Object.entries(actions)" :key="actionId" class="hotkey-row" :class="{ 'keyboard-focused-background': isFocused(`action-${actionId}`) }">
@@ -508,10 +557,19 @@ const formatActionName = (actionId) => {
     min-width: 10rem;
 }
 
+.hotkeys-disabled-note {
+    margin: 0.5rem 0 0 0;
+    color: rgba(255, 255, 255, 0.7);
+}
+
 .form-button {
     min-width: 1.5rem;
     font-size: 2.5rem;
     margin-right: 1rem;
+}
+
+.settings-top-tabs {
+    display: none;
 }
 
 .settings-view-container {
@@ -519,10 +577,10 @@ const formatActionName = (actionId) => {
     height: 80vh;
     display: flex;
 
-    .settings-left-container {
-        position: relative;
-        top: 30%;
-        width: calc(min(30%, 15rem) - 0.6rem);
+        .settings-left-container {
+            position: relative;
+            top: 30%;
+            width: calc(min(30%, 15rem) - 0.6rem);
         margin-right: 0.6rem;
         height: 60%;
 
@@ -600,6 +658,54 @@ const formatActionName = (actionId) => {
             }
             &::-webkit-scrollbar-thumb:hover {
                 background: rgba(255, 255, 255, 0.3);
+            }
+        }
+    }
+}
+
+@media (pointer: coarse) and (orientation: portrait), (hover: none) and (orientation: portrait) {
+    .settings-top-tabs {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+
+        .settings-section-button {
+            opacity: 1;
+            animation: none;
+            padding: 0.6rem 0.8rem;
+            border-radius: 0.5rem;
+
+            &.active {
+                border-left: 0;
+                outline: 1px solid rgba(255, 255, 255, 0.3);
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        .form-button {
+            margin-right: 0;
+            font-size: 2rem;
+            min-width: 2rem;
+        }
+    }
+
+    .settings-view-container {
+        width: 92vw;
+        min-width: 92vw;
+        height: 82vh;
+        flex-direction: column;
+        align-items: stretch;
+
+        .settings-right-container {
+            width: 100%;
+            padding: 0 1rem;
+
+            h2 {
+                font-size: 2rem;
+                margin-top: 1rem;
+                height: auto;
             }
         }
     }

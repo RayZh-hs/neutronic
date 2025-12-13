@@ -22,9 +22,28 @@
     [+] Last save date on account card should be hidden on small screens
 [ ] Mobile: Support for touch screens
     [+] Full touch & swipe support to operate on particles in Level View
-    [ ] Mobile version for level editor
-    [+] Mobile version for tutorial levels
-    [ ] Mobile version for settings (hotkeys need to be removed)
+    [+] Responsive: Device classification (desktop/pad/mobile) + orientation helpers
+    [+] Home: Warn when screen width < 400px
+    [+] Home: On mobile, suggest default orientation (portrait) when rotated
+    [+] Hotkeys: Disable by default on touch + settings toggle + hide overlay when disabled
+    [+] App Layout: Hide account button on touch + enlarge top buttons for touch
+    [+] Album View: Touch portrait uses vertical swipe layout + touch bullets enlarged
+    [+] Sub-Album View: Touch portrait uses vertical scroll grid (no paging)
+    [+] Sub-Album View: Touch landscape shrinks level boxes to fit on screen
+    [+] Custom Selection: Touch uses top tabs to switch between My Levels/My Recordings
+    [+] Custom Selection: Touch portrait uses vertical scroll (no paging)
+    [+] Custom Selection: Reduce items/page on small heights (5→4→3)
+    [+] Level Editor: Touch placement + drag-to-pan support
+    [+] Level Editor: Hide dev tools + enlarge toolbar icons on touch
+    [+] Level Editor: Touch portrait moves toolbar to bottom
+    [ ] Level Editor: Touch portrait changes toolbar tooltip to above icon
+    [ ] Level Editor: Touch portrait changes top container to flex column
+    [+] Level View: Mobile version for tutorial levels
+    [ ] Level View: Long tutorial text need to be wrapped
+    [+] Settings: Touch hotkeys enable toggle (off by default) + hide editor UI when off
+    [+] Settings: Touch portrait uses top icon tabs
+    [ ] Settings: Touch portrait requires new layout for settings box
+    [ ] Settings: Touch portrait demands column flex layout for individual setting item
 [ ] Tutorial robustness in handling rapid movement
 [ ] More levels need to be injected into the album
 [ ] Publishing custom levels has not been implemented, including editing metadata (not planned for public beta)

@@ -3,6 +3,7 @@
 import { useMouse, useMouseInElement, onKeyStroke, whenever, useMagicKeys, onClickOutside, useClipboard, useFileDialog, get, assert } from "@vueuse/core";
 import { useRouter } from "vue-router";
 import { overrideHotkeyOverlayConfig } from "@/data/hotkeyOverlayConfig";
+import { useDevice } from "@/functions/useDevice";
 
 //: Custom Components
 import IonButton from "@/components/IonButton.vue"
@@ -25,6 +26,7 @@ overrideHotkeyOverlayConfig({
 const router = useRouter();
 const message = useMessage();
 const dialog = useDialog();
+const device = useDevice();
 
 /**
  * This function is called to center the map on the screen.
@@ -59,6 +61,8 @@ const account = computed(() => accountStore.value.profile);
 const currentLevelId = computed(() => router.currentRoute.value.params.uuid);
 
 const showDevTools = ref(true);
+const isTouchDevice = computed(() => device.isTouchDevice.value);
+const topButtonSize = computed(() => (isTouchDevice.value ? '2.4rem' : '1.6rem'));
 
 // - tracking the level name
 const levelName = ref("New Level");
@@ -680,21 +684,11 @@ import { levelEditorPlaceFrequency } from "../data/constants";
 let placementTracker = null;
 let leftClickCooldown = false;
 
-const onMouseLeftClickOnMap = () => {
+const placeAtCoord = (atCoord) => {
     if (leftClickCooldown) { return; }
-    console.log("Left click");
-    // assert that the left click is only handled when the mode is 'place'!
     if (globalModeContext.value !== 'place') { return; }
-    const atCoord = {
-        x: toolSpritePosition.value.x - originPosition.value.x,
-        y: toolSpritePosition.value.y - originPosition.value.y
-    }
     if (activeTool.value === 'board') {
-        // Check if there is already a container at the location
         if (hasContainerAt(atCoord)) { return; }
-        // Append a new board to the boardTiles
-        // The x, y here is relative to the origin.
-        // boardTiles.value.push(atCoord);
         addBoardAt(atCoord);
     }
     else if (activeTool.value === 'portal') {
@@ -707,55 +701,120 @@ const onMouseLeftClickOnMap = () => {
             return;
         }
         if (hasBoardAt(atCoord)) {
-            // A portal can take the place of a board at placement
             removeBoardAt(atCoord);
             removeParticlesAt(atCoord);
         }
-        else if (hasContainerAt(atCoord)) {
-            // Then there exists a portal at the position
-            // message.warning("You cannot place a portal on another portal!");
-        }
-        else {
-            // All is clear
+        else if (!hasContainerAt(atCoord)) {
             addPortalAt(atCoord);
         }
     }
     else if (activeTool.value === 'positron') {
         if (hasPositronAt(atCoord)) {
-            // Then there exists a positron at the position
-            // message.warning("You cannot place a positron on another positron!");
             return;
         }
         if (!hasContainerAt(atCoord)) {
-            // Create a new board on which the positron can stand
             addBoardAt(atCoord);
         }
         removeParticlesAt(atCoord);
-        // Append a new positron to the positronParticles
         positronParticles.value.push(atCoord);
     }
     else if (activeTool.value === 'electron') {
         if (hasElectronAt(atCoord)) {
-            // Then there exists an electron at the position
-            // message.warning("You cannot place an electron on another electron!");
             return;
         }
         if (!hasContainerAt(atCoord)) {
-            // Create a new board on which the electron can stand
             addBoardAt(atCoord);
         }
         removeParticlesAt(atCoord);
-        // Append a new electron to the electronParticles
         electronParticles.value.push(atCoord);
     }
     else if (activeTool.value === 'remover') {
         removePlacementAt(atCoord);
-        // A cooldown is implemented to prevent multi-clicks
         leftClickCooldown = true;
         setTimeout(() => {
             leftClickCooldown = false;
         }, leftClickCooldownTime);
     }
+};
+
+const snapClientPointToCoord = (clientX, clientY) => {
+    const rect = getMapBoundingBox();
+    const originX = rect.x + panningOffset.value.x;
+    const originY = rect.y + panningOffset.value.y;
+    const snappedX = Math.floor((clientX - originX) / levelMapGridScalePx.value) * levelMapGridScalePx.value + originX;
+    const snappedY = Math.floor((clientY - originY) / levelMapGridScalePx.value) * levelMapGridScalePx.value + originY;
+    return {
+        x: snappedX - originX,
+        y: snappedY - originY,
+    };
+};
+
+const touchPanState = reactive({
+    active: false,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    startOffsetX: 0,
+    startOffsetY: 0,
+    moved: false,
+});
+
+const TOUCH_PAN_THRESHOLD_PX = 10;
+
+const onTouchPointerDown = (event) => {
+    if (event.pointerType !== 'touch') return;
+    touchPanState.active = true;
+    touchPanState.pointerId = event.pointerId;
+    touchPanState.startX = event.clientX;
+    touchPanState.startY = event.clientY;
+    touchPanState.startOffsetX = panningOffset.value.x;
+    touchPanState.startOffsetY = panningOffset.value.y;
+    touchPanState.moved = false;
+};
+
+const onTouchPointerMove = (event) => {
+    if (event.pointerType !== 'touch') return;
+    if (!touchPanState.active || touchPanState.pointerId !== event.pointerId) return;
+    const dx = event.clientX - touchPanState.startX;
+    const dy = event.clientY - touchPanState.startY;
+    if (!touchPanState.moved && Math.hypot(dx, dy) >= TOUCH_PAN_THRESHOLD_PX) {
+        touchPanState.moved = true;
+    }
+    if (!touchPanState.moved) return;
+    panningOffset.value = {
+        x: touchPanState.startOffsetX + dx,
+        y: touchPanState.startOffsetY + dy,
+    };
+};
+
+const onTouchPointerUp = (event) => {
+    if (event.pointerType !== 'touch') return;
+    if (!touchPanState.active || touchPanState.pointerId !== event.pointerId) return;
+    if (!touchPanState.moved) {
+        const atCoord = snapClientPointToCoord(event.clientX, event.clientY);
+        placeAtCoord(atCoord);
+    }
+    touchPanState.active = false;
+    touchPanState.pointerId = null;
+};
+
+const onTouchPointerCancel = (event) => {
+    if (event.pointerType !== 'touch') return;
+    if (touchPanState.pointerId !== event.pointerId) return;
+    touchPanState.active = false;
+    touchPanState.pointerId = null;
+};
+
+const onMouseLeftClickOnMap = () => {
+    if (leftClickCooldown) { return; }
+    console.log("Left click");
+    // assert that the left click is only handled when the mode is 'place'!
+    if (globalModeContext.value !== 'place') { return; }
+    const atCoord = {
+        x: toolSpritePosition.value.x - originPosition.value.x,
+        y: toolSpritePosition.value.y - originPosition.value.y
+    }
+    placeAtCoord(atCoord);
 }
 
 const onPlaceStart = () => {
@@ -856,6 +915,7 @@ useHotkeyBindings('editor', {
     },
     'editor.dev-tools': ({ event }) => {
         event.preventDefault();
+        if (isTouchDevice.value) return;
         showDevTools.value = !showDevTools.value;
     },
     'editor.play': ({ event }) => {
@@ -971,14 +1031,14 @@ const handleGlobalKeydown = (e) => {
     <div class="top-container">
         <!-- The left side of the top section -->
         <div class="u-gap-16"></div>
-        <ion-button name="arrow-back-circle-outline" size="1.6rem" @click="router.push('/custom')" class="a-fade-in"
+        <ion-button name="arrow-back-circle-outline" :size="topButtonSize" @click="router.push('/custom')" class="a-fade-in"
             data-hotkey-target="editor.back"
             data-hotkey-label="Back"
             data-hotkey-group="top-left"
             data-hotkey-group-side="bottom right"
             data-hotkey-label-position="inline"
         />
-        <ion-button name="save-outline" size="1.6rem" class="a-fade-in a-delay-1" @click="onSave"
+        <ion-button name="save-outline" :size="topButtonSize" class="a-fade-in a-delay-1" @click="onSave"
             data-hotkey-target="editor.save"
             data-hotkey-label="Save"
             data-hotkey-group="top-left"
@@ -1000,23 +1060,23 @@ const handleGlobalKeydown = (e) => {
         <!-- The right side of the top section -->
         <div class="u-mla"></div>
         <!-- Developer tools -->
-        <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center" v-show="showDevTools">
+        <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center" v-show="showDevTools && !isTouchDevice">
             <span>Developer Tools:</span>
-            <ion-button name="cloud-upload-outline" size="1.6rem" @click="openUploadLevelDialog"
+            <ion-button name="cloud-upload-outline" :size="topButtonSize" @click="openUploadLevelDialog"
                 data-hotkey-target="editor.upload-level"
                 data-hotkey-label="Upload Level"
                 data-hotkey-group="dev-tools"
                 data-hotkey-group-side="bottom right"
                 data-hotkey-label-position="inline"
             ></ion-button>
-            <ion-button name="download-outline" size="1.6rem" @click="downloadLevel"
+            <ion-button name="download-outline" :size="topButtonSize" @click="downloadLevel"
                 data-hotkey-target="editor.download-level"
                 data-hotkey-label="Download Level"
                 data-hotkey-group="dev-tools"
                 data-hotkey-group-side="bottom right"
                 data-hotkey-label-position="inline"
             ></ion-button>
-            <ion-button name="copy-outline" size="1.6rem" @click="copyLevelToClipboard"
+            <ion-button name="copy-outline" :size="topButtonSize" @click="copyLevelToClipboard"
                 data-hotkey-target="editor.copy"
                 data-hotkey-label="Copy Level"
                 data-hotkey-group="dev-tools"
@@ -1039,7 +1099,7 @@ const handleGlobalKeydown = (e) => {
         <span class="score a-fade-in a-delay-6"
         :class="{'score--na': !currentBest}">{{ currentBest || 'NA' }}</span>
         <div class="u-gap-4"></div>
-        <ion-button name="play-outline" class="a-fade-in a-delay-7" size="1.6rem" @click="playLevel"
+        <ion-button name="play-outline" class="a-fade-in a-delay-7" :size="topButtonSize" @click="playLevel"
             data-hotkey-target="editor.play"
             data-hotkey-label="Play"
             data-hotkey-group="play-button"
@@ -1056,6 +1116,10 @@ const handleGlobalKeydown = (e) => {
     <div class="map-container a-fade-in-raw a-delay-6" @click.right.prevent @mousedown.middle="onPanStart"
         @mouseup.middle="onPanEnd" @mousedown.left="onPlaceStart" @mouseup.left="onPlaceEnd"
         @mousedown.right.prevent="onSelectStart" @mouseup.right.prevent="onSelectEnd"
+        @pointerdown="onTouchPointerDown"
+        @pointermove="onTouchPointerMove"
+        @pointerup="onTouchPointerUp"
+        @pointercancel="onTouchPointerCancel"
         @mouseleave="onPanEnd(); onPlaceEnd();" ref="refMapContainer">
         <div class="background-grid" :style="{
             'background-position-x': `${panningOffset.x}px`,
@@ -1342,6 +1406,7 @@ const handleGlobalKeydown = (e) => {
 
 .map-container {
     background-color: $level-map-background-color;
+    touch-action: none;
 
     .background-grid {
         z-index: -20;
@@ -1359,7 +1424,7 @@ const handleGlobalKeydown = (e) => {
 .right-container {
     position: fixed;
     width: $map-editor-toolbar-width;
-    // height: 60vh;
+    max-height: 80vh;
     top: 50vh;
     translate: 0 -50%;
     right: $map-editor-toolbar-right-margin;
@@ -1453,6 +1518,56 @@ const handleGlobalKeydown = (e) => {
     // &:hover {
     //     width: $map-editor-toolbar-width-expanded;
     // }
+}
+
+@media (pointer: coarse), (hover: none) {
+    .right-container {
+        width: 4rem;
+        right: 4vw;
+        border-radius: 2rem;
+        font-size: 2.4rem;
+
+        .tool-container {
+            height: 4.2rem;
+
+            .tool-container__tooltip {
+                display: none;
+            }
+        }
+
+        ion-icon {
+            margin-left: 0.8rem;
+        }
+    }
+}
+
+@media (pointer: coarse) and (orientation: portrait), (hover: none) and (orientation: portrait) {
+    .right-container {
+        flex-direction: row;
+        width: 92vw;
+        height: 4.4rem;
+        top: auto;
+        bottom: 1.2rem;
+        left: 50%;
+        right: auto;
+        translate: -50% 0;
+        border-radius: 2.2rem;
+        justify-content: space-between;
+
+        .tool-container {
+            flex: 1;
+            width: auto;
+            justify-content: center;
+        }
+
+        ion-icon {
+            margin-left: 0;
+        }
+
+        .divider {
+            display: none;
+        }
+    }
 }
 
 .bottom-tooltip {

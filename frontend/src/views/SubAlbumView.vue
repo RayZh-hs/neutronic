@@ -2,6 +2,7 @@
 
 import { useRouter } from 'vue-router';
 import { useSessionStorage } from '@vueuse/core';
+import { useDevice } from '@/functions/useDevice';
 
 const router = useRouter();
 
@@ -122,6 +123,23 @@ useHotkeyBindings('sub-album', {
     },
 });
 
+const device = useDevice();
+const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orientation.value === 'portrait');
+
+const displayedLevels = computed(() => {
+    if (!currentAlbum.value) return [];
+    if (isTouchPortrait.value) {
+        return currentAlbum.value.content.map((item, index) => ({
+            item,
+            levelNumber: index + 1,
+        }));
+    }
+    return pagedLevels.value.map((item, index) => ({
+        item,
+        levelNumber: windowRange.value.begin + index + 1,
+    }));
+});
+
 </script>
 
 <template>
@@ -144,19 +162,19 @@ useHotkeyBindings('sub-album', {
         </div>
         <div class="main-container">
             <simple-level-card class="level-card a-fade-in" :class="{ [`a-delay-${num + 1}`]: true }"
-                v-for="(item, num) in pagedLevels"
-                :key="num + 1 + windowRange.begin"
-                :level="num + 1 + windowRange.begin"
-                :status="getStatus(num + 1 + windowRange.begin)"
-                :hotkey="(num + 1 + windowRange.begin).toString().split('').join(';')"
+                v-for="({ item, levelNumber }, num) in displayedLevels"
+                :key="levelNumber"
+                :level="levelNumber"
+                :status="getStatus(levelNumber)"
+                :hotkey="levelNumber.toString().split('').join(';')"
                 data-hotkey-target="sub-album.select-level"
                 data-hotkey-dynamic
-                :data-hotkey-hint="getLevelHotkey(num + 1 + windowRange.begin)"
+                :data-hotkey-hint="getLevelHotkey(levelNumber)"
                 data-hotkey-element-position="center"
-                @click="enterLevel(num + 1 + windowRange.begin)"
+                @click="enterLevel(levelNumber)"
                 ></simple-level-card>
         </div>
-        <ion-icon name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in"
+        <ion-icon v-if="!isTouchPortrait" name="chevron-back-outline" class="control-btn control-btn__backward a-fade-in"
             @click="prevWindow"
             :class="{disabled: !canShiftBackward}"
             data-hotkey-target="sub-album.previous"
@@ -164,7 +182,7 @@ useHotkeyBindings('sub-album', {
             data-hotkey-element-position="below"
             data-hotkey-label-position="right"
         ></ion-icon>
-        <ion-icon name="chevron-forward-outline" class="control-btn control-btn__forward a-fade-in"
+        <ion-icon v-if="!isTouchPortrait" name="chevron-forward-outline" class="control-btn control-btn__forward a-fade-in"
             @click="nextWindow"
             :class="{disabled: !canShiftForward}"
             data-hotkey-target="sub-album.next"
@@ -242,6 +260,43 @@ useHotkeyBindings('sub-album', {
             transform: translateY(-50%) scale(1.1);
             color: $n-primary;
         }
+    }
+}
+
+@media (pointer: coarse) and (orientation: portrait), (hover: none) and (orientation: portrait) {
+    .wrapper {
+        .main-container {
+            width: 92vw;
+            max-height: 72vh;
+            min-height: auto;
+            overflow-y: auto;
+            padding-bottom: 1rem;
+            grid-template-columns: repeat(3, $level-select-grid-scale);
+            grid-template-rows: auto;
+            justify-content: center;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: y proximity;
+        }
+    }
+}
+
+@media (pointer: coarse) and (orientation: landscape), (hover: none) and (orientation: landscape) {
+    .wrapper {
+        .main-container {
+            grid-template-columns: repeat(4, 4.8rem);
+            grid-template-rows: repeat(3, 4.8rem);
+            min-height: calc(0.7rem * 2 + 4.8rem * 3);
+            gap: 0.7rem;
+        }
+    }
+
+    :deep(.level-card) {
+        width: 4.8rem;
+        height: 4.8rem;
+    }
+
+    :deep(.level-card .level-text) {
+        font-size: 1.6rem;
     }
 }
 

@@ -1,4 +1,5 @@
 import { defaultHotkeyMap } from '@/data/hotkeys';
+import { useDevice } from './useDevice';
 
 const HOTKEY_STORAGE_KEY = 'neutronic.hotkeys';
 const SEQUENCE_HISTORY_LIMIT = 4;
@@ -72,6 +73,8 @@ const hotkeyState = reactive({
     overrides: {},
     contextCache: new Map(),
     overridesVersion: 0,
+    keydownHandler: null,
+    enabledWatcherStop: null,
 });
 
 const storageAvailable = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -112,6 +115,34 @@ const hasBlockingPopup = () => {
 };
 
 import { useAccountStore } from './useAccount';
+
+let hotkeysEnabledRef = null;
+
+const ensureHotkeysEnabledRef = () => {
+    if (hotkeysEnabledRef) {
+        return hotkeysEnabledRef;
+    }
+    const account = useAccountStore();
+    const device = useDevice();
+    hotkeysEnabledRef = computed({
+        get: () => {
+            const stored = account.value?.settings?.hotkeysEnabled;
+            if (stored === true || stored === false) {
+                return stored;
+            }
+            return !device.isTouchDevice.value;
+        },
+        set: (value) => {
+            if (!account.value.settings) {
+                account.value.settings = {};
+            }
+            account.value.settings.hotkeysEnabled = Boolean(value);
+        },
+    });
+    return hotkeysEnabledRef;
+};
+
+export const useHotkeysEnabled = () => ensureHotkeysEnabledRef();
 
 const loadOverrides = () => {
     const account = useAccountStore();
@@ -374,7 +405,31 @@ const ensureInitialized = () => {
             });
         });
     };
-    window.addEventListener('keydown', handleKeydown);
+
+    hotkeyState.keydownHandler = handleKeydown;
+
+    const attach = () => {
+        if (!hotkeyState.keydownHandler) return;
+        window.addEventListener('keydown', hotkeyState.keydownHandler);
+    };
+
+    const detach = () => {
+        if (!hotkeyState.keydownHandler) return;
+        window.removeEventListener('keydown', hotkeyState.keydownHandler);
+        hotkeyState.history.length = 0;
+    };
+
+    const enabled = ensureHotkeysEnabledRef();
+    const syncListener = () => {
+        if (enabled.value) {
+            attach();
+        } else {
+            detach();
+        }
+    };
+
+    syncListener();
+    hotkeyState.enabledWatcherStop = watch(enabled, syncListener, { flush: 'sync' });
     hotkeyState.initialized = true;
 };
 

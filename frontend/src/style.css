@@ -102,3 +102,10 @@ button:focus-visible {
 .n-card {
   background-color: #262626 !important;
 }
+
+@media (pointer: coarse), (hover: none) {
+  .back-to-home-btn {
+    font-size: 2.8rem !important;
+    margin: 1.25rem !important;
+  }
+}
