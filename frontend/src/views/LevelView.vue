@@ -52,6 +52,7 @@ const {
     isPanning,
     isCustomAnimating,
     disableInteraction,
+    isCollisionAnimating,
     hasWon,
     selected,
     baseLevelDefinition,
@@ -144,19 +145,19 @@ const context = usingTutorial.tutorialContext;
 
 watch(selected, (newVal) => {
     context.userSelection.value = newVal;
-});
+}, { immediate: true });
 
 watch(stepsCounter, (newVal) => {
     context.steps.value = newVal;
-});
+}, { immediate: true });
 
 watch(() => gameState.value.particles.length, (newVal) => {
     context.particleCount.value = newVal;
-});
+}, { immediate: true });
 
 watch(hasWon, (newVal) => {
     context.hasWon.value = newVal;
-});
+}, { immediate: true });
 
 
 
@@ -186,7 +187,7 @@ const handlePlaybackSelect = (key) => {
 const handleSelectParticle = (particle) => {
     if (isTouchDevice.value) return;
     if (particle === selected.value) selected.value = null;
-    else if (canInteract.value && !disableInteraction.value && !particle.colliding && !particle.transporting) { selected.value = particle; }
+    else if (canInteract.value && (!disableInteraction.value || isCollisionAnimating.value) && !particle.colliding && !particle.transporting) { selected.value = particle; }
 };
 
 const particleHotkeyKeys = computed(() => gameState.value.particles.map((p) => getParticleHotkey(p)));
@@ -223,7 +224,7 @@ usePointerSwipe(refViewPort, {
         swipeStartParticleId.value = null;
 
         if (!particleId || direction === 'none') return;
-        if (!canInteract.value || disableInteraction.value || hasWon.value) return;
+        if (!canInteract.value || (disableInteraction.value && !isCollisionAnimating.value) || hasWon.value) return;
 
         const particle = gameState.value.particles.find((p) => p.id === particleId);
         if (!particle || particle.colliding || particle.transporting) return;
@@ -271,6 +272,10 @@ const gotoNextLevel = () => {
 
 onMounted(async () => {
     hasWon.value = false;
+    context.hasWon.value = false;
+    context.tutorialStageId.value = 'none:none';
+    context.userSelection.value = null;
+    context.steps.value = 0;
     context.isStartingAnimation.value = true;
     isStartingAnimation.value = true;
     disableInteraction.value = true;    // Wait for entrance animation to finish

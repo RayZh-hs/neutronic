@@ -43,6 +43,7 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
 
     const canInteract = computed(() => isLevelLoaded.value && !isPanning.value);
     const doSmoothAnimate = computed(() => isLevelLoaded.value && !isPanning.value && !isCustomAnimating.value);
+    const isCollisionAnimating = computed(() => gameState.value.particles.some((particle) => particle?.colliding));
 
     // Level Loading
     const loadLevelFromString = (levelString) => {
@@ -398,13 +399,19 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
         if (!particles || particles.length === 0) {
             return;
         }
-        const currentIndex = particles.findIndex((particle) => particle === selected.value);
-        if (currentIndex === -1) {
-            selected.value = offset > 0 ? particles[0] : particles[particles.length - 1];
+
+        const selectableParticles = particles.filter((particle) => particle && !particle.colliding && !particle.transporting);
+        if (selectableParticles.length === 0) {
             return;
         }
-        const nextIndex = (currentIndex + offset + particles.length) % particles.length;
-        selected.value = particles[nextIndex];
+
+        const currentIndex = selectableParticles.findIndex((particle) => particle === selected.value);
+        if (currentIndex === -1) {
+            selected.value = offset > 0 ? selectableParticles[0] : selectableParticles[selectableParticles.length - 1];
+            return;
+        }
+        const nextIndex = (currentIndex + offset + selectableParticles.length) % selectableParticles.length;
+        selected.value = selectableParticles[nextIndex];
     };
 
     const focusPreviousParticle = () => focusParticleByOffset(-1);
@@ -414,8 +421,9 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
             selected.value = null;
             return;
         }
-        if (gameState.value.particles.length > 0) {
-            selected.value = gameState.value.particles[0];
+        const selectableParticles = gameState.value.particles.filter((particle) => particle && !particle.colliding && !particle.transporting);
+        if (selectableParticles.length > 0) {
+            selected.value = selectableParticles[0];
         }
     };
 
@@ -424,7 +432,7 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
         if (!particle) {
             return false;
         }
-        if (!canInteract.value || disableInteraction.value) {
+        if (!canInteract.value || (disableInteraction.value && !isCollisionAnimating.value)) {
             return false;
         }
         if (particle.colliding || particle.transporting) {
@@ -443,6 +451,7 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
         isPanning,
         isCustomAnimating,
         disableInteraction,
+        isCollisionAnimating,
         hasWon,
         selected,
         baseLevelDefinition,
@@ -464,4 +473,3 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
         getParticleHotkey
     };
 }
-
