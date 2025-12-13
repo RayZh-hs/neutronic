@@ -54,9 +54,6 @@ useHotkeyBindings('landing', {
 
 <template>
     <div class="home-view-container">
-        <n-alert v-if="showSmallScreenWarning" class="small-screen-warning" type="warning" :bordered="false">
-            Screen width is under 400px; the game may be hard to play on this device.
-        </n-alert>
         <h1 class="home-main-title a-fade-in">Neutronic</h1>
         <div class="r-container">
             <div class="r-divider-bg clickable a-fade-in a-delay-2"
@@ -105,6 +102,10 @@ useHotkeyBindings('landing', {
                 </transition>
             </div>
         </div>
+        <!-- Alert for small screens -->
+        <n-alert v-if="showSmallScreenWarning" class="small-screen-warning a-fade-in a-delay-8" type="warning" :bordered="false">
+            Screen width is under 400px. Expect possible layout issues.
+        </n-alert>
     </div>
     <n-modal v-model:show="showInfo" data-hotkey-popup="true">
         <n-card title="Neutronic" class="info-card">

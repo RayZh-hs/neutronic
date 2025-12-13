@@ -662,7 +662,7 @@ const formatActionName = (actionId) => {
 .settings-layout--touch-portrait {
     width: 92vw;
     min-width: 92vw;
-    height: 82vh;
+    height: calc(100vh - 9rem);
     flex-direction: column;
     align-items: stretch;
 
@@ -694,14 +694,88 @@ const formatActionName = (actionId) => {
     }
 
     .settings-panel {
-        width: 100%;
-        padding: 0 1rem;
+        width: 80vw;
+        padding: 0 0.75rem;
+        max-width: 100%;
+        height: 80vh;
+        text-align: left;
 
         h2 {
-            font-size: 2rem;
-            margin-top: 1rem;
+            font-size: 1.9rem;
+            margin: 0.75rem 0 0.5rem 0;
             height: auto;
+            text-align: center;
         }
+
+        .settings-content {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            margin-bottom: 1rem;
+        }
+    }
+
+    .settings-group {
+        margin: 0;
+
+        .setting-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+            justify-content: flex-start;
+            padding: 0.9rem;
+            margin-bottom: 1rem;
+            background: rgba(255, 255, 255, 0.04);
+            outline: 1px solid rgba(255, 255, 255, 0.08);
+            transform: none;
+
+            &:hover {
+                transform: none;
+            }
+        }
+
+        .setting-label {
+            width: 100%;
+
+            h3, p {
+                text-align: left;
+            }
+        }
+
+        .setting-control,
+        .setting-actions {
+            width: 100%;
+            min-width: 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        :deep(.n-switch) {
+            align-self: flex-end;
+        }
+    }
+
+    .hotkeys-list {
+        .hotkey-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+
+            .hotkey-name {
+                margin-left: 0;
+            }
+        }
+
+        .hotkey-controls {
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+    }
+
+    .keystroke-record-btn {
+        width: auto;
     }
 }
 

@@ -28,12 +28,22 @@ const readRootFontSizePx = () => {
 };
 const calculateLevelMapGridScalePx = () => levelMapGridScaleRem * readRootFontSizePx();
 const levelMapGridScalePxRef = ref(calculateLevelMapGridScalePx());
-const refreshLevelMapGridScalePx = () => {
+export const refreshLevelMapGridScalePx = () => {
     levelMapGridScalePxRef.value = calculateLevelMapGridScalePx();
 };
 if (typeof window !== 'undefined') {
     window.removeEventListener('resize', refreshLevelMapGridScalePx);
     window.addEventListener('resize', refreshLevelMapGridScalePx);
+
+    // Root font-size may be changed via responsive device decorators (class-based CSS),
+    // which does not necessarily trigger a resize event. Keep px/rem mapping in sync.
+    if (typeof document !== 'undefined' && document.documentElement) {
+        const root = document.documentElement;
+        const observer = new MutationObserver(() => refreshLevelMapGridScalePx());
+        observer.observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
+        // Ensure we capture any initial decorator-applied font-size changes.
+        requestAnimationFrame(() => refreshLevelMapGridScalePx());
+    }
 }
 export const levelMapGridScalePx = readonly(levelMapGridScalePxRef);  // Is linked to $map-editor-header-height
 export const levelPortalCycleColor = [

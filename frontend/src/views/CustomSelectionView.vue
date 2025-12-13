@@ -677,6 +677,10 @@ const playRecording = (rec) => {
     }
 }
 
+html.device--touch.device--orientation-portrait .recording-card {
+    width: 75vw;
+}
+
 .control-btn {
     position: absolute;
     font-size: 3.2rem;

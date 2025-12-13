@@ -20,7 +20,7 @@
 [+] Reactivity: Better support for reactive sizing
     [+] Warn on vertical screens
     [+] Last save date on account card should be hidden on small screens
-[ ] Mobile: Support for touch screens
+[+] Mobile: Support for touch screens
     [+] Full touch & swipe support to operate on particles in Level View
     [+] Responsive: Device classification (desktop/pad/mobile) + orientation helpers
     [+] Home: Warn when screen width < 400px
@@ -36,14 +36,14 @@
     [+] Level Editor: Touch placement + drag-to-pan support
     [+] Level Editor: Hide dev tools + enlarge toolbar icons on touch
     [+] Level Editor: Touch portrait moves toolbar to bottom
-    [ ] Level Editor: Touch portrait changes toolbar tooltip to above icon
-    [ ] Level Editor: Touch portrait changes top container to flex column
-    [+] Level View: Mobile version for tutorial levels
-    [ ] Level View: Long tutorial text need to be wrapped
+    [+] Level Editor: Touch portrait changes toolbar tooltip to above icon
+    [+] Level Editor: Touch portrait changes top container to flex column
+    [+] Level View: Mobile version for tutorial levelsA
+    [+] Level View: Long tutorial text need to be wrapped
     [+] Settings: Touch hotkeys enable toggle (off by default) + hide editor UI when off
     [+] Settings: Touch portrait uses top icon tabs
-    [ ] Settings: Touch portrait requires new layout for settings box
-    [ ] Settings: Touch portrait demands column flex layout for individual setting item
+    [+] Settings: Touch portrait requires new layout for settings box, which will not exceed screen width
+    [+] Settings: Touch portrait demands column flex layout for individual setting item
 [ ] Tutorial robustness in handling rapid movement
 [ ] More levels need to be injected into the album
 [ ] Publishing custom levels has not been implemented, including editing metadata (not planned for public beta)

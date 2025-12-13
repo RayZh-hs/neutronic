@@ -100,6 +100,10 @@ const handleDelete = () => emit('delete', props.uuid);
     }
 }
 
+html.device--touch.device--orientation-portrait .main-container {
+    width: 75vw;
+}
+
 .header {
     display: flex;
     align-items: center;

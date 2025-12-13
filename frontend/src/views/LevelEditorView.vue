@@ -27,6 +27,7 @@ const router = useRouter();
 const message = useMessage();
 const dialog = useDialog();
 const device = useDevice();
+const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orientation.value === 'portrait');
 
 /**
  * This function is called to center the map on the screen.
@@ -1028,92 +1029,149 @@ const handleGlobalKeydown = (e) => {
 </script>
 
 <template>
-    <div class="top-container">
-        <!-- The left side of the top section -->
-        <div class="u-gap-16"></div>
-        <ion-button name="arrow-back-circle-outline" :size="topButtonSize" @click="router.push('/custom')" class="a-fade-in"
-            data-hotkey-target="editor.back"
-            data-hotkey-label="Back"
-            data-hotkey-group="top-left"
-            data-hotkey-group-side="bottom right"
-            data-hotkey-label-position="inline"
-        />
-        <ion-button name="save-outline" :size="topButtonSize" class="a-fade-in a-delay-1" @click="onSave"
-            data-hotkey-target="editor.save"
-            data-hotkey-label="Save"
-            data-hotkey-group="top-left"
-            data-hotkey-group-side="bottom right"
-            data-hotkey-label-position="inline"
-        />
-        <div class="u-gap-5"></div>
-        <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
-        <p class="slash-separator a-fade-in a-delay-2">/</p>
-        <span
-            class="level-name a-fade-in a-delay-3"
-            contenteditable=""
-            ref="levelNameElement"
-            @focus="startLevelNameEdit"
-            @blur="finishLevelNameEdit()"
-            @keydown="handleLevelNameKeydown"
-        ></span>
+    <div class="top-container" :class="{ 'top-container--touch-portrait': isTouchPortrait }">
+        <template v-if="isTouchPortrait">
+            <div class="top-container__row top-container__row--primary">
+                <ion-button name="arrow-back-circle-outline" :size="topButtonSize" @click="router.push('/custom')" class="a-fade-in"
+                    data-hotkey-target="editor.back"
+                    data-hotkey-label="Back"
+                    data-hotkey-group="top-left"
+                    data-hotkey-group-side="bottom right"
+                    data-hotkey-label-position="inline"
+                />
+                <ion-button name="save-outline" :size="topButtonSize" class="a-fade-in a-delay-1" @click="onSave"
+                    data-hotkey-target="editor.save"
+                    data-hotkey-label="Save"
+                    data-hotkey-group="top-left"
+                    data-hotkey-group-side="bottom right"
+                    data-hotkey-label-position="inline"
+                />
+                <div class="u-gap-3"></div>
+                <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
+                <p class="slash-separator a-fade-in a-delay-2">/</p>
+                <span
+                    class="level-name a-fade-in a-delay-3"
+                    contenteditable=""
+                    ref="levelNameElement"
+                    @focus="startLevelNameEdit"
+                    @blur="finishLevelNameEdit()"
+                    @keydown="handleLevelNameKeydown"
+                ></span>
+            </div>
+            <div class="top-container__row top-container__row--secondary">
+                <span class="steps-goal-label a-fade-in a-delay-5">Steps Goal</span>
+                <span
+                    class="steps-goal a-fade-in a-delay-5 score"
+                    contenteditable=""
+                    ref="stepsGoalElement"
+                    @focus="startStepsGoalEdit"
+                    @blur="finishStepsGoalEdit()"
+                    @keydown="handleStepsGoalKeydown"
+                ></span>
+                <div class="u-gap-1"></div>
+                <span class="a-fade-in a-delay-5">Best</span>
+                <span class="score a-fade-in a-delay-6" :class="{ 'score--na': !currentBest }">{{ currentBest || 'NA' }}</span>
+                <div class="u-mla"></div>
+                <ion-button name="play-outline" class="a-fade-in a-delay-7" :size="topButtonSize" @click="playLevel"
+                    data-hotkey-target="editor.play"
+                    data-hotkey-label="Play"
+                    data-hotkey-group="play-button"
+                    data-hotkey-group-side="bottom right"
+                    data-hotkey-label-position="inline"
+                />
+            </div>
+        </template>
+        <template v-else>
+            <!-- The left side of the top section -->
+            <div class="u-gap-16"></div>
+            <ion-button name="arrow-back-circle-outline" :size="topButtonSize" @click="router.push('/custom')" class="a-fade-in"
+                data-hotkey-target="editor.back"
+                data-hotkey-label="Back"
+                data-hotkey-group="top-left"
+                data-hotkey-group-side="bottom right"
+                data-hotkey-label-position="inline"
+            />
+            <ion-button name="save-outline" :size="topButtonSize" class="a-fade-in a-delay-1" @click="onSave"
+                data-hotkey-target="editor.save"
+                data-hotkey-label="Save"
+                data-hotkey-group="top-left"
+                data-hotkey-group-side="bottom right"
+                data-hotkey-label-position="inline"
+            />
+            <div class="u-gap-5"></div>
+            <span class="username a-fade-in a-delay-2">{{ account.username }}</span>
+            <p class="slash-separator a-fade-in a-delay-2">/</p>
+            <span
+                class="level-name a-fade-in a-delay-3"
+                contenteditable=""
+                ref="levelNameElement"
+                @focus="startLevelNameEdit"
+                @blur="finishLevelNameEdit()"
+                @keydown="handleLevelNameKeydown"
+            ></span>
 
-        <!-- The right side of the top section -->
-        <div class="u-mla"></div>
-        <!-- Developer tools -->
-        <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center" v-show="showDevTools && !isTouchDevice">
-            <span>Developer Tools:</span>
-            <ion-button name="cloud-upload-outline" :size="topButtonSize" @click="openUploadLevelDialog"
-                data-hotkey-target="editor.upload-level"
-                data-hotkey-label="Upload Level"
-                data-hotkey-group="dev-tools"
+            <!-- The right side of the top section -->
+            <div class="u-mla"></div>
+            <!-- Developer tools -->
+            <n-flex class="dev-toolbox a-fade-in a-delay-4" align="center" justify="center" v-show="showDevTools && !isTouchDevice">
+                <span>Developer Tools:</span>
+                <ion-button name="cloud-upload-outline" :size="topButtonSize" @click="openUploadLevelDialog"
+                    data-hotkey-target="editor.upload-level"
+                    data-hotkey-label="Upload Level"
+                    data-hotkey-group="dev-tools"
+                    data-hotkey-group-side="bottom right"
+                    data-hotkey-label-position="inline"
+                ></ion-button>
+                <ion-button name="download-outline" :size="topButtonSize" @click="downloadLevel"
+                    data-hotkey-target="editor.download-level"
+                    data-hotkey-label="Download Level"
+                    data-hotkey-group="dev-tools"
+                    data-hotkey-group-side="bottom right"
+                    data-hotkey-label-position="inline"
+                ></ion-button>
+                <ion-button name="copy-outline" :size="topButtonSize" @click="copyLevelToClipboard"
+                    data-hotkey-target="editor.copy"
+                    data-hotkey-label="Copy Level"
+                    data-hotkey-group="dev-tools"
+                    data-hotkey-group-side="bottom right"
+                    data-hotkey-label-position="inline"
+                ></ion-button>
+            </n-flex>
+            <div class="u-gap-1"></div>
+            <span class="steps-goal-label a-fade-in a-delay-5">Steps Goal</span>
+            <span
+                class="steps-goal a-fade-in a-delay-5 score"
+                contenteditable=""
+                ref="stepsGoalElement"
+                @focus="startStepsGoalEdit"
+                @blur="finishStepsGoalEdit()"
+                @keydown="handleStepsGoalKeydown"
+            ></span>
+            <div class="u-gap-1"></div>
+            <span class="a-fade-in a-delay-5">Current best</span>
+            <span class="score a-fade-in a-delay-6"
+            :class="{'score--na': !currentBest}">{{ currentBest || 'NA' }}</span>
+            <div class="u-gap-4"></div>
+            <ion-button name="play-outline" class="a-fade-in a-delay-7" :size="topButtonSize" @click="playLevel"
+                data-hotkey-target="editor.play"
+                data-hotkey-label="Play"
+                data-hotkey-group="play-button"
                 data-hotkey-group-side="bottom right"
                 data-hotkey-label-position="inline"
-            ></ion-button>
-            <ion-button name="download-outline" :size="topButtonSize" @click="downloadLevel"
-                data-hotkey-target="editor.download-level"
-                data-hotkey-label="Download Level"
-                data-hotkey-group="dev-tools"
-                data-hotkey-group-side="bottom right"
-                data-hotkey-label-position="inline"
-            ></ion-button>
-            <ion-button name="copy-outline" :size="topButtonSize" @click="copyLevelToClipboard"
-                data-hotkey-target="editor.copy"
-                data-hotkey-label="Copy Level"
-                data-hotkey-group="dev-tools"
-                data-hotkey-group-side="bottom right"
-                data-hotkey-label-position="inline"
-            ></ion-button>
-        </n-flex>
-        <div class="u-gap-1"></div>
-        <span class="steps-goal-label a-fade-in a-delay-5">Steps Goal</span>
-        <span
-            class="steps-goal a-fade-in a-delay-5 score"
-            contenteditable=""
-            ref="stepsGoalElement"
-            @focus="startStepsGoalEdit"
-            @blur="finishStepsGoalEdit()"
-            @keydown="handleStepsGoalKeydown"
-        ></span>
-        <div class="u-gap-1"></div>
-        <span class="a-fade-in a-delay-5">Current best</span>
-        <span class="score a-fade-in a-delay-6"
-        :class="{'score--na': !currentBest}">{{ currentBest || 'NA' }}</span>
-        <div class="u-gap-4"></div>
-        <ion-button name="play-outline" class="a-fade-in a-delay-7" :size="topButtonSize" @click="playLevel"
-            data-hotkey-target="editor.play"
-            data-hotkey-label="Play"
-            data-hotkey-group="play-button"
-            data-hotkey-group-side="bottom right"
-            data-hotkey-label-position="inline"
-        />
-        <div class="u-gap-30"></div>
+            />
+            <div class="u-gap-30"></div>
+        </template>
     </div>
     <code>
     <!-- {{ activeRecording }} -->
     <!-- {{ getBoundingBox() }} -->
     <!-- {{ getMapBoundingBox() }} -->
     </code>
-    <div class="map-container a-fade-in-raw a-delay-6" @click.right.prevent @mousedown.middle="onPanStart"
+    <div
+        class="map-container a-fade-in-raw a-delay-6"
+        :class="{ 'map-area--touch-portrait': isTouchPortrait }"
+        @click.right.prevent
+        @mousedown.middle="onPanStart"
         @mouseup.middle="onPanEnd" @mousedown.left="onPlaceStart" @mouseup.left="onPlaceEnd"
         @mousedown.right.prevent="onSelectStart" @mouseup.right.prevent="onSelectEnd"
         @pointerdown="onTouchPointerDown"
@@ -1247,7 +1305,7 @@ const handleGlobalKeydown = (e) => {
     <!-- <div class="bottom-tooltip">
     </div> -->
 
-    <div class="map-container-wrapping">
+    <div class="map-container-wrapping" :class="{ 'map-area--touch-portrait': isTouchPortrait }">
         <div class="sprite-container sprite-mouseover-container" :style="{
             'top': `${toolSpritePosition.y}px`,
             'left': `${toolSpritePosition.x}px`,
@@ -1357,6 +1415,9 @@ const handleGlobalKeydown = (e) => {
 </template>
 
 <style lang="scss" scoped>
+$map-editor-header-height-touch-portrait: 7.4rem;
+$map-editor-map-bottom-reserve-touch-portrait: 7rem;
+
 .top-container {
     position: fixed;
     width: 80vw;
@@ -1401,6 +1462,42 @@ const handleGlobalKeydown = (e) => {
     }
 }
 
+.top-container--touch-portrait {
+    width: 92vw;
+    height: $map-editor-header-height-touch-portrait;
+    left: 4vw;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0 0.2rem;
+
+    .top-container__row {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .username,
+    .slash-separator {
+        white-space: nowrap;
+    }
+
+    .level-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .score {
+        min-width: 2.4rem;
+        text-align: left;
+    }
+}
+
 // In this way the size and positioning is applied to both the container and its wrapping (invisible duplicate)
 .map-container,
 .map-container-wrapping {
@@ -1409,6 +1506,13 @@ const handleGlobalKeydown = (e) => {
     height: 80vh;
     top: $map-editor-header-margin + $map-editor-header-height;
     left: 10vw;
+}
+
+.map-area--touch-portrait {
+    width: 92vw;
+    left: 4vw;
+    top: $map-editor-header-margin + $map-editor-header-height-touch-portrait;
+    height: calc(100vh - (#{$map-editor-header-margin} + #{$map-editor-header-height-touch-portrait} + #{$map-editor-map-bottom-reserve-touch-portrait}));
 }
 
 .map-container {
@@ -1562,6 +1666,19 @@ const handleGlobalKeydown = (e) => {
         flex: 1;
         width: auto;
         justify-content: center;
+
+        .tool-container__tooltip {
+            display: block;
+            position: absolute;
+            left: 50%;
+            top: 0.25rem;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            font-weight: 300;
+            opacity: 0.75;
+            pointer-events: none;
+            letter-spacing: 0.2pt;
+        }
     }
 
     ion-icon {
