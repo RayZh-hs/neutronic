@@ -97,8 +97,7 @@ const showGeneralHotkeys = computed(() => {
                 data-hotkey-target="general.back"
                 data-hotkey-label="Back"
                 :data-hotkey-show="showGeneralHotkeys ? 'true' : 'false'"
-                data-hotkey-group="general"
-                data-hotkey-group-side="bottom left"
+                data-hotkey-element-position="right"
                 data-hotkey-label-position="inline"
               />
               <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccountButton" v-if="device.isDesktopDevice.value">
