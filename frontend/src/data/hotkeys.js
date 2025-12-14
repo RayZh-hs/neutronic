@@ -49,6 +49,7 @@ export const defaultHotkeyMap = {
         'level.previous-particle': ['j'],
         'level.next-particle': ['l'],
         'level.toggle-focus': ['k', 'enter'],
+        'level.undo': ['z'],
         'level.reset': ['r'],
         'level.toggle-record': ['q'],
         'level.play-recording': ['shift+q'],

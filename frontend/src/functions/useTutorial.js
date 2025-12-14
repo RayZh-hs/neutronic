@@ -7,6 +7,8 @@ const tutorialContext = {
     steps: ref(0),
     particleCount: ref(0),
     hasWon: ref(false),
+    panCount: ref(0),
+    undoCount: ref(0),
 }
 
 export const useTutorial = () => {

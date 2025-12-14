@@ -83,6 +83,21 @@ export function useLevelRecording({
         }
     };
 
+    const undoLastRecordedMove = () => {
+        if (!recordingSession.value.active) {
+            return false;
+        }
+        const last = recording.value.at(-1);
+        if (!last || !Array.isArray(last.direction) || last.direction.length === 0) {
+            return false;
+        }
+        last.direction.pop();
+        if (last.direction.length === 0) {
+            recording.value.pop();
+        }
+        return true;
+    };
+
     const clearRecordingSession = () => {
         recordingSession.value.active = false;
         recordingSession.value.startedAt = null;
@@ -202,6 +217,7 @@ export function useLevelRecording({
         recordingButtonDisabled,
         playbackDropdownOptions,
         recordMove,
+        undoLastRecordedMove,
         clearRecordingSession,
         handleRecordingCompletion,
         startRecordingSession,

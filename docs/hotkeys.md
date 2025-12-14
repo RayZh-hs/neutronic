@@ -47,6 +47,7 @@ When pressing space, all the bindings to the particles will show on top of the p
 - `level.previous-particle`: Focus previous particle, defaults to `j`.
 - `level.next-particle`: Focus next particle, defaults to `l`.
 - `level.toggle-focus`: Toggle the focus of the current particle, defaults to `k|enter`.
+- `level.undo`: Undo last move, defaults to `z`.
 - `level.reset`: Reset level, defaults to `r`.
 - `level.toggle-record`: Toggle recording mode, defaults to `q`.
 - `level.play-recording`: Play recording, defaults to `shift+q`.

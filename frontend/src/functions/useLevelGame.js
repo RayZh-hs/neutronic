@@ -27,6 +27,8 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
     const baseLevelDefinition = ref(null);
     const name = ref('');
     const author = ref('');
+    const undoStack = ref([]);
+    const UNDO_LIMIT = 256;
 
     // Queries
     const {
@@ -66,6 +68,7 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
         gameState.value.particles = JSON.parse(JSON.stringify(baseLevelDefinition.value.particles));
         stepsGoal.value = levelString.content.goal;
         isLevelLoaded.value = true;
+        undoStack.value = [];
     };
 
     const initializeRuntimeState = (shouldObscure = true) => {
@@ -95,6 +98,43 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
         isCustomAnimating.value = false;
         hasWon.value = false;
         stepsCounter.value = 0;
+        undoStack.value = [];
+        return true;
+    };
+
+    const clearTransientDomArtifacts = () => {
+        if (typeof document === 'undefined') return;
+        document.querySelectorAll('.shadow-particle,[id^="shadow-"]').forEach((node) => node.remove());
+    };
+
+    const pushUndoSnapshot = () => {
+        undoStack.value.push({
+            containers: JSON.parse(JSON.stringify(gameState.value.containers)),
+            particles: JSON.parse(JSON.stringify(gameState.value.particles)),
+            steps: stepsCounter.value,
+            selectedId: selected.value?.id ?? null,
+        });
+        if (undoStack.value.length > UNDO_LIMIT) {
+            undoStack.value.splice(0, undoStack.value.length - UNDO_LIMIT);
+        }
+    };
+
+    const canUndo = computed(() => undoStack.value.length > 0);
+
+    const undoLastMove = () => {
+        if (!canUndo.value) return false;
+        const snapshot = undoStack.value.pop();
+        if (!snapshot) return false;
+
+        clearTransientDomArtifacts();
+        gameState.value.containers = JSON.parse(JSON.stringify(snapshot.containers));
+        gameState.value.particles = JSON.parse(JSON.stringify(snapshot.particles));
+        stepsCounter.value = snapshot.steps ?? 0;
+        selected.value = snapshot.selectedId
+            ? gameState.value.particles.find((p) => p?.id === snapshot.selectedId) ?? null
+            : null;
+        disableInteraction.value = false;
+        isCustomAnimating.value = false;
         return true;
     };
 
@@ -157,6 +197,9 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
         var shadowParticleNode = source.cloneNode(true);
         shadowParticleNode.id = `shadow-${source.id}`;
         shadowParticleNode.classList.add('shadow-particle');
+        shadowParticleNode.addEventListener('animationend', () => {
+            shadowParticleNode.remove();
+        }, { once: true });
         refViewPort.value.appendChild(shadowParticleNode);
     };
 
@@ -203,6 +246,7 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
 
         const isValid = isMoveValid(currentColor, currentId, { row: currentRow, column: currentColumn });
         if (isValid) {
+            if (!allowWhilePlayback) pushUndoSnapshot();
             stepsCounter.value++;
             if (onMoveRecorded) onMoveRecorded(currentId, direction);
 
@@ -457,12 +501,14 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
         baseLevelDefinition,
         name,
         author,
+        canUndo,
         canInteract,
         doSmoothAnimate,
         loadLevelFromString,
         initializeRuntimeState,
         restoreBaseLevelState,
         moveParticle,
+        undoLastMove,
         containersWithAttr,
         getPositionForParticles,
         changeObscurityForAll,

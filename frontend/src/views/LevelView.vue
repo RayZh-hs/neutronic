@@ -58,12 +58,14 @@ const {
     baseLevelDefinition,
     name,
     author,
+    canUndo,
     canInteract,
     doSmoothAnimate,
     loadLevelFromString,
     initializeRuntimeState,
     restoreBaseLevelState,
     moveParticle,
+    undoLastMove,
     containersWithAttr,
     getPositionForParticles,
     changeObscurityForAll,
@@ -98,6 +100,7 @@ const {
     recordingButtonDisabled,
     playbackDropdownOptions,
     recordMove,
+    undoLastRecordedMove,
     clearRecordingSession,
     handleRecordingCompletion,
     startRecordingSession,
@@ -201,11 +204,16 @@ const { isTouchDevice } = useDevice();
 
 watchEffect(() => {
     const tutorialState = usingTutorial.tutorialState(levelId);
-    context.currentLevelTutorialState.value =
-        isTouchDevice.value && tutorialState === 'advanced'
-            ? 'none'
-            : tutorialState;
+    context.currentLevelTutorialState.value = tutorialState;
 });
+
+watch(
+    () => ({ x: panningOffset.value.x, y: panningOffset.value.y }),
+    (next) => {
+        if (context.panCount.value > 0) return;
+        if (Math.hypot(next.x, next.y) > 24) context.panCount.value = 1;
+    }
+);
 
 const swipeStartParticleId = ref(null);
 usePointerSwipe(refViewPort, {
@@ -240,9 +248,83 @@ const handleDirectionalHotkey = (direction, { event }) => {
     moveParticle(direction, { onMoveRecorded: recordMove });
 };
 
+const undoMove = (payload = {}) => {
+    const event =
+        payload instanceof Event
+            ? payload
+            : payload?.event instanceof Event
+                ? payload.event
+                : null;
+    if (event) event.preventDefault?.();
+    if (hasWon.value) return;
+    if (!canInteract.value || (disableInteraction.value && !isCollisionAnimating.value)) return;
+    if (isCustomAnimating.value) return;
+    if (!undoLastMove()) return;
+    undoLastRecordedMove();
+    context.undoCount.value += 1;
+};
+
 const restartGame = () => {
     router.go(0);
 }
+
+let lastTapAt = 0;
+let lastTapPos = null;
+const DOUBLE_TAP_MAX_DELAY_MS = 320;
+const DOUBLE_TAP_MAX_DISTANCE_PX = 24;
+
+const isUndoTapTarget = (target) => {
+    const el = target?.closest ? target : null;
+    if (!el) return true;
+    if (el.closest('.particle')) return false;
+    if (el.closest('.steps-complex')) return false;
+    if (el.closest('.end-info-container')) return false;
+    if (el.closest('.bad-responses-container')) return false;
+    return true;
+};
+
+const handleViewportTouchEnd = (event) => {
+    if (!isTouchDevice.value) return;
+    if (!event?.changedTouches || event.changedTouches.length !== 1) return;
+    if (event.touches && event.touches.length > 0) return;
+    if (!isUndoTapTarget(event.target)) {
+        lastTapAt = 0;
+        lastTapPos = null;
+        return;
+    }
+
+    const touch = event.changedTouches[0];
+    const now = Date.now();
+    const pos = { x: touch.clientX, y: touch.clientY };
+    const withinTime = now - lastTapAt <= DOUBLE_TAP_MAX_DELAY_MS;
+    const withinDistance =
+        lastTapPos &&
+        Math.hypot(pos.x - lastTapPos.x, pos.y - lastTapPos.y) <= DOUBLE_TAP_MAX_DISTANCE_PX;
+
+    if (withinTime && withinDistance) {
+        event.preventDefault?.();
+        lastTapAt = 0;
+        lastTapPos = null;
+        undoMove({ event });
+        return;
+    }
+
+    lastTapAt = now;
+    lastTapPos = pos;
+};
+
+onMounted(() => {
+    const el = refViewPort.value;
+    if (!el) return;
+    el.addEventListener('touchend', handleViewportTouchEnd, { passive: false });
+});
+
+onBeforeUnmount(() => {
+    const el = refViewPort.value;
+    if (!el) return;
+    el.removeEventListener('touchend', handleViewportTouchEnd);
+});
+
 const gotoLevelSelect = () => {
     if (albumIndex === null || Number.isNaN(albumIndex)) {
         router.push('/custom');
@@ -276,6 +358,8 @@ onMounted(async () => {
     context.tutorialStageId.value = 'none:none';
     context.userSelection.value = null;
     context.steps.value = 0;
+    context.panCount.value = 0;
+    context.undoCount.value = 0;
     context.isStartingAnimation.value = true;
     isStartingAnimation.value = true;
     disableInteraction.value = true;    // Wait for entrance animation to finish
@@ -351,6 +435,10 @@ useBackHandler(() => {
     return true;
 });
 
+const disableUndoButton = computed(() => {
+    return !canUndo.value || hasWon.value || !canInteract.value || (disableInteraction.value && !isCollisionAnimating.value) || isCustomAnimating.value || isPlaybackActive.value;
+})
+
 const activeHotkeyContext = computed(() => (hasWon.value ? 'level.on-finish' : 'level'));
 
 useHotkeyBindings(activeHotkeyContext, {
@@ -369,6 +457,9 @@ useHotkeyBindings(activeHotkeyContext, {
     'level.toggle-focus': ({ event }) => {
         event.preventDefault();
         toggleParticleFocus();
+    },
+    'level.undo': ({ event }) => {
+        undoMove({ event });
     },
     'level.reset': ({ event }) => {
         event.preventDefault();
@@ -402,7 +493,7 @@ useHotkeyBindings(activeHotkeyContext, {
 </script>
 
 <template>
-    <div class="viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
+    <div class="viewport" id="level-viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
         @mouseleave="onPanEndWrapper" ref="refViewPort">
         <tutorial-handler v-if="context.currentLevelTutorialState.value !== 'none'"/>
         <div class="steps-complex a-fade-in" v-show="!isStartingAnimation && !hasWon">
@@ -412,9 +503,28 @@ useHotkeyBindings(activeHotkeyContext, {
                 <span class="steps-complex__steps-aim" v-if="stepsGoal">{{ stepsGoal }}</span>
                 <div class="u-rel u-gap-14"></div>
                 <div class="game-control-container">
+                    <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :show-arrow="false" :disabled="disableUndoButton">
+                        <template #trigger>
+                            <ion-button
+                                id="level-undo-btn"
+                                name="arrow-undo-outline"
+                                size="1.6rem"
+                                class="undo-btn"
+                                data-hotkey-target="level.undo"
+                                data-hotkey-label="Undo"
+                                data-hotkey-group="level-controls"
+                                data-hotkey-group-side="bottom right"
+                                data-hotkey-label-position="inline"
+                                :disabled="disableUndoButton"
+                                @click="undoMove"
+                            ></ion-button>
+                        </template>
+                        <span>Undo</span>
+                    </n-tooltip>
                     <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :show-arrow="false">
                         <template #trigger>
                             <ion-button
+                                id="level-reset-btn"
                                 name="refresh-outline"
                                 size="1.6rem"
                                 class="reset-btn"
@@ -618,6 +728,7 @@ useHotkeyBindings(activeHotkeyContext, {
             align-items: center;
             gap: 0.5rem;
 
+            .undo-btn,
             .reset-btn,
             .record-btn,
             .play-btn {

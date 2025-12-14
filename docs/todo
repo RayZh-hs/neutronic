@@ -46,10 +46,11 @@
     [+] Settings: Touch portrait demands column flex layout for individual setting item
 [+] Tutorial robustness in handling rapid movement
 [+] Mobile: Touch swipe to pan in Level View and Level Editor
-[ ] Level View: Undo support
-    [ ] Implement undo stack
-    [ ] Implement undo as part of the advanced tutorial
+[+] Level View: Undo support
+    [+] Implement undo stack
+    [+] Implement undo as part of the advanced tutorial
 [ ] More levels need to be injected into the album
 [ ] Publishing custom levels has not been implemented, including editing metadata (not planned for public beta)
 [ ] Online section has not been implemented (not planned for public beta)
+[ ] Multi-language support (not planned for public beta)
 [ ] Mobile: Android/iOS app version (not planned for public beta)

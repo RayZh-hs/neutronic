@@ -258,6 +258,16 @@ const animationFunctionMapping = {
     },
     'advanced:configure': () => {
         // No specific animation
+    },
+    'advanced:undo': () => {
+        setTimeout(() => {
+            addPulseToElement('level-undo-btn', '#fff');
+        }, 800);
+    },
+    'advanced:restart': () => {
+        setTimeout(() => {
+            addPulseToElement('level-reset-btn', '#fff');
+        }, 800);
     }
 }
 
@@ -280,6 +290,9 @@ const animationFunctionMapping = {
  * - `advanced:select`  Inform the user about selecting particles with number keys.
  * - `advanced:cycle`   Inform the user about using j and l to cycle through particles.
  * - `advanced:configure`   Inform the user that hotkeys can be configured in the settings system.
+ * - `advanced:pan`     (Touch) Inform the user about two-finger panning.
+ * - `advanced:undo`    (Touch) Inform the user about undoing a move.
+ * - `advanced:restart` (Touch) Inform the user how to restart a level.
  */
 const stageId = context.tutorialStageId;
 watch(context.isStartingAnimation, (newVal) => {
@@ -290,7 +303,7 @@ watch(context.isStartingAnimation, (newVal) => {
                 invokeAnimationFunction(isTouchDevice.value ? 'simple:swipe' : 'simple:click')
                 break;
             case 'advanced':
-                invokeAnimationFunction('advanced:space')
+                invokeAnimationFunction(isTouchDevice.value ? 'advanced:pan' : 'advanced:space')
                 break;
             default:
                 // Do nothing here
@@ -319,15 +332,37 @@ watch(context.steps, (newVal) => {
     if (newVal > 0 && stageId.value === 'simple:move') {
         invokeAnimationFunction('simple:meet');
     }
-    else if (stageId.value === 'advanced:configure') {
-        invokeAnimationFunction('none:none');
-    }
+    // else if (newVal > 0 && stageId.value === 'advanced:configure' && !isTouchDevice.value) {
+    //     invokeAnimationFunction('advanced:undo');
+    // }
 });
 
 watch(context.particleCount, (newVal, oldVal) => {
     if (newVal < oldVal && stageId.value === 'simple:meet') {
         invokeAnimationFunction('simple:goal');
     }
+});
+
+watch(context.panCount, (newVal) => {
+    if (newVal > 0 && stageId.value === 'advanced:pan') {
+        invokeAnimationFunction('advanced:undo');
+    }
+});
+
+watch(context.undoCount, (newVal) => {
+    if (newVal <= 0) return;
+    if (stageId.value !== 'advanced:undo') return;
+
+    if (isTouchDevice.value) {
+        invokeAnimationFunction('advanced:restart');
+        setTimeout(() => {
+            if (context.tutorialStageId.value === 'advanced:restart') {
+                invokeAnimationFunction('none:none');
+            }
+        }, 8000);
+        return;
+    }
+    invokeAnimationFunction('none:none');
 });
 
 watch(context.hasWon, (newVal) => {
@@ -387,6 +422,12 @@ watch(context.hasWon, (newVal) => {
                 </div>
             </transition>
             <transition name="tooltip">
+                <div v-show="stageId == 'advanced:pan'" class="tooltip-block advanced-pan">
+                    <ion-icon name="hand-left-outline"></ion-icon>
+                    <span>Use <span class="text-green">two fingers</span> to drag and pan the board.</span>
+                </div>
+            </transition>
+            <transition name="tooltip">
                 <div v-show="stageId == 'advanced:select'" class="tooltip-block advanced-select">
                     <!-- Number Keys -->
                     <div class="first-line">
@@ -408,6 +449,19 @@ watch(context.hasWon, (newVal) => {
                     <!-- Settings -->
                     <ion-icon name="settings-outline"></ion-icon>
                     <span>Hotkeys can be configured in <span class="text-green">Settings</span>.</span>
+                </div>
+            </transition>
+            <transition name="tooltip">
+                <div v-show="stageId == 'advanced:undo'" class="tooltip-block advanced-undo">
+                    <ion-icon name="arrow-undo-outline"></ion-icon>
+                    <span v-if="isTouchDevice">To undo your last move, <span class="text-green">double-tap empty space</span> (or tap the undo icon).</span>
+                    <span v-else>Undo a move with <span class="text-green">Ctrl+Z</span> (or <span class="text-green">Cmd+Z</span>).</span>
+                </div>
+            </transition>
+            <transition name="tooltip">
+                <div v-show="stageId == 'advanced:restart'" class="tooltip-block advanced-restart">
+                    <ion-icon name="refresh-outline"></ion-icon>
+                    <span>Tap <span class="text-green">Restart</span> (⟳) to reset the level.</span>
                 </div>
             </transition>
         </div>
