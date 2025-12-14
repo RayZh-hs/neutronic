@@ -52,6 +52,8 @@ export const defaultHotkeyMap = {
         'level.reset': ['r'],
         'level.toggle-record': ['q'],
         'level.play-recording': ['shift+q'],
+    },
+    'level.on-finish': {
         'level.on-finish.restart': ['j'],
         'level.on-finish.level-select': ['k', 'backspace', '`'],
         'level.on-finish.next': ['l'],

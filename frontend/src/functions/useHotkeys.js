@@ -154,7 +154,57 @@ const persistOverrides = () => {
     account.value.hotkeys = { ...hotkeyState.overrides };
 };
 
-hotkeyState.overrides = loadOverrides();
+const migrateLegacyOverrides = (rawOverrides = {}) => {
+    if (!rawOverrides || typeof rawOverrides !== 'object') {
+        return {};
+    }
+    const overrides = { ...rawOverrides };
+    const levelOverrides = overrides.level;
+    if (!levelOverrides || typeof levelOverrides !== 'object') {
+        return overrides;
+    }
+    const legacyKeys = Object.keys(levelOverrides).filter((key) => key.startsWith('level.on-finish.'));
+    if (legacyKeys.length === 0) {
+        return overrides;
+    }
+    if (!overrides['level.on-finish'] || typeof overrides['level.on-finish'] !== 'object') {
+        overrides['level.on-finish'] = {};
+    }
+    legacyKeys.forEach((actionId) => {
+        overrides['level.on-finish'][actionId] = levelOverrides[actionId];
+        delete levelOverrides[actionId];
+    });
+    if (Object.keys(levelOverrides).length === 0) {
+        delete overrides.level;
+    } else {
+        overrides.level = levelOverrides;
+    }
+    return overrides;
+};
+
+hotkeyState.overrides = migrateLegacyOverrides(loadOverrides());
+
+const getContextFromActionId = (actionId) => {
+    if (!actionId || typeof actionId !== 'string') {
+        return '';
+    }
+    const lastDot = actionId.lastIndexOf('.');
+    if (lastDot <= 0) {
+        return '';
+    }
+    return actionId.slice(0, lastDot);
+};
+
+const resolveListenerContext = (listener) => {
+    const source = listener?.context;
+    const resolved =
+        typeof source === 'function'
+            ? source()
+            : (source && typeof source === 'object' && Object.prototype.hasOwnProperty.call(source, 'value'))
+                ? source.value
+                : source;
+    return typeof resolved === 'string' ? resolved : '';
+};
 
 const normalizeToken = (token = '') => {
     if (typeof token !== 'string') {
@@ -378,7 +428,10 @@ const ensureInitialized = () => {
         }
         const contexts = new Set();
         hotkeyState.listeners.forEach((listener) => {
-            contexts.add(listener.context);
+            const context = resolveListenerContext(listener);
+            if (context) {
+                contexts.add(context);
+            }
         });
         const contextMatches = {};
         contexts.forEach((context) => {
@@ -390,7 +443,11 @@ const ensureInitialized = () => {
             if (event.defaultPrevented) {
                 break;
             }
-            const { context, options, handlers } = listener;
+            const context = resolveListenerContext(listener);
+            if (!context) {
+                continue;
+            }
+            const { options, handlers } = listener;
             const match = contextMatches[context];
             if (!match) {
                 continue;
@@ -461,7 +518,7 @@ export const getBindingsForAction = (actionId) => {
     if (!actionId) {
         return [];
     }
-    const [context] = actionId.split('.');
+    const context = getContextFromActionId(actionId);
     if (!context) {
         return [];
     }
@@ -503,7 +560,7 @@ export const setHotkeyBindings = (actionId, bindings) => {
     if (!actionId) {
         return;
     }
-    const [context] = actionId.split('.');
+    const context = getContextFromActionId(actionId);
     if (!context) {
         return;
     }
@@ -521,7 +578,7 @@ export const addHotkeyBinding = (actionId, binding) => {
     if (!actionId) {
         return;
     }
-    const [context] = actionId.split('.');
+    const context = getContextFromActionId(actionId);
     if (!context) {
         return;
     }
@@ -537,7 +594,7 @@ export const resetHotkeyBindings = (actionId) => {
     if (!actionId) {
         return;
     }
-    const [context] = actionId.split('.');
+    const context = getContextFromActionId(actionId);
     if (!context || !hotkeyState.overrides[context]) {
         return;
     }

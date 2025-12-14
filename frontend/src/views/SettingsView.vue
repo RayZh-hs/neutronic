@@ -291,7 +291,8 @@ const resetHotkey = (actionId) => {
 };
 
 const formatActionName = (actionId) => {
-    const name = actionId.split('.')[1] || actionId;
+    const parts = actionId.split('.');
+    const name = parts[parts.length - 1] || actionId;
     return name.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 

@@ -351,26 +351,20 @@ useBackHandler(() => {
     return true;
 });
 
-useHotkeyBindings('level', {
+const activeHotkeyContext = computed(() => (hasWon.value ? 'level.on-finish' : 'level'));
+
+useHotkeyBindings(activeHotkeyContext, {
     'level.up': (payload) => handleDirectionalHotkey('up', payload),
     'level.down': (payload) => handleDirectionalHotkey('down', payload),
     'level.left': (payload) => handleDirectionalHotkey('left', payload),
     'level.right': (payload) => handleDirectionalHotkey('right', payload),
     'level.previous-particle': ({ event }) => {
         event.preventDefault();
-        if (hasWon.value) {
-            restartGame();
-        } else {
-            focusPreviousParticle();
-        }
+        focusPreviousParticle();
     },
     'level.next-particle': ({ event }) => {
         event.preventDefault();
-        if (hasWon.value && levelViewConfig.value.context === 'album') {
-            gotoNextLevel();
-        } else {
-            focusNextParticle();
-        }
+        focusNextParticle();
     },
     'level.toggle-focus': ({ event }) => {
         event.preventDefault();
@@ -389,22 +383,18 @@ useHotkeyBindings('level', {
         playLatestRecordingEntry();
     },
     'level.on-finish.restart': ({ event }) => {
-        if (hasWon.value) {
-            event.preventDefault();
-            restartGame();
-        }
+        event.preventDefault();
+        restartGame();
     },
     'level.on-finish.level-select': ({ event }) => {
-        if (hasWon.value && levelViewConfig.value.context === 'album') {
-            event.preventDefault();
-            router.push(`/album/${albumIndex}`);
-        }
+        if (levelViewConfig.value.context !== 'album') return;
+        event.preventDefault();
+        router.push(`/album/${albumIndex}`);
     },
     'level.on-finish.next': ({ event }) => {
-        if (hasWon.value && levelViewConfig.value.context === 'album') {
-            event.preventDefault();
-            gotoNextLevel();
-        }
+        if (levelViewConfig.value.context !== 'album') return;
+        event.preventDefault();
+        gotoNextLevel();
     },
 }, {
     ignore: ['general.view-hotkeys']
