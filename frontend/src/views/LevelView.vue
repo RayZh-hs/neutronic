@@ -411,19 +411,23 @@ useHotkeyBindings(activeHotkeyContext, {
                 <span class="steps-complex__steps-label" v-if="stepsGoal">/</span>
                 <span class="steps-complex__steps-aim" v-if="stepsGoal">{{ stepsGoal }}</span>
                 <div class="u-rel u-gap-14"></div>
-                <ion-button
-                    name="refresh-outline"
-                    size="1.6rem"
-                    class="reset-btn"
-                    data-hotkey-target="level.reset"
-                    data-hotkey-label="Reset level"
-                    data-hotkey-group="level-controls"
-                    data-hotkey-group-side="bottom right"
-                    data-hotkey-label-position="inline"
-                    @click="restartGame"
-                ></ion-button>
-                <div class="u-rel u-gap-8"></div>
-                <div class="recording-controls">
+                <div class="game-control-container">
+                    <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :show-arrow="false">
+                        <template #trigger>
+                            <ion-button
+                                name="refresh-outline"
+                                size="1.6rem"
+                                class="reset-btn"
+                                data-hotkey-target="level.reset"
+                                data-hotkey-label="Reset level"
+                                data-hotkey-group="level-controls"
+                                data-hotkey-group-side="bottom right"
+                                data-hotkey-label-position="inline"
+                                @click="restartGame"
+                            ></ion-button>
+                        </template>
+                        <span>Restart</span>
+                    </n-tooltip>
                     <n-tooltip placement="bottom" raw style="color: var(--n-primary)" :show-arrow="false">
                         <template #trigger>
                             <ion-button
@@ -607,17 +611,14 @@ useHotkeyBindings(activeHotkeyContext, {
             margin: 0.25rem;
         }
 
-        .reset-btn {
-            margin: auto 0;
-        }
-
-        .recording-controls {
+        .game-control-container {
             display: flex;
             margin: auto 0;
             justify-content: center;
             align-items: center;
             gap: 0.5rem;
 
+            .reset-btn,
             .record-btn,
             .play-btn {
                 visibility: visible;
