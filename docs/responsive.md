@@ -70,6 +70,10 @@ Long tutorial texts should be wrapped into multiple lines if the container canno
 
 On all devices touch interaction is supported.
 
+On TPS devices, to undo an action users double-tap on the screen on empty space. On NTPS devices, users can use the hotkey (Ctrl+Z or Cmd+Z). This is part of the second phase tutorial.
+
+On TPS devices, users pan by dragging with two fingers. On NTPS devices, users pan by dragging with the middle mouse button.
+
 ### Custom Selection View
 
 For TPS devices, changing between custom levels and recordings require only clicking on the "My Levels/My Recordings" title, and the both are displayed as tabs at the top of the screen.
