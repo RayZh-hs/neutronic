@@ -11,7 +11,25 @@
  */
 
 //: API
-export const SERVER_URL = import.meta.env.API_SERVER_URL || "http://localhost:9721/api";
+const normalizeServerUrl = (value) => {
+    if (!value) return '';
+    const trimmed = String(value).trim();
+    if (!trimmed) return '';
+
+    // Allow relative URLs (e.g. "/neutronic/api") for same-origin deployments.
+    if (trimmed.startsWith('/')) return trimmed.replace(/\/+$/, '');
+
+    // If a protocol is already present, keep it.
+    if (/^https?:\/\//i.test(trimmed)) return trimmed.replace(/\/+$/, '');
+
+    // If it's a host:port (or host) without protocol, default to http://.
+    return `http://${trimmed}`.replace(/\/+$/, '');
+};
+
+// Vite only exposes env vars prefixed with VITE_ to client code.
+export const SERVER_URL = normalizeServerUrl(
+    import.meta.env?.VITE_API_SERVER_URL ?? 'http://localhost:9721/neutronic/api'
+);
 
 //: Custom Selection
 export const customSelectionWindowSize = 5;

@@ -57,11 +57,12 @@ import { watch } from 'vue';
 const player = getAccountProgress();
 
 console.log(album);
-const albumLength = computed(() => album.value.length)
+const albumLength = computed(() => (Array.isArray(album.value) ? album.value.length : 0))
 const activePage = computed(() => swiperPage.value['swiper-page-memory']);
 
 //: Jump to referring page
 const jumpToReferent = () => {
+    if (!Array.isArray(album.value)) return;
     const id = activePage.value;
     console.log("Jumping to ", id);
     if (id === albumLength.value) {
