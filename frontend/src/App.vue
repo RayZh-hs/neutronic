@@ -118,6 +118,9 @@ const showGeneralHotkeys = computed(() => {
               </n-popover>
               <IonButton name="logo-github" :size="headerIconSize" aria-label="github" @click="openGitHub"
                 class="header__github-button"
+                :style="{
+                  'margin-left': (showUserButton && device.isDesktopDevice.value) ? '0' : 'auto'
+                }"
                 data-hotkey-target="general.github"
                 data-hotkey-label="GitHub"
                 :data-hotkey-show="showGeneralHotkeys ? 'true' : 'false'"
@@ -199,7 +202,7 @@ html, body {
   padding: 0 2rem;
   box-sizing: border-box;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   pointer-events: none;
 
   .header__back-button {
@@ -224,75 +227,5 @@ html, body {
 :global(html.device--touch) .header {
   top: 1rem;
   padding: 0 1rem;
-}
-
-.warning-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: repeating-linear-gradient(
-    45deg,
-    rgba($n-black, 0.9),
-    rgba($n-black, 0.9) 10px,
-    rgba($n-dark-grey, 0.9) 10px,
-    rgba($n-dark-grey, 0.9) 20px
-  );
-  backdrop-filter: blur(5px);
-  z-index: 10000;
-  display: none;
-  justify-content: center;
-  align-items: center;
-
-  &--dismissed {
-    display: none;
-  }
-
-  .warning-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: $n-black;
-    border: 2px solid $n-red;
-    padding: 2rem;
-    border-radius: 1rem;
-    text-align: center;
-    color: $n-white;
-    width: 80vw;
-    min-height: 20vh;
-
-    .warning-title {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      font-size: 5vh;
-      margin-bottom: 1rem;
-      font-family: 'Electrolize', sans-serif;
-      color: $n-red;
-
-      ion-icon {
-        font-size: 5vh;
-        margin-right: 3.6vw;
-      }
-    }
-
-    p {
-      font-size: 2.5vh;
-      font-family: 'Poppins', sans-serif;
-    }
-
-    .dismissal-button {
-      font-size: 2vh;
-      min-height: 3.6vh;
-      margin-top: 1rem;
-      --n-icon-size: 3vh !important;
-    }
-  }
-}
-
-:global(html.device--orientation-portrait) .warning-overlay:not(.warning-overlay--dismissed) {
-  display: flex;
 }
 </style>
