@@ -130,6 +130,11 @@ useHotkeyBindings('landing', {
 </template>
 
 <style lang="scss" scoped>
+
+html.device--orientation-landscape .home-main-title {
+    font-size: min(3.5rem, 5vw);
+}
+
 .home-view-container {
     .small-screen-warning {
         max-width: 32rem;
@@ -139,7 +144,6 @@ useHotkeyBindings('landing', {
 
     .home-main-title {
         text-transform: uppercase;
-        font-size: 3.5rem;
         letter-spacing: 5pt;
         margin-bottom: 1rem;
     }

@@ -1,5 +1,9 @@
 <script setup>
 
+defineOptions({
+    inheritAttrs: false,
+});
+
 const props = defineProps({
     color: String,
     width: {
@@ -22,25 +26,32 @@ const props = defineProps({
 </script>
 
 <template>
-    <div class="title-container">
-        <p class="title">
-            {{ title }}
-        </p>
-        <span>{{ finished }} / {{ total }}</span>
-    </div>
-    <div class="status-bar-container" :style="{
-        width: width,
-        height: height,
-        'margin-bottom': marginBottom
-    }">
-        <div class="status-bar" :style="{
-            width: (finished / total * 100) + '%',
-            backgroundColor: color
-        }" />
+    <div
+        class="status-bar-root"
+        v-bind="$attrs"
+        :style="{ width: width, 'margin-bottom': marginBottom }"
+    >
+        <div class="title-container">
+            <p class="title">
+                {{ title }}
+            </p>
+            <span>{{ finished }} / {{ total }}</span>
+        </div>
+        <div class="status-bar-container" :style="{ height: height }">
+            <div class="status-bar" :style="{
+                width: (finished / total * 100) + '%',
+                backgroundColor: color
+            }" />
+        </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
+.status-bar-root {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 .title-container {
 
     width: 100%;
@@ -49,7 +60,7 @@ const props = defineProps({
 
     p.title {
         font-weight: 200;
-        letter-spacing: 2pt;
+        letter-spacing: 0.16em;
         margin: 0;
     }
 }
