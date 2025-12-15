@@ -543,6 +543,8 @@ watch(context.hasWon, (newVal) => {
             }
 
             span {
+                display: inline block;
+                width: fit-content;
                 font-family: "Electrolize", serif;
                 align-self: center;
                 text-align: left;
