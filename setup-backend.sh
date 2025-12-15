@@ -3,7 +3,7 @@
 set -eo pipefail
 
 cd "$(dirname "$0")"
-cd backend && yarn install
-pm2 start src/server.js --name neutronic-api-server
+yarn install
+pm2 start backend/api/server.cjs --name neutronic-api-server
 pm2 save
 echo "Neutronic Backend setup complete. Running at port 9721."
