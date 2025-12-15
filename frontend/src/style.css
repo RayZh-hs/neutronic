@@ -18,7 +18,7 @@
 }
 
 /* Touch devices: base rem scales by min(viewport width,height). */
-html.device--touch.device--touch-vp-sm {
+/* html.device--touch.device--touch-vp-sm {
   font-size: 12px;
 }
 
@@ -28,6 +28,10 @@ html.device--touch.device--touch-vp-md {
 
 html.device--touch.device--touch-vp-lg {
   font-size: 18px;
+} */
+
+html.device--touch {
+  font-size: clamp(12px, 2.5vw, 18px);
 }
 
 body {

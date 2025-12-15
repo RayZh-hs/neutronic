@@ -157,9 +157,9 @@ const displayedLevels = computed(() => {
         <div class="header-container">
             <h1 class="album-title a-fade-in">{{ currentAlbum.meta.name }}</h1>
             <div class="header-container__right a-fade-in a-delay-1">
-                <status-bar title="perfects" color="#007bff" width="18rem" :total="totalLevels" :finished="perfects"
+                <status-bar title="perfects" color="#007bff" width="18em" :total="totalLevels" :finished="perfects"
                     marginBottom="3pt" />
-                <status-bar title="passes" color="#f03c24" width="18rem" :total="totalLevels" :finished="passes"
+                <status-bar title="passes" color="#f03c24" width="18em" :total="totalLevels" :finished="passes"
                     marginBottom="0" />
             </div>
         </div>
@@ -208,6 +208,8 @@ const displayedLevels = computed(() => {
     gap: 2rem;
 
     .header-container {
+        display: flexbox;
+        font-size: min(2.2vw, 1rem);
         min-width: 50vw;
         min-height: 8rem;
         /* background-color: black; */
@@ -215,6 +217,10 @@ const displayedLevels = computed(() => {
         align-items: center;
         justify-content: center;
         gap: 2rem;
+
+        .album-title {
+            font-size: max(3.2em, 2.4rem);
+        }
 
         .header-container__right {
             display: flex;
@@ -268,11 +274,12 @@ const displayedLevels = computed(() => {
 
 .wrapper--touch-portrait {
     .main-container {
-        width: 92vw;
-        max-height: 72vh;
+        width: max(60vw, calc(6rem * 3 + 1rem * 2));
+        max-height: 50vh;
         min-height: auto;
         overflow-y: auto;
         padding-bottom: 1rem;
+        padding-right: 1rem;
         grid-template-columns: repeat(3, $level-select-grid-scale);
         grid-template-rows: auto;
         justify-content: center;
