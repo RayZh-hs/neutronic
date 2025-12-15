@@ -17,7 +17,7 @@ The frontend uses environment variables for configuration. You can set these in 
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |
-| `API_SERVER_URL` | The full URL of the backend API (e.g., `https://api.neutronic.com/api`) | `http://localhost:9721/api` |
+| `VITE_API_SERVER_URL` | The full URL of the backend API (e.g., `https://api.neutronic.com/neutronic/api`) | `http://localhost:9721/neutronic/api` |
 
 ### Build Steps
 
@@ -38,7 +38,7 @@ The frontend uses environment variables for configuration. You can set these in 
 
    To specify the server URL during build:
    ```bash
-   API_SERVER_URL=https://your-api-url.com/neutronic/api yarn run build
+   VITE_API_SERVER_URL=https://your-api-url.com/neutronic/api yarn run build
    ```
 
 4. The build artifacts will be generated in the `frontend/dist` directory. These files can be served by any static file server (Nginx, Apache, etc.).
@@ -92,7 +92,7 @@ PORT=8080 node api/server.cjs
      ```
 
 2. **Frontend**:
-   - Build the frontend locally or in a CI/CD pipeline with the correct `API_SERVER_URL`.
+   - Build the frontend locally or in a CI/CD pipeline with the correct `VITE_API_SERVER_URL`.
    - Upload the contents of `frontend/dist` to your web server's public directory.
    - Configure your web server (e.g., Nginx) to serve `index.html` for all non-asset routes (SPA fallback).
 
@@ -102,10 +102,10 @@ This repository is configured to automatically deploy the frontend to GitHub Pag
 
 ### Workflow
 
-The workflow is defined in `.github/workflows/deploy.yml`. It triggers on pushes to `dev` and `main` branches.
+The workflow is defined in `.github/workflows/deploy.yml`. It triggers on pushes to the `main` branch.
 
 1.  Installs dependencies using `yarn`.
-2.  Builds the frontend with `API_SERVER_URL` set to `https://service.norb.space/neutronic/api`.
+2.  Builds the frontend with `VITE_API_SERVER_URL` set (currently `https://api.norb.space/neutronic/api`).
 3.  Uploads the build artifact (`frontend/dist`) using `actions/upload-pages-artifact`.
 4.  Deploys the artifact to GitHub Pages using `actions/deploy-pages`.
 

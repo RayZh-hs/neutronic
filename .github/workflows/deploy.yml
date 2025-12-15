@@ -34,7 +34,7 @@ jobs:
       - name: Build Frontend
         run: yarn workspace frontend build
         env:
-          API_SERVER_URL: https://service.norb.space/neutronic/api
+          VITE_API_SERVER_URL: https://api.norb.space/neutronic/api
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
