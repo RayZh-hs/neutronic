@@ -28,7 +28,7 @@ const normalizeServerUrl = (value) => {
 
 // Vite only exposes env vars prefixed with VITE_ to client code.
 export const SERVER_URL = normalizeServerUrl(
-    import.meta.env?.VITE_API_SERVER_URL ?? 'http://localhost:9721/neutronic/api'
+    import.meta.env?.VITE_API_SERVER_URL ?? 'http://localhost:9721/api'
 );
 
 //: Custom Selection
