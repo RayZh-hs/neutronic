@@ -21,8 +21,8 @@ const emits = defineEmits(['click']);
                 <ion-icon name="lock-closed-outline" style="font-size: 1.6rem;" v-show="locked"></ion-icon>
             </h1>
             <div class="data-container">
-                <status-bar title="perfects" color="#007bff" width="18rem" :total="total" :finished="perfects" />
-                <status-bar title="passes" color="#f03c24" width="18rem" :total="total" :finished="passes" />
+                <status-bar title="perfects" color="#007bff" width="18rem" :total="total" :finished="perfects" class="status-bar" />
+                <status-bar title="passes" color="#f03c24" width="18rem" :total="total" :finished="passes" class="status-bar" />
             </div>
         </div>
     </div>
@@ -32,6 +32,7 @@ const emits = defineEmits(['click']);
 .album-divider {
     width: 100%;
     height: 100%;
+    max-width: 80vw;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -41,6 +42,7 @@ const emits = defineEmits(['click']);
         // height: 100%;
 
         width: 26rem;
+        max-width: 80vw;
         margin: 0 auto;
 
         display: flex;
@@ -73,6 +75,10 @@ const emits = defineEmits(['click']);
     transition: scale 0.3s;
 
     margin-bottom: 2rem;
-
+    
+    .status-bar {
+        width: 18rem;
+        max-width: 80vw;
+    }
 }
 </style>

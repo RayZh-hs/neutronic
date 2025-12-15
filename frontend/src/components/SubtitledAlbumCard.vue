@@ -37,6 +37,7 @@ const emits = defineEmits(['click']);
         // height: 100%;
 
         width: 26rem;
+        max-width: 90vw;
         min-height: 14rem;
         margin: 0 auto;
 

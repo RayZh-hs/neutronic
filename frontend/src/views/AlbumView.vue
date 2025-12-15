@@ -247,6 +247,7 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
     }
 
     .arrow-down-text {
+        text-wrap: nowrap;
         font-size: 1.2rem;
         letter-spacing: 0.4pt;
     }
@@ -266,9 +267,10 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
     display: flex;
     align-items: center;
     user-select: none;
+    max-width: 85vw;
 
     ion-icon {
-        font-size: 3.2rem;
+        font-size: 3.2em;
         color: #f8f9fa;
         visibility: visible;
 
@@ -290,7 +292,7 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
     .swiper {
         width: 60vw;
         height: 60vh;
-        // outline: 1px solid rgb(255, 255, 255);   
+        // outline: 1px solid rgb(255, 255, 255);
     }
 }
 
@@ -298,6 +300,48 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
     .swiper {
         width: 86vw;
         height: 70vh;
+    }
+}
+
+/* Media query for small screens around 820x460 */
+@media (max-width: 850px) and (max-height: 500px) {
+    .side-container {
+        ion-icon {
+            font-size: 2.4em;
+        }
+        
+        .swiper {
+            width: 70vw;
+            height: 65vh;
+        }
+    }
+    
+    .side-container--touch {
+        .swiper {
+            width: 80vw;
+            height: 65vh;
+        }
+    }
+}
+
+/* Media query for even smaller screens */
+@media (max-width: 600px) {
+    .side-container {
+        ion-icon {
+            font-size: 2em;
+        }
+        
+        .swiper {
+            width: 75vw;
+            height: 60vh;
+        }
+    }
+    
+    .side-container--touch {
+        .swiper {
+            width: 85vw;
+            height: 60vh;
+        }
     }
 }
 
