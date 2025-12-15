@@ -1,0 +1,18 @@
+name: Update on Remote Server
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Trigger update webhook
+      run: |
+        curl -X POST \
+          https://api.norb.space/update/neutronic \
+          -H "Authorization: Bearer ${{ secrets.API_UPDATE_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{}'
