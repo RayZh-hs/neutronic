@@ -12,6 +12,8 @@ const bootstrapDatabase = (fileName) => {
 // For storing all level data
 const levelDb = bootstrapDatabase('level.db');
 
+let levelSelectStmt;
+
 // Database initialization, called before server launch
 const initDatabases = () => {
     levelDb.exec(`
@@ -23,6 +25,10 @@ const initDatabases = () => {
         levelType INTEGER NOT NULL
     )
     `);
+
+    if (!levelSelectStmt) {
+        levelSelectStmt = levelDb.prepare('SELECT * FROM levelTable WHERE levelId = ?');
+    }
     console.log("Level database initialized");
 }
 
@@ -36,13 +42,21 @@ const loadPremadeLevels = () => {
     }
 }
 
-// Find a level by its ID and retrieve it
-const levelSelectStmt = levelDb.prepare('SELECT * FROM levelTable WHERE levelId = ?');
+const ensureInitialized = () => {
+    if (!levelSelectStmt) {
+        initDatabases();
+    }
+};
 
-const getLevel = (levelId) => levelSelectStmt.get(levelId);
+// Find a level by its ID and retrieve it
+const getLevel = (levelId) => {
+    ensureInitialized();
+    return levelSelectStmt.get(levelId);
+};
 
 // Check if a level exists in the database
 const levelExists = (levelId) => {
+    ensureInitialized();
     return levelSelectStmt.get(levelId) != undefined;
 }
 
