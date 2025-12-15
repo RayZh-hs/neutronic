@@ -4,7 +4,7 @@ set -eo pipefail
 
 cd "$(dirname "$0")"
 git pull origin main
-yarn install --frozen-lockfile
+yarn install
 pm2 reload neutronic-api-server
 pm2 save
 
