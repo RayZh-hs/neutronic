@@ -49,6 +49,7 @@
 [+] Level View: Undo support
     [+] Implement undo stack
     [+] Implement undo as part of the advanced tutorial
+[ ] Level View: Fix issue when consecutive clicks during portal teleport breaks movement
 [ ] More levels need to be injected into the album
 [ ] Publishing custom levels has not been implemented, including editing metadata (not planned for public beta)
 [ ] Online section has not been implemented (not planned for public beta)

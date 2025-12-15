@@ -291,8 +291,8 @@ const animationFunctionMapping = {
  * - `advanced:cycle`   Inform the user about using j and l to cycle through particles.
  * - `advanced:configure`   Inform the user that hotkeys can be configured in the settings system.
  * - `advanced:pan`     (Touch) Inform the user about two-finger panning.
- * - `advanced:undo`    (Touch) Inform the user about undoing a move.
  * - `advanced:restart` (Touch) Inform the user how to restart a level.
+ * - `advanced:undo`    (Touch) Inform the user about undoing a move.
  */
 const stageId = context.tutorialStageId;
 watch(context.isStartingAnimation, (newVal) => {
@@ -304,6 +304,10 @@ watch(context.isStartingAnimation, (newVal) => {
                 break;
             case 'advanced':
                 invokeAnimationFunction(isTouchDevice.value ? 'advanced:pan' : 'advanced:space')
+                // Timeout for testing on desktop, remaining as if for mobile during beta phase
+                setTimeout(() => {
+                    context.panCount.value += 1;
+                }, 2000);
                 break;
             default:
                 // Do nothing here
@@ -332,6 +336,9 @@ watch(context.steps, (newVal) => {
     if (newVal > 0 && stageId.value === 'simple:move') {
         invokeAnimationFunction('simple:meet');
     }
+    if (newVal > 0 && isTouchDevice.value && stageId.value === 'advanced:restart' && context.panCount.value > 0) {
+        invokeAnimationFunction('advanced:undo');
+    }
     // else if (newVal > 0 && stageId.value === 'advanced:configure' && !isTouchDevice.value) {
     //     invokeAnimationFunction('advanced:undo');
     // }
@@ -345,7 +352,15 @@ watch(context.particleCount, (newVal, oldVal) => {
 
 watch(context.panCount, (newVal) => {
     if (newVal > 0 && stageId.value === 'advanced:pan') {
-        invokeAnimationFunction('advanced:undo');
+        invokeAnimationFunction('advanced:restart');
+        if (isTouchDevice.value && context.steps.value > 0) {
+            setTimeout(() => {
+                if (stageId.value !== 'advanced:restart') return;
+                if (context.panCount.value <= 0) return;
+                if (context.steps.value <= 0) return;
+                invokeAnimationFunction('advanced:undo');
+            }, 2000);
+        }
     }
 });
 
@@ -353,15 +368,6 @@ watch(context.undoCount, (newVal) => {
     if (newVal <= 0) return;
     if (stageId.value !== 'advanced:undo') return;
 
-    if (isTouchDevice.value) {
-        invokeAnimationFunction('advanced:restart');
-        setTimeout(() => {
-            if (context.tutorialStageId.value === 'advanced:restart') {
-                invokeAnimationFunction('none:none');
-            }
-        }, 8000);
-        return;
-    }
     invokeAnimationFunction('none:none');
 });
 
@@ -454,14 +460,15 @@ watch(context.hasWon, (newVal) => {
             <transition name="tooltip">
                 <div v-show="stageId == 'advanced:undo'" class="tooltip-block advanced-undo">
                     <ion-icon name="arrow-undo-outline"></ion-icon>
-                    <span v-if="isTouchDevice">To undo your last move, <span class="text-green">double-tap empty space</span> (or tap the undo icon).</span>
-                    <span v-else>Undo a move with <span class="text-green">Ctrl+Z</span> (or <span class="text-green">Cmd+Z</span>).</span>
+                    <span v-if="isTouchDevice">To undo your last move, <span class="text-green">double-tap empty space</span>, or press the undo button.</span>
+                    <!-- Deprecated. The undo shortcut (and others) will be shown when space is pressed. -->
+                    <span v-else>Undo a move with <span class="text-green">Z</span>.</span>
                 </div>
             </transition>
             <transition name="tooltip">
                 <div v-show="stageId == 'advanced:restart'" class="tooltip-block advanced-restart">
                     <ion-icon name="refresh-outline"></ion-icon>
-                    <span>Tap <span class="text-green">Restart</span> (⟳) to reset the level.</span>
+                    <span>Tap <span class="text-green">Restart</span> to reset the level.</span>
                 </div>
             </transition>
         </div>
