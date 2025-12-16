@@ -30,8 +30,12 @@ html.device--touch.device--touch-vp-lg {
   font-size: 18px;
 } */
 
-html.device--touch {
-  font-size: clamp(12px, 2.5vw, 18px);
+html.device--touch.device--orientation-portrait {
+  font-size: clamp(12px, 2.5vw, 22px);
+}
+
+html.device--touch.device--orientation-landscape {
+  font-size: clamp(12px, 2.5vh, 22px);
 }
 
 body {
