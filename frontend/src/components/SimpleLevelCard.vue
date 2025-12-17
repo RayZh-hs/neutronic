@@ -83,4 +83,8 @@ const props = defineProps({
         cursor: pointer;
     }
 }
+
+html.device--touch .level-card:hover {
+    outline: none !important;
+}
 </style>
