@@ -159,7 +159,7 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
             @slideChange="updatePage"
         >
             <swiper-slide v-for="(item, num) in album" :key="num">
-                <album-card :name="item.meta.name" :locked="player.lookup[item.meta.name] == undefined" :total="item.content.length" :passes="player.lookup[item.meta.name]?.passed" :perfects="player.lookup[item.meta.name]?.perfected" class="a-fade-in" 
+                <album-card :name="item.meta.name" :locked="player.lookup[item.meta.name] == undefined" :total="item.content.length" :passes="player.lookup[item.meta.name]?.passed" :perfects="player.lookup[item.meta.name]?.perfected" class="a-fade-in card-center" 
                     @click="jumpToReferent"
                     data-hotkey-target="album.enter"
                     data-hotkey-label="Enter"
@@ -168,7 +168,7 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
             </swiper-slide>
             <swiper-slide>
                 <subtitled-album-card name="Custom" subtitle="Your own puzzles and recordings." icon="create-outline"
-                    @click="jumpToReferent" class="a-fade-in"
+                    @click="jumpToReferent" class="a-fade-in card-center"
                     data-hotkey-target="album.enter"
                     data-hotkey-label="Enter"
                     data-hotkey-show="false"
@@ -176,7 +176,7 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
             </swiper-slide>
             <swiper-slide>
                 <subtitled-album-card name="Online" subtitle="And join the world at thought." icon="logo-web-component"
-                    @click="jumpToReferent" class="a-fade-in"
+                    @click="jumpToReferent" class="a-fade-in card-center"
                     data-hotkey-target="album.enter"
                     data-hotkey-label="Enter"
                     data-hotkey-show="false"
@@ -343,6 +343,11 @@ const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orie
             height: 60vh;
         }
     }
+}
+
+.card-center {
+    // Fix justification issue
+    max-width: 100%;
 }
 
 .timeout-message-box {

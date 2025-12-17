@@ -66,6 +66,12 @@ const emits = defineEmits(['click']);
     }
 }
 
+// disable hover for touch devices
+html.device--touch .album-card:not(.locked):hover {
+    scale: 1;
+    animation: none;
+}
+
 .data-container {
     display: flex;
     flex-direction: column;
