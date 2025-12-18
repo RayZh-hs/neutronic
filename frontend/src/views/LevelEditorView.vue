@@ -29,8 +29,10 @@ const message = useMessage();
 const dialog = useDialog();
 const device = useDevice();
 const isTouchPortrait = computed(() => device.isTouchDevice.value && device.orientation.value === 'portrait');
+const isNarrowScreen = computed(() => device.viewportWidth.value < 600);
 
 useBackHandler(() => {
+    if (handleUnsavedChanges()) return true;
     router.push('/custom');
     return true;
 });
@@ -947,13 +949,57 @@ const persistLevel = (levelWrapper) => {
     message.success("Saved locally");
 };
 
+const lastSavedState = ref('');
+
+const serializeCurrentState = () => {
+    return JSON.stringify({
+        name: levelName.value,
+        goal: stepsGoal.value,
+        best: currentBest.value,
+        board: boardTiles.value,
+        portals: portalPairs.value,
+        positrons: positronParticles.value,
+        electrons: electronParticles.value,
+    });
+};
+
 const onSave = () => {
     const levelWrapper = buildLevelJson();
-    if (levelWrapper.status === "failure") { return; }
+    if (levelWrapper.status === "failure") { return false; }
     persistLevel(levelWrapper);
+    lastSavedState.value = serializeCurrentState();
+    return true;
 }
 
 // - keyboard hotkeys
+
+const showUnsavedChangesModal = ref(false);
+
+const handleUnsavedChanges = () => {
+    if (serializeCurrentState() !== lastSavedState.value) {
+        showUnsavedChangesModal.value = true;
+        return true;
+    }
+    return false;
+};
+
+const levelEditorBack = () => {
+    if (handleUnsavedChanges()) return;
+    console.log("Navigating back to /custom");
+    router.push('/custom');
+}
+
+const confirmExitWithoutSaving = () => {
+    showUnsavedChangesModal.value = false;
+    router.push('/custom');
+};
+
+const confirmSaveAndExit = () => {
+    if (onSave()) {
+        showUnsavedChangesModal.value = false;
+        router.push('/custom');
+    }
+};
 
 useHotkeyBindings('editor', {
     'editor.board-tool': ({ event }) => {
@@ -1097,10 +1143,11 @@ const hydrateFromCustomLevel = () => {
 };
 
 const initializeEditor = () => {
+    hydrateFromCustomLevel();
+    lastSavedState.value = serializeCurrentState();
     if (loadFromLevelViewSession()) {
         return;
     }
-    hydrateFromCustomLevel();
 };
 
 watch(currentLevelId, () => {
@@ -1111,22 +1158,13 @@ watch(currentLevelId, () => {
 onMounted(() => {
     initializeEditor();
     setInterval(updateToolSpritePosition, 1000 / levelEditorRefreshFrequency);
-    window.addEventListener('keydown', handleGlobalKeydown);
 });
 
 onBeforeUnmount(() => {
     if (typeof restoreHotkeyOverlayConfig === "function") {
         restoreHotkeyOverlayConfig();
     }
-    window.removeEventListener('keydown', handleGlobalKeydown);
 });
-
-const handleGlobalKeydown = (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        onSave();
-    }
-};
 
 </script>
 
@@ -1186,7 +1224,7 @@ const handleGlobalKeydown = (e) => {
         <template v-else>
             <!-- The left side of the top section -->
             <div class="u-gap-16"></div>
-            <ion-button name="arrow-back-circle-outline" :size="topButtonSize" @click="triggerBack" class="a-fade-in"
+            <ion-button name="arrow-back-circle-outline" :size="topButtonSize" @click="levelEditorBack" class="a-fade-in"
                 data-hotkey-target="general.back"
                 data-hotkey-label="Back"
                 data-hotkey-group="top-left"
@@ -1241,7 +1279,7 @@ const handleGlobalKeydown = (e) => {
                 ></ion-button>
             </n-flex>
             <div class="u-gap-1"></div>
-            <span class="steps-goal-label a-fade-in a-delay-5">Steps Goal</span>
+            <span class="steps-goal-label a-fade-in a-delay-5">{{ device.isTouchDevice.value ? 'Goal' : 'Steps Goal' }}</span>
             <span
                 class="steps-goal a-fade-in a-delay-5 score"
                 :contenteditable="isTouchDevice ? 'false' : 'true'"
@@ -1252,7 +1290,7 @@ const handleGlobalKeydown = (e) => {
                 @click="onMetaFieldClick('stepsGoal', $event)"
             ></span>
             <div class="u-gap-1"></div>
-            <span class="a-fade-in a-delay-5">Current best</span>
+            <span class="a-fade-in a-delay-5">{{ device.isTouchDevice.value ? 'Current' : 'Current Best' }}</span>
             <span class="score a-fade-in a-delay-6"
             :class="{'score--na': !currentBest}">{{ currentBest || 'NA' }}</span>
             <div class="u-gap-4"></div>
@@ -1522,9 +1560,9 @@ const handleGlobalKeydown = (e) => {
         />
     </n-modal>
     <n-modal v-model:show="showConfirmDeletionModal" data-hotkey-popup="true">
-        <n-card class="confirm-deletion__card">
-            <h2 class="confirm-deletion__title">Confirm Deletion?</h2>
-            <p class="confirm-deletion__text">
+        <n-card class="confirm-card confirm-deletion-card">
+            <h2 class="confirm-card__title">Confirm Deletion?</h2>
+            <p class="confirm-card__text">
                 Are you sure you want to delete all containers and particles on the map?
                 You cannot undo this action!
             </p>
@@ -1537,6 +1575,47 @@ const handleGlobalKeydown = (e) => {
                         <ion-icon name="trash-outline"></ion-icon>
                     </template>
                     Delete
+                </n-button>
+            </n-flex>
+        </n-card>
+    </n-modal>
+    <n-modal v-model:show="showUnsavedChangesModal" data-hotkey-popup="true">
+        <n-card class="confirm-card confirm-exit-card">
+            <h2 class="confirm-card__title">Unsaved Changes</h2>
+            <p class="confirm-card__text">
+                You have unsaved changes. Do you want to save before exiting?
+            </p>
+            <n-divider></n-divider>
+            <n-flex justify="center" :vertical="isNarrowScreen">
+                <n-button
+                    class="confirm-card__button u-w-100"
+                    name="save-outline"
+                    @click="confirmSaveAndExit"
+                >
+                    <template #icon>
+                        <ion-icon name="save-outline"></ion-icon>
+                    </template>
+                    Save and Exit
+                </n-button>
+                <n-button
+                    class="confirm-card__button u-w-100"
+                    name="exit-outline"
+                    @click="confirmExitWithoutSaving"
+                >
+                    <template #icon>
+                        <ion-icon name="exit-outline"></ion-icon>
+                    </template>
+                    Discard Changes
+                </n-button>
+                <n-button
+                    class="confirm-card__button u-w-100"
+                    name="close-circle-outline"
+                    @click="showUnsavedChangesModal = false"
+                >
+                    <template #icon>
+                        <ion-icon name="close-circle-outline"></ion-icon>
+                    </template>
+                    Cancel
                 </n-button>
             </n-flex>
         </n-card>
@@ -1944,26 +2023,28 @@ $map-editor-map-bottom-reserve-touch-portrait: 7rem;
     }
 }
 
-.confirm-deletion__card {
-    max-width: $map-editor-confirm-deletion-card-width;
+.confirm-card {
+    &.confirm-deletion-card {
+        max-width: $map-editor-confirm-deletion-card-width;
+    }
+    &.confirm-exit-card {
+        max-width: $map-editor-confirm-exit-card-width;
+    }
+
     display: flex;
     flex-direction: column;
     justify-content: center;
 
-    .confirm-deletion__title {
+    .confirm-card__title {
         font-size: 2rem;
         font-weight: 200;
         justify-self: center;
         margin-top: 0;
     }
 
-    .confirm-deletion__text {
+    .confirm-card__text {
         font-weight: 200;
         letter-spacing: .3pt;
-    }
-
-    .confirm-deletion__button {
-        width: 40%;
     }
 }
 </style>

@@ -73,7 +73,7 @@ export const defaultHotkeyMap = {
         'editor.apply-tool': ['f'],
         'editor.cancel-selection': ['escape'],
         'editor.copy': ['ctrl+c'],
-        'editor.dev-tools': ['`'],
+        'editor.dev-tools': ['ctrl+`'],
         'editor.play': ['enter'],
     },
     playback: {
