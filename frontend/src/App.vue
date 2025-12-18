@@ -16,7 +16,7 @@ const openGitHub = () => {
 
 const router = useRouter();
 const toggleAccountCard = ref(false);
-const hoverAccountButton = ref(false);
+const hoverAccount = ref(false);
 const device = useDevice();
 useDeviceDecorators();
 const hotkeysEnabled = useHotkeysEnabled();
@@ -100,11 +100,11 @@ const showGeneralHotkeys = computed(() => {
                 data-hotkey-element-position="right"
                 data-hotkey-label-position="inline"
               />
-              <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccountButton" v-if="device.isDesktopDevice.value">
+              <n-popover trigger="manual" raw placement="bottom-end" :show="toggleAccountCard || hoverAccount" v-if="device.isDesktopDevice.value">
                 <template #trigger>
                   <div class="header__user-button-wrapper">
                     <IonButton name="person-circle-outline" :size="headerIconSize" class="header__user-button"
-                      @mouseenter="hoverAccountButton=true" @mouseleave="hoverAccountButton=false"
+                      @mouseenter="hoverAccount=true" @mouseleave="hoverAccount=false"
                       data-hotkey-target="general.account-toggle"
                       data-hotkey-label="Account"
                       :data-hotkey-show="showGeneralHotkeys ? 'true' : 'false'"
@@ -114,7 +114,10 @@ const showGeneralHotkeys = computed(() => {
                       v-if="showUserButton && device.isDesktopDevice.value" />
                   </div>
                 </template>
-                <AccountCard />
+                <AccountCard
+                  @mouseenter="hoverAccount=true" @mouseleave="hoverAccount=false"
+                  @close="toggleAccountCard=false"
+                />
               </n-popover>
               <IonButton name="logo-github" :size="headerIconSize" aria-label="github" @click="openGitHub"
                 class="header__github-button"
