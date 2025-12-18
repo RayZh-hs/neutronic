@@ -42,6 +42,12 @@ const handleBack = (event) => {
   }
 };
 
+watch(() => route.fullPath, () => {
+  console.log('Route changed, closing account card');
+  toggleAccountCard.value = false;
+  hoverAccount.value = false;
+});
+
 useHotkeyBindings('general', {
     'general.github': ({ event }) => {
         event.preventDefault();
