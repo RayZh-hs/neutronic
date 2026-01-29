@@ -271,18 +271,18 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
 
                 if (instant) {
                     updateMapAfterCollision(currentRow, currentColumn);
+                    disableInteraction.value = false;
                 } else {
                     setTimeout(() => {
-                        try {
-                            updateMapAfterCollision(currentRow, currentColumn);
-                        } finally {
-                            disableInteraction.value = false;
-                        }
+                        updateMapAfterCollision(currentRow, currentColumn);
                     }, duration);
+                    disableInteraction.value = false;
                 }
             }
             else if (hasPortalAt(currentRow, currentColumn)) {
-                if (!instant) disableInteraction.value = true;
+                console.log("Entered portal")
+                // Disable movement immediately when particle enters portal
+                disableInteraction.value = true;
                 
                 const handlePortalLogic = () => {
                     if (!instant) isCustomAnimating.value = true;
@@ -304,14 +304,12 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
                         if (instant) {
                             updateMapAfterCollision(otherPortalCoord.row, otherPortalCoord.column);
                         } else {
+                            // Re-enable interaction after collision finishes
                             setTimeout(() => {
-                                try {
-                                    isCustomAnimating.value = false;
-                                    updateMapAfterCollision(otherPortalCoord.row, otherPortalCoord.column);
-                                } finally {
-                                    disableInteraction.value = false;
-                                }
+                                isCustomAnimating.value = false;
+                                updateMapAfterCollision(otherPortalCoord.row, otherPortalCoord.column,);
                             }, duration);
+                            disableInteraction.value = false;
                         }
                     }
                     else {
@@ -322,6 +320,7 @@ export function useLevelGame(refViewPort, panningOffset, additionalCenteringOffs
                         if (instant) {
                              // No op
                         } else {
+                            // Re-enable interaction after teleportation completes
                             setTimeout(() => {
                                 isCustomAnimating.value = false;
                                 currentNode.classList.remove('particle--transported');
