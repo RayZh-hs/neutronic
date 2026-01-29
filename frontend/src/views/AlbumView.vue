@@ -2,6 +2,7 @@
 
 import { useLocalStorage, useTimeoutFn } from '@vueuse/core';
 import { useDevice } from '@/functions/useDevice';
+import { repairAccountLookupCounts } from '@/functions/useAlbum';
 
 //: Swiper-specific setup
 
@@ -104,6 +105,7 @@ useBackHandler(() => {
 
 onMounted(() => {
     console.log("AlbumView mounted");
+    repairAccountLookupCounts();
 });
 
 const {timeoutStart, timeoutStop} = useTimeoutFn(
