@@ -34,6 +34,13 @@ export const useEditorEntities = () => {
         portalPairs.value = portalPairs.value.filter(pair => pair.length === 2);
         usedPortalPairsCount.value = portalPairs.value.length;
         activePortalMode.value = 'first';
+        // Remove lone particles from the level editor
+        positronParticles.value = positronParticles.value.filter(particle =>
+            hasPortalAt(particle) || hasBoardAt(particle)
+        );
+        electronParticles.value = electronParticles.value.filter(particle =>
+            hasPortalAt(particle) || hasBoardAt(particle)
+        );        
     };
 
     const addPortalAt = (coord) => {
