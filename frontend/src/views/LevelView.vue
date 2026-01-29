@@ -494,7 +494,6 @@ useHotkeyBindings(activeHotkeyContext, {
 </script>
 
 <template>
-    {{ disableInteraction }}
     <div class="viewport" id="level-viewport" @mousedown.middle.prevent="onPanStartWrapper" @mouseup.middle.prevent="onPanEndWrapper"
         @mouseleave="onPanEndWrapper" ref="refViewPort">
         <tutorial-handler v-if="context.currentLevelTutorialState.value !== 'none'"/>
